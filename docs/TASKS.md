@@ -41,7 +41,7 @@ Roles:
 | P2-RUNWAY | Implement `computeRunway` (`lib/core/runway.ts`) | DeepSeek | ⬜ | Pure, deterministic (no `Date.now()` inside; `asOf` is an input). **RESOLVED: count rental income as an inflow** on its due date; rent events appear as positive items in `RunwayResult.timeline`. Hand-checked unit tests: no shortfall, exact-zero, shortfall date+amount, with rent inflows. |
 | P2-RUNWAY-UI | Headline runway card + show-your-work timeline | DeepSeek | ⬜ | Number expands to full event ledger (rule 2.1). |
 | P2-WARN | 90-day liquidity warning | DeepSeek | ⬜ | Flags when liquid + inflows < liabilities in window. |
-| P2-METALS | Metals.dev `getSpotFilsPerGram` + wire commodity valuation | DeepSeek | ⬜ | Returns fils/gram pure; feeds `commodityValueFils`. **RESOLVED: live spot, stamped.** Always display value with an "as of <timestamp>" label + staleness; store the fetch time; never show a metal value without its as-of time. |
+| P2-METALS | Metals.dev `getSpotFilsPerGram` + wire commodity valuation | DeepSeek | 🟨 | Returns fils/gram pure; feeds `commodityValueFils`. **RESOLVED: live spot, stamped.** Always display value with an "as of <timestamp>" label + staleness; store the fetch time; never show a metal value without its as-of time. |
 | P2-BANK | GoCardless balance sync | DeepSeek | ⬜ | Verify UAE bank support first; ask owner. |
 
 ## Phase 3 / 4
