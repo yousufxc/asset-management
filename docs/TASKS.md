@@ -3,6 +3,9 @@
 Single source of truth for who-does-what. **DeepSeek implements; Claude reviews.**
 Update the Status column in your PR. Keep tasks atomic (one concern each).
 
+> **Ready-to-send DeepSeek prompts live in [`docs/DEEPSEEK_PROMPTS.md`](./DEEPSEEK_PROMPTS.md)** —
+> a standard preamble + one copy-paste prompt per task below.
+
 Status legend: ⬜ todo · 🟦 in progress · 🟨 in review · ✅ done · ⛔ blocked
 
 Roles:
