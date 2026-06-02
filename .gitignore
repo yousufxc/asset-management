@@ -14,6 +14,7 @@ node_modules/
 .next/
 out/
 build/
+tsconfig.tsbuildinfo
 
 # Logs and OS cruft
 *.log
