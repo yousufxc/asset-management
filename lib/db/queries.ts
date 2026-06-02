@@ -182,7 +182,6 @@ export function updateInstallment(
 export function deleteInstallment(id: number): void {
   getDb().prepare(`DELETE FROM installments WHERE id = ?`).run(id);
 }
-
 /** Check if an installment with (property_id, due_date, amount_fils) exists — used for PDF idempotency. */
 export function installmentExistsByKey(
   propertyId: number,

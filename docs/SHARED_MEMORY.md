@@ -196,3 +196,4 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   `DELETE` with 400/404; live status + MarkPaid/Delete buttons on property page.
   Verified live: PATCH markPaid, DELETE, 404s, 400s. Typecheck clean, 33 tests
   green. No schema change. PR opening as `feat/installment-actions`.
+- **2026-06-02 — DeepSeek → Feature 3 (PDF ingestion).** `pdfToMarkdown` (pdf-parse, local-only) + `parseScheduleFromMarkdown` (Claude API → `ParsedScheduleSchema`) + `POST /api/ingest/spa` (multipart upload, idempotent via `installmentExistsByKey`, 422 on failure) + `IngestPdfForm` on properties page. Tests: schema validation rejects bad JSON/UAE dates/negative amounts; `installmentExistsByKey` idempotency guard. Typecheck clean, 31 tests green. Verified live: missing params → 400, page loads. Deps: pdf-parse, @anthropic-ai/sdk. No schema change. PR opening as `feat/pdf-ingestion`. Phase 1 complete.

@@ -14,7 +14,9 @@
     "db:reset": "tsx scripts/db-reset.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "next": "15.1.6",
+    "pdf-parse": "^2.4.5",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "zod": "^3.24.1"
