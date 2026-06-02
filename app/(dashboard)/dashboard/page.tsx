@@ -11,7 +11,7 @@ import {
   listAllInstallments,
 } from "@/lib/db/queries";
 import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
-import { computeRunway } from "@/lib/core/runway";
+import { computeRunway, checkLiquidityWarning } from "@/lib/core/runway";
 import type { Liability, Inflow } from "@/lib/core/runway";
 
 export const dynamic = "force-dynamic";
@@ -89,10 +89,61 @@ export default function DashboardPage() {
     inflows,
     horizonDays: 90,
   });
+  const warning = checkLiquidityWarning({
+    asOf: todayIso,
+    liquidCashFils: liquidFils,
+    liabilities,
+    inflows,
+    horizonDays: 90,
+  });
 
   return (
     <>
       <h2>Dashboard</h2>
+
+      {/* ─── LIQUIDITY WARNING BANNER ──────────────────────────────────── */}
+      {warning.breached && (
+        <div
+          className="card"
+          style={{
+            borderLeft: "4px solid var(--bad)",
+            backgroundColor: "rgba(220,53,69,0.06)",
+          }}
+        >
+          <h3 style={{ marginTop: 0, color: "var(--bad)" }}>
+            90-day liquidity warning
+          </h3>
+          <p>
+            You will run out of liquid cash in{" "}
+            <strong style={{ color: "var(--bad)", fontSize: 20 }}>
+              {warning.daysUntil} day{warning.daysUntil === 1 ? "" : "s"}
+            </strong>
+            {warning.byDate ? ` (by ${formatIsoToUae(warning.byDate)})` : ""}.
+            Shortfall: <strong style={{ color: "var(--bad)" }}>
+              {formatAed(warning.shortfallFils)}
+            </strong>.
+          </p>
+          <details className="work">
+            <summary>Show contributing items</summary>
+            <div className="work-body">
+              <p>
+                <strong>Liquid cash:</strong> {formatAed(liquidFils)} across{" "}
+                {liquidAccounts.length} account(s)
+              </p>
+              <p>
+                <strong>Liabilities (unpaid):</strong> {liabilities.length} item(s) totaling{" "}
+                {formatAed(liabilities.reduce((s, l) => s + l.amountFils, 0))}
+              </p>
+              {inflows.length > 0 && (
+                <p>
+                  <strong>Expected inflows:</strong> {formatAed(inflows.reduce((s, i) => s + i.amountFils, 0))}{" "}
+                  from {rentalProperties.length} rental propert{rentalProperties.length === 1 ? "y" : "ies"}
+                </p>
+              )}
+            </div>
+          </details>
+        </div>
+      )}
 
       {/* ─── RUNWAY HEADLINE ──────────────────────────────────────────── */}
       <div className="card">

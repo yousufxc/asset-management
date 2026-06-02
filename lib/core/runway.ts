@@ -152,6 +152,35 @@ export function computeRunway(input: RunwayInput): RunwayResult {
   };
 }
 
+// ─── Liquidity warning (reuses computeRunway) ────────────────────────────
+
+export interface LiquidityWarning {
+  /** True when liquid cash + inflows < liabilities within the horizon window. */
+  breached: boolean;
+  /** Largest shortfall amount in fils (positive number), or 0 if not breached. */
+  shortfallFils: number;
+  /** Date of first shortfall (ISO), or null if not breached. */
+  byDate: string | null;
+  /** Days from asOf to the first shortfall date, or null. */
+  daysUntil: number | null;
+}
+
+/**
+ * Check whether liquidity is sufficient over the given window.
+ * Thin wrapper around computeRunway; breached is driven by withinHorizon.
+ */
+export function checkLiquidityWarning(
+  input: RunwayInput,
+): LiquidityWarning {
+  const runway = computeRunway(input);
+  return {
+    breached: runway.withinHorizon,
+    shortfallFils: runway.worstShortfallFils,
+    byDate: runway.shortfallDate,
+    daysUntil: runway.daysUntilShortfall,
+  };
+}
+
 // ─── Pure date helpers (deterministic, no Date.now()) ─────────────────────
 
 /** Add `days` days to an ISO date string, returning a new ISO date string. */

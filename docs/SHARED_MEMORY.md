@@ -185,6 +185,7 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   green and verify live before every PR.
 
 
+
 - **2026-06-02 — DeepSeek → Feature 5 (Runway UI).** Dashboard updated with headline
   runway card + show-your-work timeline expansion. Reads liquid cash, unpaid
   installments, and rental inflows via real cheque-timing model (rent_cheques_per_year
@@ -200,3 +201,7 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   "Shortfall in N days" (red). Full timeline table with delta + running balance
   per event (rule 2.1), red-highlighted negative rows. Typecheck clean, 24 tests
   green, live dashboard confirmed. No schema change. PR opening as `feat/runway-ui`.
+
+- **2026-06-02 — DeepSeek → Feature 6 (Liquidity warning).** Added `checkLiquidityWarning` to `lib/core/runway.ts` (thin wrapper around `computeRunway`, breached driven by `withinHorizon`). Dashboard shows warning banner when 90-day liquidity is insufficient. Typecheck clean, all tests green. No schema change. PR opening as `feat/liquidity-warning`.
+
+ c609ddb (feat: 90-day liquidity warning + dashboard runway card)
