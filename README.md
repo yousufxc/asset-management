@@ -90,8 +90,7 @@ Create a file named `.env.local` in the project folder (Claude Code will help, o
 | Key | What it's for | Where to get it |
 |---|---|---|
 | `ANTHROPIC_API_KEY` | Parsing SPA/statement PDFs | console.anthropic.com → API Keys |
-| `METALS_DEV_KEY` | Precious-metal spot prices | metals.dev → sign up |
-| `GOCARDLESS_SECRET_ID` / `GOCARDLESS_SECRET_KEY` | Bank balance sync | bankaccountdata.gocardless.com (verify your UAE banks are supported before relying on this) |
+| `METALS_DEV_API_KEY` | Precious-metal spot prices | metals.dev → sign up |
 
 You do not need all of them on day one — Phase 1 only needs `ANTHROPIC_API_KEY`.
 
