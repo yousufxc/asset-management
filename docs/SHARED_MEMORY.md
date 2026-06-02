@@ -168,3 +168,9 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   actions (edit/mark-paid/delete) + overdue helper → PDF ingestion → [Phase 2]
   runway core → runway UI → 90-day warning → metals → bank. One PR each. Keep tests
   green and verify live before every PR.
+- **2026-06-02 — DeepSeek → Feature 7 (Metals spot).** `getSpotFilsPerGram` in
+  `lib/integrations/metals.ts` (Metals.dev API → USD/troy_oz → AED/g → fils/g).
+  Commodities page now shows live spot values with "as of HH:MM" timestamp +
+  staleness. Value cell expands to show full lineage (weight→grams, purity, spot,
+  quantity). Mocked network test. Typecheck clean, 25 tests green. No schema change.
+  PR opening as `feat/metals-spot`.
