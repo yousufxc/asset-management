@@ -89,6 +89,20 @@ export const CommodityInputSchema = z.object({
 export type CommodityInput = z.infer<typeof CommodityInputSchema>;
 
 // ---------------------------------------------------------------------------
+// INSTALLMENT UPDATE (partial — fields allowed in PATCH)
+// ---------------------------------------------------------------------------
+export const InstallmentUpdateSchema = z.object({
+  due_date: uaeDate.optional(),
+  amount_aed: aedAmount.optional(),
+  milestone_label: z.string().optional().nullable(),
+  status: z.enum(["upcoming", "paid", "overdue"]).optional(),
+  paid_date: uaeDate.optional().nullable(),
+  paid_amount_aed: aedAmount.optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type InstallmentUpdate = z.infer<typeof InstallmentUpdateSchema>;
+
+// ---------------------------------------------------------------------------
 // PDF PIPELINE OUTPUT — what Claude must return for an SPA installment schedule.
 // Machine input: amounts already in AED decimals, dates ISO. Validated before
 // dedup + double-entry + DB write (Phase 1 ingestion).

@@ -188,3 +188,11 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   + custom), page with show-your-work expansion. Verified live: GET, POST (201),
   bad input (400), 22K → purity_fraction 0.9167. Typecheck clean, 24 tests green.
   No schema change. PR opening as `feat/commodities`.
+- **2026-06-02 — DeepSeek → Feature 2 (Installment actions + overdue).** Pure
+  `installmentStatus` in `lib/core/installments.ts` (9 hand-checked tests); query
+  helpers added: `getInstallment`, `markInstallmentPaid`, `updateInstallment`,
+  `deleteInstallment`, `installmentExistsByKey` (none modified existing); API
+  `PATCH /api/installments/[id]` (Zod via new `InstallmentUpdateSchema`) and
+  `DELETE` with 400/404; live status + MarkPaid/Delete buttons on property page.
+  Verified live: PATCH markPaid, DELETE, 404s, 400s. Typecheck clean, 33 tests
+  green. No schema change. PR opening as `feat/installment-actions`.

@@ -6,8 +6,10 @@
 
 import PropertyForm from "./PropertyForm";
 import InstallmentForm from "./InstallmentForm";
+import { MarkPaidButton, DeleteButton } from "./InstallmentActions";
 import { listProperties, listAllInstallments } from "@/lib/db/queries";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
+import { installmentStatus } from "@/lib/core/installments";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -29,6 +31,7 @@ function daysSince(iso: string | null): string {
 export default function PropertiesPage() {
   const properties = listProperties();
   const installments = listAllInstallments();
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
     <>
@@ -65,13 +68,20 @@ export default function PropertiesPage() {
                         <details className="work">
                           <summary>{insts.length} installment(s) — show schedule</summary>
                           <div className="work-body">
-                            {insts.map((i) => (
-                              <div key={i.id}>
-                                {formatIsoToUae(i.due_date)} — {formatAed(i.amount_fils)}{" "}
-                                <span className={`pill ${i.status}`}>{i.status}</span>
-                                {i.milestone_label ? ` · ${i.milestone_label}` : ""}
-                              </div>
-                            ))}
+                            {insts.map((i) => {
+                              const live = installmentStatus(i, todayIso);
+                              return (
+                                <div key={i.id}>
+                                  {formatIsoToUae(i.due_date)} — {formatAed(i.amount_fils)}{" "}
+                                  <span className={`pill ${live}`}>{live}</span>
+                                  {i.milestone_label ? ` · ${i.milestone_label}` : ""}
+                                  {live !== "paid" && (
+                                    <MarkPaidButton installmentId={i.id} />
+                                  )}
+                                  <DeleteButton installmentId={i.id} />
+                                </div>
+                              );
+                            })}
                           </div>
                         </details>
                       )}

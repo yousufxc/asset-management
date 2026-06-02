@@ -8,6 +8,7 @@
  */
 
 import { getDb } from "@/lib/db/client";
+import type { SQLInputValue } from "node:sqlite";
 import { aedToFils, parseUaeDateToIso } from "@/lib/core/units";
 import { normalizeDescription, transactionHash } from "@/lib/core/dedup";
 import type {
@@ -99,6 +100,101 @@ export function listAllInstallments(): Installment[] {
   return getDb()
     .prepare(`SELECT * FROM installments ORDER BY due_date ASC`)
     .all() as unknown as Installment[];
+}
+
+export function getInstallment(id: number): Installment | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM installments WHERE id = ?`)
+    .get(id) as unknown as Installment | undefined;
+}
+
+export function markInstallmentPaid(
+  id: number,
+  paidDateUae?: string | null,
+  paidAmountAed?: number | null,
+): Installment | undefined {
+  const db = getDb();
+  const paidDateIso = uaeOrNull(paidDateUae);
+  const paidFils = aedOrNull(paidAmountAed);
+  db.prepare(`
+    UPDATE installments
+    SET status = 'paid',
+        paid_date = @paid_date,
+        paid_amount_fils = @paid_amount_fils,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = @id
+  `).run({ id, paid_date: paidDateIso, paid_amount_fils: paidFils });
+  return getInstallment(id);
+}
+
+export function updateInstallment(
+  id: number,
+  data: {
+    dueDateUae?: string;
+    amountAed?: number;
+    milestoneLabel?: string | null;
+    status?: string;
+    paidDateUae?: string | null;
+    paidAmountAed?: number | null;
+    notes?: string | null;
+  },
+): Installment | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.dueDateUae !== undefined) {
+    sets.push("due_date = @due_date");
+    params.due_date = parseUaeDateToIso(data.dueDateUae);
+  }
+  if (data.amountAed !== undefined) {
+    sets.push("amount_fils = @amount_fils");
+    params.amount_fils = aedToFils(data.amountAed);
+  }
+  if (data.milestoneLabel !== undefined) {
+    sets.push("milestone_label = @milestone_label");
+    params.milestone_label = data.milestoneLabel;
+  }
+  if (data.status !== undefined) {
+    sets.push("status = @status");
+    params.status = data.status;
+  }
+  if (data.paidDateUae !== undefined) {
+    sets.push("paid_date = @paid_date");
+    params.paid_date = uaeOrNull(data.paidDateUae);
+  }
+  if (data.paidAmountAed !== undefined) {
+    sets.push("paid_amount_fils = @paid_amount_fils");
+    params.paid_amount_fils = aedOrNull(data.paidAmountAed);
+  }
+  if (data.notes !== undefined) {
+    sets.push("notes = @notes");
+    params.notes = data.notes;
+  }
+
+  if (sets.length === 0) return getInstallment(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE installments SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getInstallment(id);
+}
+
+export function deleteInstallment(id: number): void {
+  getDb().prepare(`DELETE FROM installments WHERE id = ?`).run(id);
+}
+
+/** Check if an installment with (property_id, due_date, amount_fils) exists — used for PDF idempotency. */
+export function installmentExistsByKey(
+  propertyId: number,
+  dueDateIso: string,
+  amountFils: number,
+): boolean {
+  const row = getDb()
+    .prepare(
+      `SELECT 1 FROM installments WHERE property_id = ? AND due_date = ? AND amount_fils = ? LIMIT 1`,
+    )
+    .get(propertyId, dueDateIso, amountFils);
+  return row !== undefined;
 }
 
 // CASH ACCOUNTS --------------------------------------------------------------

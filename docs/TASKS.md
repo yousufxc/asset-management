@@ -28,7 +28,7 @@ Roles:
 | P1-API-COMMODITIES | `app/api/commodities/route.ts` | DeepSeek | 🟨 | Same pattern as properties route. |
 | P1-UI-INSTALL | Installment entry form (payment schedule) | Claude | ✅ | Reference built: `InstallmentForm.tsx` on the Property page. DeepSeek follow-up: add edit / mark-paid / delete. |
 | P1-API-INSTALL | `app/api/installments/route.ts` | Claude | ✅ | Built. Zod-gated, validates `property_id` exists, returns 400 otherwise. |
-| P1-OVERDUE | Derive `overdue` status on read | DeepSeek | ⬜ | **RESOLVED: compute on read, never mutate.** Pure helper `lib/core/installments.ts → installmentStatus(installment, asOfIso)` returns `upcoming\|paid\|overdue` (overdue = due_date < asOf AND not paid). Unit-tested. Wire it into the property page schedule + dashboard so overdue shows live. No jobs. |
+| P1-OVERDUE | Derive `overdue` status on read | DeepSeek | 🟨 | **RESOLVED: compute on read, never mutate.** Pure helper `lib/core/installments.ts → installmentStatus(installment, asOfIso)` returns `upcoming\|paid\|overdue` (overdue = due_date < asOf AND not paid). Unit-tested. Wire it into the property page schedule + dashboard so overdue shows live. No jobs. |
 | P1-PDF-1 | `pdfToMarkdown` (local strip, `pdf-parse`) | DeepSeek | ⬜ | Local only, no network. Strips headers/footers/page furniture. |
 | P1-PDF-2 | `parseScheduleFromMarkdown` (Claude API) | DeepSeek | ⬜ | Uses `ANTHROPIC_API_KEY`. Returns JSON validated by `ParsedScheduleSchema`. No prose/fences. |
 | P1-PDF-3 | Ingest endpoint: upload → md → parse → validate → dedup → balance check → write | DeepSeek | ⬜ | Re-ingest adds 0 rows. Failures surfaced for manual review, never written. |
