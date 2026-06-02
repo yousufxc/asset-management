@@ -26,6 +26,8 @@ export interface Property {
   valued_at: string | null;
   is_rental: 0 | 1;
   annual_rent_fils: number | null;
+  rent_cheques_per_year: number | null; // 1|2|4|12
+  next_rent_date: string | null; // ISO
   notes: string | null;
   created_at: string;
   updated_at: string;

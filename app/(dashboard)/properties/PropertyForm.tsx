@@ -42,6 +42,8 @@ export default function PropertyForm() {
       valued_at: strOrNull("valued_at"),
       is_rental: isRental,
       annual_rent_aed: isRental ? numOrNull("annual_rent_aed") : null,
+      rent_cheques_per_year: isRental ? numOrNull("rent_cheques_per_year") : null,
+      next_rent_date: isRental ? strOrNull("next_rent_date") : null,
       notes: strOrNull("notes"),
     };
 
@@ -129,10 +131,27 @@ export default function PropertyForm() {
         This property is rented out
       </label>
       {isRental && (
-        <div style={{ maxWidth: 240 }}>
-          <label>Yearly rent (AED)</label>
-          <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
-        </div>
+        <>
+          <div className="row">
+            <div style={{ maxWidth: 240 }}>
+              <label>Yearly rent (AED)</label>
+              <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
+            </div>
+            <div style={{ maxWidth: 200 }}>
+              <label>Cheques per year</label>
+              <select name="rent_cheques_per_year" defaultValue={1}>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={4}>4</option>
+                <option value={12}>12</option>
+              </select>
+            </div>
+            <div style={{ maxWidth: 220 }}>
+              <label>Next rent date (DD/MM/YYYY)</label>
+              <input name="next_rent_date" placeholder="01/01/2027" />
+            </div>
+          </div>
+        </>
       )}
       <label>Notes</label>
       <textarea name="notes" rows={2} />

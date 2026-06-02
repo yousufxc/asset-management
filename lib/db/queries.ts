@@ -31,10 +31,10 @@ export function insertProperty(input: PropertyInput): Property {
   const stmt = db.prepare(`
     INSERT INTO properties
       (name, subcategory, property_type, city, area, developer, size_sqft, purchase_price_fils,
-       current_value_fils, valued_at, is_rental, annual_rent_fils, notes)
+       current_value_fils, valued_at, is_rental, annual_rent_fils, rent_cheques_per_year, next_rent_date, notes)
     VALUES
       (@name, @subcategory, @property_type, @city, @area, @developer, @size_sqft, @purchase_price_fils,
-       @current_value_fils, @valued_at, @is_rental, @annual_rent_fils, @notes)
+       @current_value_fils, @valued_at, @is_rental, @annual_rent_fils, @rent_cheques_per_year, @next_rent_date, @notes)
   `);
   const info = stmt.run({
     name: input.name,
@@ -49,6 +49,8 @@ export function insertProperty(input: PropertyInput): Property {
     valued_at: uaeOrNull(input.valued_at),
     is_rental: input.is_rental ? 1 : 0,
     annual_rent_fils: aedOrNull(input.annual_rent_aed),
+    rent_cheques_per_year: input.is_rental ? input.rent_cheques_per_year ?? null : null,
+    next_rent_date: input.is_rental ? uaeOrNull(input.next_rent_date) : null,
     notes: input.notes ?? null,
   });
   return getProperty(Number(info.lastInsertRowid))!;
