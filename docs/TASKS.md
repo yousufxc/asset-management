@@ -24,8 +24,8 @@ Roles:
 | P1-ARCH | Scaffold app, schema+WAL, pure core, tests, properties reference slice | Claude | ✅ | App boots, `npm test` green, `npm run typecheck` clean |
 | P1-UI-CASH | Cash data-entry form + list page | DeepSeek | 🟨 | Mirror `/properties`. POST `/api/cash` gated by `CashAccountInputSchema`. Show-your-work + "last updated N days ago" staleness. No raw SQL; use `insertCashAccount`/`listCashAccounts`. **Done — PR #1, reviewed by Claude.** |
 | P1-API-CASH | `app/api/cash/route.ts` (GET+POST) | DeepSeek | 🟨 | Copy `app/api/properties/route.ts` pattern exactly. 400 on Zod failure. **Done — PR #1, reviewed by Claude.** |
-| P1-UI-COMMODITIES | Commodities form + list page | DeepSeek | ⬜ | Capture metal_type, weight+unit, purity (accept karat → `karatToFraction`), form, quantity, storage. POST `/api/commodities` gated by `CommodityInputSchema`. |
-| P1-API-COMMODITIES | `app/api/commodities/route.ts` | DeepSeek | ⬜ | Same pattern as properties route. |
+| P1-UI-COMMODITIES | Commodities form + list page | DeepSeek | 🟨 | Capture metal_type, weight+unit, purity (accept karat → `karatToFraction`), form, quantity, storage. POST `/api/commodities` gated by `CommodityInputSchema`. |
+| P1-API-COMMODITIES | `app/api/commodities/route.ts` | DeepSeek | 🟨 | Same pattern as properties route. |
 | P1-UI-INSTALL | Installment entry form (payment schedule) | Claude | ✅ | Reference built: `InstallmentForm.tsx` on the Property page. DeepSeek follow-up: add edit / mark-paid / delete. |
 | P1-API-INSTALL | `app/api/installments/route.ts` | Claude | ✅ | Built. Zod-gated, validates `property_id` exists, returns 400 otherwise. |
 | P1-OVERDUE | Derive `overdue` status on read | DeepSeek | ⬜ | **RESOLVED: compute on read, never mutate.** Pure helper `lib/core/installments.ts → installmentStatus(installment, asOfIso)` returns `upcoming\|paid\|overdue` (overdue = due_date < asOf AND not paid). Unit-tested. Wire it into the property page schedule + dashboard so overdue shows live. No jobs. |

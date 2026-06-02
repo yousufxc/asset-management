@@ -183,3 +183,8 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   actions (edit/mark-paid/delete) + overdue helper → PDF ingestion → [Phase 2]
   runway core → runway UI → 90-day warning → metals → bank. One PR each. Keep tests
   green and verify live before every PR.
+- **2026-06-02 — DeepSeek → Feature 1 (Commodities).** Commodities slice delivered.
+  API route mirrors cash pattern, form with purity presets (24K/22K/21K/18K/.999/.925
+  + custom), page with show-your-work expansion. Verified live: GET, POST (201),
+  bad input (400), 22K → purity_fraction 0.9167. Typecheck clean, 24 tests green.
+  No schema change. PR opening as `feat/commodities`.
