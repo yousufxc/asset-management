@@ -1,0 +1,24 @@
+# Secrets — never commit
+.env.local
+.env*.local
+
+# Local database and its WAL/SHM sidecar files
+data/*.db
+data/*.db-wal
+data/*.db-shm
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+build/
+
+# Logs and OS cruft
+*.log
+.DS_Store
+
+# Uploaded source documents (private financial PDFs)
+uploads/
+*.pdf
