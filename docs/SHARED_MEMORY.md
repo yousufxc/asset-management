@@ -68,6 +68,33 @@ financial bugs. Therefore:
 
 ## 5. Definition of done — see docs/TASKS.md (CLAUDE.md §8). All 5 must hold.
 
+## 6. Autonomous full-plan run (NEW WORKING MODE — read this)
+The owner no longer wants a stop-and-review handshake between every task. **You
+(DeepSeek) implement the whole remaining plan yourself, one feature at a time, and
+the owner reviews everything at the end.** Discipline replaces the per-task gate:
+
+- **One major feature = one branch = one PR.** Never pile two features into one PR.
+  Branch names: `feat/<feature>` (e.g. `feat/commodities`, `feat/pdf-ingestion`,
+  `feat/runway`). Open the PR, then move to the next feature on a fresh branch off
+  the latest `main`. The PR list IS the owner's review queue.
+- **Order is fixed** — see "Build order" in `docs/DEEPSEEK_PROMPTS.md`. Do not skip
+  ahead; later features depend on earlier ones.
+- **Self-verification is now your only safety net** (no per-task human review until
+  the end). For every feature, before opening the PR: `npm run typecheck` clean,
+  `npm test` green, AND you ran it live (`npm run dev`) and confirmed the actual
+  numbers/behavior — not reasoned about them. State this explicitly in the PR body.
+- **Contracts are still frozen.** If something forces a contract change, STOP that
+  one feature, write it under Open Questions, mark the task ⛔ in TASKS.md, and keep
+  building the other features that aren't blocked. Never silently edit a contract.
+- **Schema changes need `npm run db:reset`** (no migrations in Phase 1; it wipes the
+  local DB). If a feature changes `schema.sql`, say so loudly in the PR body so the
+  owner knows their local data resets.
+- **Update the tracker as you go:** flip the task's Status in `docs/TASKS.md` within
+  the same PR (🟦 in progress → 🟨 in review when the PR opens), and append a one-line
+  Handoff Note here per feature so the trail stays legible.
+- **Do NOT start Phase 2 features until all Phase 1 features have open PRs.** Phase 1
+  is the data-in foundation; Phase 2 (runway/metals/bank) reads that data.
+
 ---
 
 ## Decision Log (append-only)
@@ -93,17 +120,37 @@ financial bugs. Therefore:
   "Yearly rent (AED)". Rent input is now conditional: only shown after the "rented out"
   checkbox is ticked, and `annual_rent` is forced null when not rented. Schema changed →
   `npm run db:reset` required.
+- **2026-06-02 — Claude review.** Cash slice (P1-API-CASH, P1-UI-CASH) implemented by
+  DeepSeek, reviewed: faithful to the property reference, contracts unchanged, fils
+  conversion correct in the query layer, show-your-work present, typecheck clean, 24
+  tests green. Shipped as its own PR (`feat/cash-accounts`, PR #1).
+- **2026-06-02 — Owner decision (resolves Open Q#1, P1-OVERDUE): COMPUTE OVERDUE ON
+  READ.** Do NOT mutate stored status. `installments.status` holds only `upcoming|paid`
+  as set by the user; "overdue" is DERIVED at read time by a pure helper
+  (`lib/core/installments.ts → installmentStatus(installment, asOfIso)` →
+  `upcoming|paid|overdue`, where overdue = due_date < asOf AND not paid). No jobs, no
+  self-changing data. The DB CHECK still allows `overdue` (a user may also set it
+  explicitly), but the app never writes it automatically.
+- **2026-06-02 — Owner decision (resolves Open Q#2, P2-RUNWAY): COUNT RENTAL INCOME AS
+  INFLOW.** Runway = liquid cash + expected inflows (incl. rent arriving on its due
+  date) − scheduled liabilities, per CLAUDE.md Phase 2. Rent events MUST appear as
+  positive line items in the `RunwayResult.timeline` show-your-work lineage so the owner
+  sees exactly which future income was assumed.
+- **2026-06-02 — Owner decision (resolves Open Q#3, P2-METALS): LIVE SPOT, STAMPED.**
+  Commodity value updates automatically from the latest Metals.dev spot price, always
+  displayed with an "as of <timestamp>" label and a staleness indicator. Store the
+  fetch timestamp alongside any cached price. Never show a metal value without its
+  as-of time.
 
 ## Open Questions (for the OWNER — plain language; do not guess)
-1. **(P1-OVERDUE)** When an installment's due date passes and it isn't marked paid,
-   should the app automatically flip it to "overdue", or only show it as overdue
-   when you're looking (computed live)? Both look the same to you; it affects
-   whether old data changes by itself.
-2. **(P2-RUNWAY)** For the runway calculation, should expected **rental income**
-   count as cash coming in on the rent date, or do you prefer runway to ignore
-   future income and only count cash you already hold? (Conservative vs realistic.)
-3. **(P2-METALS)** Should commodity value use live spot prices automatically, or
-   do you want to confirm/freeze a price before it changes your net worth?
+_All three Phase-1/2 blocking questions have been answered by the owner (2026-06-02)
+and moved to the Decision Log above: overdue=compute-on-read, runway=count rent inflow,
+metals=live-spot-stamped. No open questions remain. If you hit a NEW ambiguity, append
+it here, mark the affected task ⛔ in TASKS.md, and keep going on everything else._
+
+1. ~~(P1-OVERDUE) auto-flip vs compute-on-read~~ → **RESOLVED: compute on read.**
+2. ~~(P2-RUNWAY) count rental income as inflow?~~ → **RESOLVED: yes, count it.**
+3. ~~(P2-METALS) live spot vs frozen price?~~ → **RESOLVED: live spot, stamped.**
 
 ## Handoff Notes (append-only, most recent last)
 - **2026-06-02 — Claude → DeepSeek.** Scaffold complete on branch
@@ -111,3 +158,13 @@ financial bugs. Therefore:
   tasks: P1-API-CASH, P1-UI-CASH, then commodities, then installments, then the
   PDF pipeline. Copy the properties pattern; keep money in fils; run tests. Put
   questions under Open Questions and ping Claude for review when a task hits 🟨.
+- **2026-06-02 — DeepSeek → Claude.** Cash slice delivered (Task 1). Reviewed and
+  shipped as PR #1 `feat/cash-accounts`.
+- **2026-06-02 — Claude → DeepSeek (MODE CHANGE).** New working mode: implement the
+  full remaining plan autonomously, one feature per PR, owner reviews at the end
+  (see §6 above). All three blocking product questions are answered (see Decision
+  Log). The single big prompt with the fixed build order + per-feature acceptance
+  criteria is in `docs/DEEPSEEK_PROMPTS.md`. Build order: Commodities → Installment
+  actions (edit/mark-paid/delete) + overdue helper → PDF ingestion → [Phase 2]
+  runway core → runway UI → 90-day warning → metals → bank. One PR each. Keep tests
+  green and verify live before every PR.
