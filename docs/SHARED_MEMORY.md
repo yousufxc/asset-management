@@ -151,6 +151,7 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
 1. ~~(P1-OVERDUE) auto-flip vs compute-on-read~~ → **RESOLVED: compute on read.**
 2. ~~(P2-RUNWAY) count rental income as inflow?~~ → **RESOLVED: yes, count it.**
 3. ~~(P2-METALS) live spot vs frozen price?~~ → **RESOLVED: live spot, stamped.**
+4. **(P2-BANK) GoCardless UAE bank support?** Checked GoCardless coverage (June 2026) — all listed banks are European (AT, DE, GB, IT, SE, NO, FI, DK, BE). No UAE (AE) banks found. The GoCardless Bank Account Data product may not cover UAE. Owner: does your bank support Open Banking / PSD2-style access? Or should we use an alternative (manual balance entry until a UAE-compatible aggregator is found, or look into a UAE-specific fintech like Lean, Tarabut, or direct bank API)?
 
 ## Handoff Notes (append-only, most recent last)
 - **2026-06-02 — Claude → DeepSeek.** Scaffold complete on branch
@@ -174,3 +175,8 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   staleness. Value cell expands to show full lineage (weight→grams, purity, spot,
   quantity). Mocked network test. Typecheck clean, 25 tests green. No schema change.
   PR opening as `feat/metals-spot`.
+- **2026-06-02 — DeepSeek → Feature 8 (Bank sync).** ⛔ STOPPED. GoCardless
+  coverage (June 2026) shows only European banks — no UAE (AE) institutions listed.
+  Added plain-language question to Open Questions asking owner about UAE bank
+  support. Task marked ⛔ in TASKS.md pending owner input. All other 7 features
+  have open PRs.
