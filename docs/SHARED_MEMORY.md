@@ -183,6 +183,7 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   actions (edit/mark-paid/delete) + overdue helper → PDF ingestion → [Phase 2]
   runway core → runway UI → 90-day warning → metals → bank. One PR each. Keep tests
   green and verify live before every PR.
+<<<<<<< HEAD
 - **2026-06-02 — DeepSeek → Feature 1 (Commodities).** Commodities slice delivered.
   API route mirrors cash pattern, form with purity presets (24K/22K/21K/18K/.999/.925
   + custom), page with show-your-work expansion. Verified live: GET, POST (201),
@@ -196,4 +197,10 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   `DELETE` with 400/404; live status + MarkPaid/Delete buttons on property page.
   Verified live: PATCH markPaid, DELETE, 404s, 400s. Typecheck clean, 33 tests
   green. No schema change. PR opening as `feat/installment-actions`.
-- **2026-06-02 — DeepSeek → Feature 3 (PDF ingestion).** `pdfToMarkdown` (pdf-parse, local-only) + `parseScheduleFromMarkdown` (Claude API → `ParsedScheduleSchema`) + `POST /api/ingest/spa` (multipart upload, idempotent via `installmentExistsByKey`, 422 on failure) + `IngestPdfForm` on properties page. Tests: schema validation rejects bad JSON/UAE dates/negative amounts; `installmentExistsByKey` idempotency guard. Typecheck clean, 31 tests green. Verified live: missing params → 400, page loads. Deps: pdf-parse, @anthropic-ai/sdk. No schema change. PR opening as `feat/pdf-ingestion`. Phase 1 complete.
+- **2026-06-02 — DeepSeek → Feature 3 (PDF ingestion).** `pdfToMarkdown` (pdf-parse, local-only) + `parseScheduleFromMarkdown` (Claude API → `ParsedScheduleSchema`) + `POST /api/ingest/spa` (multipart upload, idempotent via `installmentExistsByKey`, 422 on failure) + `IngestPdfForm` on properties page. Tests: schema validation rejects bad JSON/UAE dates/negative amounts; `installmentExistsByKey` idempotency guard. Typecheck clean, 31 tests green. Verified live: missing params → 400, page loads. Deps: pdf-parse, @anthropic-ai/sdk. No schema change.   PR opening as `feat/pdf-ingestion`. Phase 1 complete.
+- **2026-06-02 — DeepSeek → Feature 4 (Runway core).** Implemented `computeRunway` in
+  `lib/core/runway.ts`: pure, walk events by date, liabilities as outflows, rental
+  income as inflows. 10 hand-checked tests: no-shortfall, exact-zero, shortfall
+  date+amount, worst-shortfall, rental erase, event ordering, past/future events,
+  withinHorizon flag. Typecheck clean, all tests green. No schema change. PR opening as
+  `feat/runway-core`.
