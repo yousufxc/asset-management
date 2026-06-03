@@ -29,10 +29,10 @@ Roles:
 | P1-UI-INSTALL | Installment entry form (payment schedule) | Claude | ✅ | Reference built: `InstallmentForm.tsx` on the Property page. DeepSeek follow-up: add edit / mark-paid / delete. |
 | P1-API-INSTALL | `app/api/installments/route.ts` | Claude | ✅ | Built. Zod-gated, validates `property_id` exists, returns 400 otherwise. |
 | P1-OVERDUE | Derive `overdue` status on read | DeepSeek | 🟨 | **RESOLVED: compute on read, never mutate.** Pure helper `lib/core/installments.ts → installmentStatus(installment, asOfIso)` returns `upcoming\|paid\|overdue` (overdue = due_date < asOf AND not paid). Unit-tested. Wire it into the property page schedule + dashboard so overdue shows live. No jobs. |
-| P1-PDF-1 | `pdfToMarkdown` (local strip, `pdf-parse`) | DeepSeek | 🟨 | Local only, no network. Strips headers/footers/page furniture. |
-| P1-PDF-2 | `parseScheduleFromMarkdown` (Claude API) | DeepSeek | 🟨 | Uses `ANTHROPIC_API_KEY`. Returns JSON validated by `ParsedScheduleSchema`. No prose/fences. |
-| P1-PDF-3 | Ingest endpoint: upload → md → parse → validate → dedup → balance check → write | DeepSeek | 🟨 | Re-ingest adds 0 rows. Failures surfaced for manual review, never written. |
-| P1-TEST-PDF | Tests for the PDF pipeline (mock the Claude call) | DeepSeek | 🟨 | Validation rejects bad JSON; dedup proven; date parsing proven. |
+| P1-PDF-1 | `pdfToMarkdown` (local strip, `pdf-parse`) | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** PDF ingestion pipeline removed. |
+| P1-PDF-2 | `parseScheduleFromMarkdown` (Claude API) | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** |
+| P1-PDF-3 | Ingest endpoint: upload → md → parse → validate → dedup → balance check → write | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** |
+| P1-TEST-PDF | Tests for the PDF pipeline (mock the Claude call) | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** |
 
 ## Phase 2 — Core dashboard (DO NOT START until Phase 1 signed off)
 
