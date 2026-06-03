@@ -74,7 +74,8 @@ export default function InstallmentForm({ properties }: { properties: PropertyOp
       <div className="row">
         <div style={{ flex: 2, minWidth: 220 }}>
           <label>Property *</label>
-          <select name="property_id" required defaultValue={properties[0]?.id}>
+          <select name="property_id" required defaultValue="">
+            <option value="" disabled>Select</option>
             {properties.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} {p.subcategory === "off_plan" ? "(off-plan)" : "(existing)"}
@@ -83,8 +84,8 @@ export default function InstallmentForm({ properties }: { properties: PropertyOp
           </select>
         </div>
         <div style={{ flex: 1, minWidth: 150 }}>
-          <label>Due date (DD/MM/YYYY) *</label>
-          <input name="due_date" required placeholder="15/09/2026" />
+          <label>Due date *</label>
+          <input name="due_date" type="date" required />
         </div>
       </div>
       <div className="row">
@@ -99,6 +100,7 @@ export default function InstallmentForm({ properties }: { properties: PropertyOp
         <div style={{ flex: 1, minWidth: 140 }}>
           <label>Status</label>
           <select name="status" defaultValue="upcoming">
+            <option value="" disabled>Select</option>
             <option value="upcoming">Upcoming</option>
             <option value="paid">Paid</option>
             <option value="overdue">Overdue</option>

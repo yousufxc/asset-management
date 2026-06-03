@@ -36,6 +36,10 @@ export function getDb(): DatabaseSyncT {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
 
+  // schema.sql is the SINGLE source of truth (applied idempotently via
+  // CREATE TABLE/VIEW IF NOT EXISTS). Schema changes use `npm run db:reset` — no
+  // ad-hoc migrations in Phase 1 (documented decision; one definition per
+  // table/view, no drift).
   const schema = readFileSync(SCHEMA_PATH, "utf8");
   db.exec(schema);
 

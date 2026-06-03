@@ -6,6 +6,7 @@ import {
   GRAMS_PER_UNIT,
   karatToFraction,
   parseUaeDateToIso,
+  parseDateToIso,
   formatIsoToUae,
 } from "@/lib/core/units";
 
@@ -64,5 +65,23 @@ describe("UAE date parsing (DD/MM/YYYY) — the silent-bug guard (rule 2.2)", ()
   });
   it("round-trips to UAE display", () => {
     expect(formatIsoToUae("2026-03-07")).toBe("07/03/2026");
+  });
+});
+
+describe("parseDateToIso accepts both ISO and UAE formats", () => {
+  it("passes through valid ISO dates", () => {
+    expect(parseDateToIso("2026-03-07")).toBe("2026-03-07");
+    expect(parseDateToIso("2026-12-25")).toBe("2026-12-25");
+  });
+
+  it("parses UAE DD/MM/YYYY to ISO", () => {
+    expect(parseDateToIso("07/03/2026")).toBe("2026-03-07");
+    expect(parseDateToIso("25/12/2026")).toBe("2026-12-25");
+  });
+
+  it("rejects impossible calendar dates regardless of format", () => {
+    expect(() => parseDateToIso("2026-02-31")).toThrow();
+    expect(() => parseDateToIso("31/02/2026")).toThrow();
+    expect(() => parseDateToIso("not-a-date")).toThrow();
   });
 });
