@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { parseUaeDateToIso } from "@/lib/core/units";
+import { parseDateToIso } from "@/lib/core/units";
 
 function RentalFields() {
   const [cheques, setCheques] = useState(1);
@@ -10,8 +10,8 @@ function RentalFields() {
   function dateInput(n: number) {
     return (
       <div style={{ maxWidth: 220 }} key={n}>
-        <label>Cheque {n} Deposit date (DD/MM/YYYY)</label>
-        <input name={`rent_date_${n}`} placeholder="01/01/2027" />
+        <label>Cheque {n} Deposit date</label>
+        <input name={`rent_date_${n}`} type="date" />
       </div>
     );
   }
@@ -30,6 +30,7 @@ function RentalFields() {
             value={cheques}
             onChange={(e) => setCheques(Number(e.target.value))}
           >
+            <option value="" disabled>Select</option>
             <option value={1}>1</option>
             <option value={2}>2</option>
             <option value={4}>4</option>
@@ -60,7 +61,7 @@ export default function PropertyForm() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isRental, setIsRental] = useState(false);
-  const [subcategory, setSubcategory] = useState("off_plan");
+  const [subcategory, setSubcategory] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [installments, setInstallments] = useState<{ key: number }[]>([]);
   const instKey = useRef(0);
@@ -87,16 +88,18 @@ export default function PropertyForm() {
       return v === "" || v === null ? null : String(v);
     };
 
-    const selectedSubcategory = String(fd.get("subcategory") ?? "off_plan");
+    const selectedSubcategory = String(fd.get("subcategory") ?? "");
 
     const payload = {
       name: String(fd.get("name") ?? ""),
       subcategory: selectedSubcategory,
       property_type: strOrNull("property_type"),
+      bedrooms: strOrNull("bedrooms"),
       city: strOrNull("city"),
       area: strOrNull("area"),
       developer: strOrNull("developer"),
       size_sqft: numOrNull("size_sqft"),
+      annual_service_charge_aed: numOrNull("annual_service_charge_aed"),
       purchase_price_aed: numOrNull("purchase_price_aed"),
       current_value_aed: numOrNull("current_value_aed"),
       valued_at: strOrNull("valued_at"),
@@ -121,9 +124,9 @@ export default function PropertyForm() {
         const due = String(fd.get(`inst_due_date_${i}`) ?? "").trim();
         const amount = Number(fd.get(`inst_amount_aed_${i}`));
         try {
-          parseUaeDateToIso(due);
+          parseDateToIso(due);
         } catch {
-          rowErrors.push(`Installment ${i + 1}: invalid date "${due}" (use DD/MM/YYYY)`);
+          rowErrors.push(`Installment ${i + 1}: invalid date "${due}"`);
           continue;
         }
         if (!Number.isFinite(amount) || amount < 0) {
@@ -183,7 +186,7 @@ export default function PropertyForm() {
     setSaving(false);
     (e.target as HTMLFormElement).reset();
     setIsRental(false);
-    setSubcategory("off_plan");
+    setSubcategory("");
     setInstallments([]);
     router.refresh();
   }
@@ -217,17 +220,32 @@ export default function PropertyForm() {
                 if (e.target.value === "off_plan") setIsRental(false);
               }}
             >
+              <option value="">Select</option>
               <option value="off_plan">Off-plan</option>
               <option value="existing">Existing</option>
             </select>
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Property type</label>
-            <select name="property_type" defaultValue="apartment">
+            <select name="property_type" defaultValue="">
+              <option value="">Select</option>
               <option value="apartment">Apartment</option>
               <option value="penthouse">Penthouse</option>
               <option value="townhouse">Townhouse</option>
               <option value="villa">Villa</option>
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: 140 }}>
+            <label># of Bedrooms</label>
+            <select name="bedrooms" defaultValue="">
+              <option value="">Select</option>
+              <option value="Studio">Studio</option>
+              <option value="1BR">1BR</option>
+              <option value="2BR">2BR</option>
+              <option value="3BR">3BR</option>
+              <option value="4BR">4BR</option>
+              <option value="5BR">5BR</option>
+              <option value="+5BR">+5BR</option>
             </select>
           </div>
         </div>
@@ -248,6 +266,10 @@ export default function PropertyForm() {
             <label>Size (sqft)</label>
             <input name="size_sqft" type="number" step="any" />
           </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Annual Service Charge (AED)</label>
+            <input name="annual_service_charge_aed" type="number" step="0.01" />
+          </div>
         </div>
         <div className="row">
           <div style={{ flex: 1, minWidth: 160 }}>
@@ -259,8 +281,8 @@ export default function PropertyForm() {
             <input name="current_value_aed" type="number" step="0.01" />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
-            <label>Valued on (DD/MM/YYYY)</label>
-            <input name="valued_at" placeholder="07/03/2026" />
+            <label>Valued on</label>
+            <input name="valued_at" type="date" />
           </div>
         </div>
         {subcategory === "existing" && (
@@ -285,8 +307,8 @@ export default function PropertyForm() {
             {installments.map((inst, i) => (
               <div className="row" key={inst.key} style={{ alignItems: "flex-end" }}>
                 <div style={{ flex: 1, minWidth: 150 }}>
-                  <label>Due date (DD/MM/YYYY) *</label>
-                  <input name={`inst_due_date_${i}`} required placeholder="15/09/2026" />
+                  <label>Due date *</label>
+                  <input name={`inst_due_date_${i}`} type="date" required />
                 </div>
                 <div style={{ flex: 1, minWidth: 130 }}>
                   <label>Amount (AED) *</label>

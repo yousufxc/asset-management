@@ -5,6 +5,7 @@
 
 export type PropertySubcategory = "off_plan" | "existing";
 export type PropertyType = "apartment" | "penthouse" | "townhouse" | "villa";
+export type Bedrooms = "Studio" | "1BR" | "2BR" | "3BR" | "4BR" | "5BR" | "+5BR";
 export type InstallmentStatus = "upcoming" | "paid" | "overdue";
 export type InstallmentSource = "manual" | "pdf";
 export type MetalType = "gold" | "silver" | "platinum" | "palladium" | "other";
@@ -15,10 +16,12 @@ export interface Property {
   name: string;
   subcategory: PropertySubcategory;
   property_type: PropertyType | null;
+  bedrooms: Bedrooms | null;
   city: string | null;
   area: string | null;
   developer: string | null;
   size_sqft: number | null;
+  annual_service_charge_fils: number | null;
   purchase_price_fils: number | null;
   current_value_fils: number | null;
   valued_at: string | null;

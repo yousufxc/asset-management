@@ -4,11 +4,20 @@ import {
   PropertyInputSchema,
 } from "@/lib/ingest/validate";
 
-describe("uaeDate validation rejects impossible calendar dates (no more 500s)", () => {
+describe("dateString validation accepts both ISO and UAE formats", () => {
   it("accepts a valid DD/MM/YYYY installment date", () => {
     const r = InstallmentInputSchema.safeParse({
       property_id: 1,
       due_date: "15/09/2026",
+      amount_aed: 75000,
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts a valid ISO YYYY-MM-DD installment date", () => {
+    const r = InstallmentInputSchema.safeParse({
+      property_id: 1,
+      due_date: "2026-09-15",
       amount_aed: 75000,
     });
     expect(r.success).toBe(true);

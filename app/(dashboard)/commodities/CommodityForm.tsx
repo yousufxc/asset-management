@@ -14,7 +14,7 @@ export default function CommodityForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [unit, setUnit] = useState("gram");
+  const [unit, setUnit] = useState("");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,9 +31,9 @@ export default function CommodityForm() {
     };
 
     const payload = {
-      metal_type: String(fd.get("metal_type") ?? "gold"),
+      metal_type: String(fd.get("metal_type") ?? ""),
       weight: Number(fd.get("weight") ?? 0),
-      weight_unit: String(fd.get("weight_unit") ?? "gram"),
+      weight_unit: String(fd.get("weight_unit") ?? ""),
       current_price_per_unit_aed: numOrNull("current_price_per_unit_aed") ?? 0,
       bought_price_per_unit_aed: numOrNull("bought_price_per_unit_aed"),
       purchase_date: strOrNull("purchase_date"),
@@ -57,11 +57,11 @@ export default function CommodityForm() {
       return;
     }
     (e.target as HTMLFormElement).reset();
-    setUnit("gram");
+    setUnit("");
     router.refresh();
   }
 
-  const perUnit = UNIT_LABEL[unit] ?? unit;
+  const perUnit = unit ? UNIT_LABEL[unit] ?? unit : "unit";
 
   return (
     <form onSubmit={onSubmit} className="card">
@@ -69,7 +69,8 @@ export default function CommodityForm() {
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Type *</label>
-          <select name="metal_type" defaultValue="gold">
+          <select name="metal_type" defaultValue="">
+            <option value="">Select</option>
             <option value="gold">Gold</option>
             <option value="silver">Silver</option>
             <option value="platinum">Platinum</option>
@@ -88,6 +89,7 @@ export default function CommodityForm() {
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
           >
+            <option value="">Select</option>
             <option value="gram">Gram</option>
             <option value="kg">Kilogram</option>
             <option value="troy_oz">Troy ounce</option>
@@ -107,12 +109,12 @@ export default function CommodityForm() {
       </div>
       <div className="row">
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label>Date of purchase (DD/MM/YYYY)</label>
-          <input name="purchase_date" placeholder="07/03/2026" />
+          <label>Date of purchase</label>
+          <input name="purchase_date" type="date" />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label>Date of current price (DD/MM/YYYY)</label>
-          <input name="current_price_date" placeholder="07/03/2026" />
+          <label>Date of current price</label>
+          <input name="current_price_date" type="date" />
         </div>
       </div>
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}

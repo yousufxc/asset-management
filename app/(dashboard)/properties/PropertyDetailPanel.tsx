@@ -12,6 +12,16 @@ const TYPE_LABEL: Record<string, string> = {
   villa: "Villa",
 };
 
+const BEDROOMS_LABEL: Record<string, string> = {
+  Studio: "Studio",
+  "1BR": "1BR",
+  "2BR": "2BR",
+  "3BR": "3BR",
+  "4BR": "4BR",
+  "5BR": "5BR",
+  "+5BR": "+5BR",
+};
+
 function formatAedValue(fils: number | null): string {
   if (fils === null || fils === undefined) return "—";
   return formatAed(fils); // app-standard "AED 1,234.00"
@@ -31,17 +41,6 @@ function aedInputOrEmpty(fils: number | null): string {
   return filsToAed(fils).toString();
 }
 
-// Nil-safe default for DATE INPUTS: empty string for null (NOT the "—" used in
-// the read-only view). Prevents "—" being submitted and rejected with a 400 when
-// editing a property that has no valuation date / unset cheque dates.
-function isoInputOrEmpty(iso: string | null): string {
-  if (!iso) return "";
-  try {
-    return formatIsoToUae(iso);
-  } catch {
-    return iso;
-  }
-}
 
 export default function PropertyDetailPanel({ property }: { property: Property }) {
   const router = useRouter();
@@ -82,6 +81,9 @@ export default function PropertyDetailPanel({ property }: { property: Property }
     const ptype = strOrNull("property_type");
     if (ptype !== (property.property_type ?? null)) payload.property_type = ptype;
 
+    const bedrooms = strOrNull("bedrooms");
+    if (bedrooms !== (property.bedrooms ?? null)) payload.bedrooms = bedrooms;
+
     const city = strOrNull("city");
     if (city !== (property.city ?? null)) payload.city = city;
 
@@ -94,6 +96,10 @@ export default function PropertyDetailPanel({ property }: { property: Property }
     const sizeSqft = numOrNull("size_sqft");
     if (sizeSqft !== (property.size_sqft ?? null)) payload.size_sqft = sizeSqft;
 
+    const serviceCharge = numOrNull("annual_service_charge_aed");
+    const existingCharge = property.annual_service_charge_fils != null ? filsToAed(property.annual_service_charge_fils) : null;
+    if (serviceCharge !== existingCharge) payload.annual_service_charge_aed = serviceCharge;
+
     const purchasePrice = numOrNull("purchase_price_aed");
     const existingPurchase = property.purchase_price_fils != null ? filsToAed(property.purchase_price_fils) : null;
     if (purchasePrice !== existingPurchase) payload.purchase_price_aed = purchasePrice;
@@ -103,8 +109,7 @@ export default function PropertyDetailPanel({ property }: { property: Property }
     if (currentValue !== existingValue) payload.current_value_aed = currentValue;
 
     const valuedAt = strOrNull("valued_at");
-    const existingValued = property.valued_at ? formatIsoDisplay(property.valued_at) : null;
-    if (valuedAt !== existingValued) payload.valued_at = valuedAt;
+    if (valuedAt !== (property.valued_at ?? null)) payload.valued_at = valuedAt;
 
     if (isRental !== !!property.is_rental) payload.is_rental = isRental;
 
@@ -118,8 +123,8 @@ export default function PropertyDetailPanel({ property }: { property: Property }
     for (const n of [1, 2, 3, 4] as const) {
       const key = `rent_date_${n}` as const;
       const dateVal = isRental ? strOrNull(key) : null;
-      const existingDate = property[`rent_date_${n}`] ? formatIsoDisplay(property[`rent_date_${n}`]) : null;
-      if (dateVal !== existingDate) payload[key] = dateVal;
+      const existing = property[`rent_date_${n}` as keyof Property];
+      if (dateVal !== (existing ?? null)) payload[key] = dateVal;
     }
 
     const notes = strOrNull("notes");
@@ -169,6 +174,10 @@ export default function PropertyDetailPanel({ property }: { property: Property }
         <span>{property.property_type ? TYPE_LABEL[property.property_type] : "—"}</span>
       </div>
       <div className="detail-row">
+        <span className="detail-label"># of Bedrooms</span>
+        <span>{property.bedrooms ? BEDROOMS_LABEL[property.bedrooms] : "—"}</span>
+      </div>
+      <div className="detail-row">
         <span className="detail-label">City</span>
         <span>{property.city ?? "—"}</span>
       </div>
@@ -183,6 +192,10 @@ export default function PropertyDetailPanel({ property }: { property: Property }
       <div className="detail-row">
         <span className="detail-label">Size (sqft)</span>
         <span>{property.size_sqft ?? "—"}</span>
+      </div>
+      <div className="detail-row">
+        <span className="detail-label">Annual Service Charge</span>
+        <span>{formatAedValue(property.annual_service_charge_fils)}</span>
       </div>
       <div className="detail-row">
         <span className="detail-label">Purchase price</span>
@@ -249,6 +262,7 @@ export default function PropertyDetailPanel({ property }: { property: Property }
               if (e.target.value === "off_plan") setEditIsRental(false);
             }}
           >
+            <option value="">Select</option>
             <option value="off_plan">Off-plan</option>
             <option value="existing">Existing</option>
           </select>
@@ -256,11 +270,24 @@ export default function PropertyDetailPanel({ property }: { property: Property }
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Property type</label>
           <select name="property_type" defaultValue={property.property_type ?? ""}>
-            <option value="">(none)</option>
+            <option value="">Select</option>
             <option value="apartment">Apartment</option>
             <option value="penthouse">Penthouse</option>
             <option value="townhouse">Townhouse</option>
             <option value="villa">Villa</option>
+          </select>
+        </div>
+        <div style={{ flex: 1, minWidth: 140 }}>
+          <label># of Bedrooms</label>
+          <select name="bedrooms" defaultValue={property.bedrooms ?? ""}>
+            <option value="">Select</option>
+            <option value="Studio">Studio</option>
+            <option value="1BR">1BR</option>
+            <option value="2BR">2BR</option>
+            <option value="3BR">3BR</option>
+            <option value="4BR">4BR</option>
+            <option value="5BR">5BR</option>
+            <option value="+5BR">+5BR</option>
           </select>
         </div>
       </div>
@@ -281,6 +308,10 @@ export default function PropertyDetailPanel({ property }: { property: Property }
           <label>Size (sqft)</label>
           <input name="size_sqft" type="number" step="any" defaultValue={property.size_sqft ?? ""} />
         </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Annual Service Charge (AED)</label>
+          <input name="annual_service_charge_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.annual_service_charge_fils)} />
+        </div>
       </div>
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
@@ -292,8 +323,8 @@ export default function PropertyDetailPanel({ property }: { property: Property }
           <input name="current_value_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.current_value_fils)} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Valued on (DD/MM/YYYY)</label>
-          <input name="valued_at" defaultValue={isoInputOrEmpty(property.valued_at)} placeholder="07/03/2026" />
+          <label>Valued on</label>
+          <input name="valued_at" type="date" defaultValue={property.valued_at ?? ""} />
         </div>
       </div>
       {editSubcategory === "existing" && (
@@ -322,6 +353,7 @@ export default function PropertyDetailPanel({ property }: { property: Property }
                     value={editCheques}
                     onChange={(e) => setEditCheques(Number(e.target.value))}
                   >
+                    <option value="" disabled>Select</option>
                     <option value={1}>1</option>
                     <option value={2}>2</option>
                     <option value={4}>4</option>
@@ -335,8 +367,8 @@ export default function PropertyDetailPanel({ property }: { property: Property }
                   const date = property[key] as string | null;
                   return (
                     <div style={{ maxWidth: 220 }} key={i}>
-                      <label>Cheque {i + 1} Deposit date (DD/MM/YYYY)</label>
-                      <input name={`rent_date_${i + 1}`} defaultValue={isoInputOrEmpty(date)} placeholder="01/01/2027" />
+                      <label>Cheque {i + 1} Deposit date</label>
+                      <input name={`rent_date_${i + 1}`} type="date" defaultValue={date ?? ""} />
                     </div>
                   );
                 })}

@@ -65,6 +65,28 @@ export function karatToFraction(karat: number): number {
 // ---------------------------------------------------------------------------
 
 /**
+ * Parse a date string in either ISO "YYYY-MM-DD" or UAE "DD/MM/YYYY" format
+ * (also accepts "-" or "." separators for UAE) into ISO "YYYY-MM-DD".
+ * Throws on invalid/ambiguous input.
+ */
+export function parseDateToIso(input: string): string {
+  const trimmed = input.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    const [y, m, d] = trimmed.split("-").map(Number);
+    const date = new Date(`${trimmed}T00:00:00Z`);
+    if (
+      date.getUTCFullYear() === y &&
+      date.getUTCMonth() + 1 === m &&
+      date.getUTCDate() === d
+    ) {
+      return trimmed;
+    }
+    throw new Error(`parseDateToIso: invalid calendar date "${input}"`);
+  }
+  return parseUaeDateToIso(trimmed);
+}
+
+/**
  * Parse a UAE-format date string "DD/MM/YYYY" (also accepts "-" or "." separators)
  * into ISO "YYYY-MM-DD". Throws on invalid/ambiguous input rather than guessing.
  *

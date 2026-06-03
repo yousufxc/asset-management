@@ -28,10 +28,12 @@ CREATE TABLE IF NOT EXISTS properties (
   name                TEXT    NOT NULL,                 -- e.g. "Marina Tower 1204"
   subcategory         TEXT    NOT NULL CHECK (subcategory IN ('off_plan', 'existing')),
   property_type       TEXT    CHECK (property_type IS NULL OR property_type IN ('apartment', 'penthouse', 'townhouse', 'villa')),
+  bedrooms            TEXT    CHECK (bedrooms IS NULL OR bedrooms IN ('Studio', '1BR', '2BR', '3BR', '4BR', '5BR', '+5BR')),
   city                TEXT,                              -- e.g. Dubai, Abu Dhabi
   area                TEXT,                              -- DLD community/area, used for AVM later
   developer           TEXT,                              -- off-plan developer
   size_sqft           REAL,                              -- for AVM: median price/sqft * size
+  annual_service_charge_fils INTEGER CHECK (annual_service_charge_fils IS NULL OR annual_service_charge_fils >= 0),
   purchase_price_fils INTEGER CHECK (purchase_price_fils IS NULL OR purchase_price_fils >= 0),
   current_value_fils  INTEGER CHECK (current_value_fils  IS NULL OR current_value_fils  >= 0),
   valued_at           TEXT,                              -- ISO date of last manual valuation (staleness)
@@ -140,8 +142,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(txn_date);
 --   (API keys live in .env.local, never in the DB, so none are exposed here.)
 -- ----------------------------------------------------------------------------
 CREATE VIEW IF NOT EXISTS v_properties AS
-  SELECT id, name, subcategory, property_type, city, area, developer, size_sqft,
-         purchase_price_fils, current_value_fils, valued_at,
+  SELECT id, name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
+         annual_service_charge_fils, purchase_price_fils, current_value_fils, valued_at,
          is_rental, annual_rent_fils, rent_cheques_per_year,
          rent_date_1, rent_date_2, rent_date_3, rent_date_4
   FROM properties;
