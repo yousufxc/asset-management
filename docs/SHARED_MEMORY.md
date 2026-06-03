@@ -42,7 +42,8 @@ financial bugs. Therefore:
 7. **Chatbot is read-only (Phase 3).** Use `lib/db/readonly.ts`; query only `v_*`
    views; validate SQL is SELECT-only. Never expose secrets.
 8. **Outbound calls are whitelisted** (rule 2.4): Claude API, Metals.dev,
-   GoCardless, DLD/Dubai REST. Nothing else leaves the machine.
+   DLD/Dubai REST. Nothing else leaves the machine. (GoCardless/bank-sync was
+   REMOVED 2026-06-02 — cash is manual entry only.)
 
 ## 3. Frozen contracts (build against these)
 - **Types:** `lib/types.ts`
@@ -93,7 +94,7 @@ the owner reviews everything at the end.** Discipline replaces the per-task gate
   the same PR (🟦 in progress → 🟨 in review when the PR opens), and append a one-line
   Handoff Note here per feature so the trail stays legible.
 - **Do NOT start Phase 2 features until all Phase 1 features have open PRs.** Phase 1
-  is the data-in foundation; Phase 2 (runway/metals/bank) reads that data.
+  is the data-in foundation; Phase 2 (runway/metals) reads that data.
 
 ---
 
@@ -141,6 +142,20 @@ the owner reviews everything at the end.** Discipline replaces the per-task gate
   displayed with an "as of <timestamp>" label and a staleness indicator. Store the
   fetch timestamp alongside any cached price. Never show a metal value without its
   as-of time.
+
+- **2026-06-02 — Owner decision: REMOVE GoCardless / bank-sync (Feature 8 / P2-BANK)
+  entirely.** Cash is a MANUAL-input asset class — the existing Cash form is the whole
+  feature; no automated bank balance sync, ever. Removed from code+docs: `gocardless.ts`
+  stub, `cash_accounts.gocardless_account_id` column, `'gocardless'` option in
+  `transactions.source` CHECK + `RawTransaction.source` type, the Feature-8 prompt, the
+  P2-BANK task, and the outbound whitelist entry. Schema changed → `npm run db:reset`.
+- **2026-06-02 — Owner decision: RENT TIMING = cheques-per-year + next-rent-date.**
+  DeepSeek's runway code wrongly assumed annual_rent ÷ 12 monthly from next month.
+  Correct model: add per-rental-property fields `rent_cheques_per_year` (1|2|4|12) and
+  `next_rent_date`, and generate rent inflow events on the REAL dates (next_rent_date,
+  then spaced 12/cheques months apart) for the runway horizon. Each cheque =
+  round(annual_rent_fils / cheques_per_year). Replaces the monthly-spread hack. Schema
+  changed → `npm run db:reset`.
 
 ## Open Questions (for the OWNER — plain language; do not guess)
 _All three Phase-1/2 blocking questions have been answered by the owner (2026-06-02)

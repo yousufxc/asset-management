@@ -56,7 +56,6 @@ export interface CashAccount {
   current_balance_fils: number;
   is_liquid: 0 | 1;
   last_updated: string | null;
-  gocardless_account_id: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

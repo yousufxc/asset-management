@@ -47,7 +47,7 @@ Run the test suite after every change. Do not report a feature complete if tests
 All real logic — valuation math, runway calculation, dedup hashing, currency-unit conversion — lives in **pure functions** in `lib/core/` with no database access and no network calls. They take inputs, return outputs, and are trivially testable. The database layer and API routes are thin wrappers that call these functions. This separation is what makes the tests meaningful and what lets you verify your own work.
 
 ### 2.4 Financial data never leaves the machine except where explicitly required
-The only outbound calls permitted are: (a) Claude API for PDF parsing, (b) Metals.dev for spot prices, (c) GoCardless for bank balances, (d) the chosen UAE valuation source. Never log full account numbers, never put financial data in URL query strings, never send portfolio data anywhere not on this list.
+The only outbound calls permitted are: (a) Claude API for PDF parsing, (b) Metals.dev for spot prices, (c) the chosen UAE valuation source. Never log full account numbers, never put financial data in URL query strings, never send portfolio data anywhere not on this list. (Automated bank-balance sync via GoCardless was removed 2026-06-02 — cash is entered manually.)
 
 ### 2.5 The chatbot is read-only, structurally
 When the conversational query feature is built, the database connection it uses **must be physically incapable of writing.** Open a separate read-only SQLite handle for it. Additionally, parse every generated SQL string through a validator that rejects anything but SELECT (block DROP/DELETE/UPDATE/ALTER/INSERT/ATTACH/PRAGMA). Never expose tables holding API keys or credentials to the query layer — use sanitized views.
@@ -89,7 +89,6 @@ asset-platform/
 │   │   └── validate.ts        # Zod schemas + double-entry check
 │   └── integrations/
 │       ├── metals.ts          # Metals.dev spot prices
-│       ├── gocardless.ts      # bank balance sync
 │       └── uae-valuation.ts   # property AVM (see §5)
 ├── app/
 │   ├── api/                   # thin routes — call lib/, return JSON
@@ -114,7 +113,7 @@ Build **incrementally, one feature per branch/PR.** Do not start a phase until t
 - **Cash runway**: the headline number, with full show-your-work expansion.
 - **Installment timeline**: what's due, when, how much, across all properties.
 - **Liquidity warning**: flag when liquid cash + expected inflows < scheduled liabilities over the next 90 days.
-- Metals spot integration (Metals.dev). Bank balance sync (GoCardless).
+- Metals spot integration (Metals.dev). (Cash balances are entered manually — no bank sync.)
 
 **Phase 3 — Intelligence layer**
 - Read-only Text-to-SQL chatbot (see §2.5 — read-only is non-negotiable).

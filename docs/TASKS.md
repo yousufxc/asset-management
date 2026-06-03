@@ -42,7 +42,7 @@ Roles:
 | P2-RUNWAY-UI | Headline runway card + show-your-work timeline | DeepSeek | ⬜ | Number expands to full event ledger (rule 2.1). |
 | P2-WARN | 90-day liquidity warning | DeepSeek | ⬜ | Flags when liquid + inflows < liabilities in window. |
 | P2-METALS | Metals.dev `getSpotFilsPerGram` + wire commodity valuation | DeepSeek | ⬜ | Returns fils/gram pure; feeds `commodityValueFils`. **RESOLVED: live spot, stamped.** Always display value with an "as of <timestamp>" label + staleness; store the fetch time; never show a metal value without its as-of time. |
-| P2-BANK | GoCardless balance sync | DeepSeek | ⬜ | Verify UAE bank support first; ask owner. |
+| ~~P2-BANK~~ | ~~GoCardless balance sync~~ | — | ❌ removed | **Removed 2026-06-02 (owner).** No automated bank sync. Cash balances are entered manually via the existing Cash form. |
 
 ## Phase 3 / 4
 Read-only Text-to-SQL chatbot (rule 2.5), DLD AVM, liquidation optimizer, RAG,

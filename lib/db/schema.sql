@@ -76,8 +76,7 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
   currency              TEXT    NOT NULL DEFAULT 'AED' CHECK (currency = 'AED'),
   current_balance_fils  INTEGER NOT NULL DEFAULT 0,
   is_liquid             INTEGER NOT NULL DEFAULT 1 CHECK (is_liquid IN (0, 1)), -- fixed deposits may be 0
-  last_updated          TEXT,                            -- ISO date balance last confirmed (staleness)
-  gocardless_account_id TEXT,                            -- nullable; set when bank sync is wired (Phase 2)
+  last_updated          TEXT,                            -- ISO date balance manually confirmed (staleness)
   notes                 TEXT,
   created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -134,7 +133,7 @@ CREATE TABLE IF NOT EXISTS transactions (
   -- Stable de-dup hash (sha256 of date|normalized_description|signed_amount_fils).
   -- UNIQUE enforces dedup at the DB level: re-ingesting the same row is a no-op.
   dedup_hash             TEXT    NOT NULL UNIQUE,
-  source                 TEXT    NOT NULL DEFAULT 'pdf' CHECK (source IN ('pdf', 'manual', 'gocardless')),
+  source                 TEXT    NOT NULL DEFAULT 'pdf' CHECK (source IN ('pdf', 'manual')),
   created_at             TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);

@@ -173,7 +173,7 @@ export interface RawTransaction {
   txn_date: string; // ISO
   description: string;
   amount_fils: number; // signed
-  source?: "pdf" | "manual" | "gocardless";
+  source?: "pdf" | "manual";
 }
 
 /**

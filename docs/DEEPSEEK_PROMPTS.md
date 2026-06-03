@@ -241,19 +241,12 @@ input. Mock the network in tests. Acceptance: a known weight/purity/spot yields 
 hand-checked fils value; timestamp+staleness visible; tests+typecheck; verified live
 (a mocked or real fetch). Schema: none (or add a tiny price-cache table — flag if so).
 
-==== FEATURE 8 — GoCardless bank balance sync ====
-branch: feat/bank-sync
-Goal: sync cash-account balances from GoCardless (permitted outbound call). FIRST
-verify GoCardless supports the owner's UAE bank(s); if uncertain, STOP and add a
-plain-language question to Open Questions rather than guessing. Never log full account
-numbers; keys live in .env.local only. Map a synced balance to the existing
-cash_accounts row (gocardless_account_id) and stamp last_updated. Acceptance: a synced
-balance updates the account and shows fresh staleness; secrets never logged or
-committed; tests+typecheck; verified live (sandbox if needed). Schema: likely none
-(column exists) — flag if not.
+[FEATURE 8 — GoCardless bank balance sync — REMOVED 2026-06-02 by owner decision.
+ Cash balances are entered MANUALLY (the existing Cash form is the whole feature).
+ No automated bank sync. Do not implement any GoCardless/Open-Banking integration.]
 
 --------------------------------------------------------------------------------
-After all 8 PRs are open: post a summary comment listing each PR, what to click to QA
+After all 7 PRs are open: post a summary comment listing each PR, what to click to QA
 it, and any TASKS.md items still ⬜/⛔ with why. Then wait for the owner's review.
 ===== END FULL PLAN =====
 ```
@@ -268,4 +261,4 @@ it, and any TASKS.md items still ⬜/⛔ with why. Then wait for the owner's rev
 5. `feat/runway-ui`
 6. `feat/liquidity-warning`
 7. `feat/metals-spot`
-8. `feat/bank-sync`
+(Feature 8 / `feat/bank-sync` removed — cash is manual entry only.)
