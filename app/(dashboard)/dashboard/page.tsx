@@ -11,8 +11,8 @@ import {
   listAllInstallments,
 } from "@/lib/db/queries";
 import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
-import { computeRunway, checkLiquidityWarning } from "@/lib/core/runway";
-import type { Liability, Inflow } from "@/lib/core/runway";
+import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
+import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +47,6 @@ export default function DashboardPage() {
     }));
 
   // ── Rental inflows (real cheques-per-year timing) ───────────────────────
-  const inflows: Inflow[] = [];
   const rentalProperties = properties.filter(
     (p) => p.is_rental === 1 && p.annual_rent_fils && p.annual_rent_fils > 0,
   );
@@ -58,28 +57,10 @@ export default function DashboardPage() {
     if (liab.dueDate > latestDate) latestDate = liab.dueDate;
   }
 
-  for (const prop of rentalProperties) {
-    if (!prop.rent_cheques_per_year || !prop.next_rent_date) continue; // skip if missing timing
-    const chequesPerYear = prop.rent_cheques_per_year;
-    const intervalMonths = 12 / chequesPerYear;
-    const perChequeFils = Math.round(prop.annual_rent_fils! / chequesPerYear);
-    const nextRent = prop.next_rent_date;
-
-    // Generate cheques starting from next_rent_date, spaced intervalMonths apart,
-    // until past the latest date we care about
-    let chequeIdx = 0;
-    let chequeDate = nextRent;
-    while (chequeDate <= latestDate) {
-      inflows.push({
-        id: prop.id * 1000 + chequeIdx,
-        label: `Rent: ${prop.name} (cheque)`,
-        date: chequeDate,
-        amountFils: perChequeFils,
-      });
-      chequeIdx++;
-      chequeDate = addMonths(nextRent, chequeIdx * intervalMonths);
-    }
-  }
+  const inflows: Inflow[] = generateRentalInflows(
+    properties as RentalPropertyInput[],
+    latestDate,
+  );
 
   // ── Compute runway ──────────────────────────────────────────────────────
   const runway = computeRunway({

@@ -38,7 +38,10 @@ CREATE TABLE IF NOT EXISTS properties (
   is_rental           INTEGER NOT NULL DEFAULT 0 CHECK (is_rental IN (0, 1)),
   annual_rent_fils    INTEGER CHECK (annual_rent_fils IS NULL OR annual_rent_fils >= 0),  -- yearly rent (UAE rents are quoted annually)
   rent_cheques_per_year INTEGER CHECK (rent_cheques_per_year IS NULL OR rent_cheques_per_year IN (1, 2, 4, 12)),
-  next_rent_date      TEXT,                              -- ISO date next rent cheque is due
+  rent_date_1         TEXT,                              -- ISO: cheque 1 deposit date (also first monthly cheque for 12/year)
+  rent_date_2         TEXT,                              -- ISO: cheque 2 (null if <2 or monthly)
+  rent_date_3         TEXT,                              -- ISO: cheque 3 (null if <3 or monthly)
+  rent_date_4         TEXT,                              -- ISO: cheque 4 (null if <4 or monthly)
   notes               TEXT,
   created_at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -150,7 +153,8 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(txn_date);
 CREATE VIEW IF NOT EXISTS v_properties AS
   SELECT id, name, subcategory, property_type, city, area, developer, size_sqft,
          purchase_price_fils, current_value_fils, valued_at,
-         is_rental, annual_rent_fils, rent_cheques_per_year, next_rent_date
+         is_rental, annual_rent_fils, rent_cheques_per_year,
+         rent_date_1, rent_date_2, rent_date_3, rent_date_4
   FROM properties;
 
 CREATE VIEW IF NOT EXISTS v_installments AS

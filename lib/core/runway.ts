@@ -26,6 +26,80 @@ export interface Inflow {
   amountFils: number;
 }
 
+export interface RentalPropertyInput {
+  id: number;
+  name: string;
+  is_rental: 0 | 1;
+  annual_rent_fils: number | null;
+  rent_cheques_per_year: number | null;
+  rent_date_1: string | null; // ISO
+  rent_date_2: string | null; // ISO
+  rent_date_3: string | null; // ISO
+  rent_date_4: string | null; // ISO
+}
+
+/** Add `months` months to an ISO date string, returning a new ISO date string. */
+export function addMonthsIso(iso: string, months: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Generate rental inflow events from rental properties for the runway timeline.
+ * Pure function — no DB, no network. maxDate caps the horizon.
+ */
+export function generateRentalInflows(
+  properties: RentalPropertyInput[],
+  maxDate: string,
+): Inflow[] {
+  const inflows: Inflow[] = [];
+  const rentalProperties = properties.filter(
+    (p) => p.is_rental === 1 && p.annual_rent_fils && p.annual_rent_fils > 0,
+  );
+
+  for (const prop of rentalProperties) {
+    const chequesPerYear = prop.rent_cheques_per_year;
+    if (!chequesPerYear) continue;
+    const annualRentFils = prop.annual_rent_fils!;
+
+    if (chequesPerYear === 12) {
+      const firstDate = prop.rent_date_1;
+      if (!firstDate) continue;
+      const perMonthFils = Math.round(annualRentFils / 12);
+      let monthIdx = 0;
+      for (let d = firstDate; d <= maxDate; d = addMonthsIso(firstDate, monthIdx)) {
+        inflows.push({
+          id: prop.id * 1000 + monthIdx,
+          label: `Rent: ${prop.name} (monthly)`,
+          date: d,
+          amountFils: perMonthFils,
+        });
+        monthIdx++;
+      }
+    } else {
+      for (let n = 1; n <= chequesPerYear; n++) {
+        const dates = [null, prop.rent_date_1, prop.rent_date_2, prop.rent_date_3, prop.rent_date_4];
+        const chequeDate = dates[n];
+        if (!chequeDate) continue;
+        const perChequeFils = Math.round(annualRentFils / chequesPerYear);
+        let yearOffset = 0;
+        for (let d = addMonthsIso(chequeDate, 0); d <= maxDate; d = addMonthsIso(chequeDate, yearOffset * 12)) {
+          inflows.push({
+            id: prop.id * 1000 + n * 100 + yearOffset,
+            label: `Rent: ${prop.name} (cheque ${n})`,
+            date: d,
+            amountFils: perChequeFils,
+          });
+          yearOffset++;
+        }
+      }
+    }
+  }
+
+  return inflows;
+}
+
 export interface RunwayInput {
   /** "Today" as ISO date, injected for testability (no Date.now() in pure core). */
   asOf: string;

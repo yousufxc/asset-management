@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { computeRunway } from "@/lib/core/runway";
-import type { RunwayInput } from "@/lib/core/runway";
+import { computeRunway, generateRentalInflows } from "@/lib/core/runway";
+import type { RunwayInput, RentalPropertyInput } from "@/lib/core/runway";
 
 const asOf = "2026-06-01";
 const horizonDays = 90;
@@ -197,5 +197,105 @@ describe("computeRunway", () => {
     expect(result.withinHorizon).toBe(false);
     expect(result.worstShortfallFils).toBe(500_000);
     // withinHorizon must be false since 200 > 90
+  });
+});
+
+describe("generateRentalInflows", () => {
+  const baseProp: RentalPropertyInput = {
+    id: 1,
+    name: "Marina Tower",
+    is_rental: 1,
+    annual_rent_fils: 120_000, // AED 1,200
+    rent_cheques_per_year: 1,
+    rent_date_1: null,
+    rent_date_2: null,
+    rent_date_3: null,
+    rent_date_4: null,
+  };
+
+  it("1 cheque: generates annual event at the given date", () => {
+    const prop = { ...baseProp, rent_cheques_per_year: 1, rent_date_1: "2026-02-15" };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    expect(inflows.length).toBe(2);
+    expect(inflows[0]!.date).toBe("2026-02-15");
+    expect(inflows[0]!.amountFils).toBe(120_000);
+    expect(inflows[0]!.label).toBe("Rent: Marina Tower (cheque 1)");
+    expect(inflows[1]!.date).toBe("2027-02-15");
+  });
+
+  it("2 cheques with explicit dates: inflows on exact dates (not approximated intervals)", () => {
+    const prop = {
+      ...baseProp,
+      rent_cheques_per_year: 2,
+      rent_date_1: "2026-01-15",
+      rent_date_2: "2026-07-01",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    expect(inflows.length).toBe(3);
+    expect(inflows.find((i) => i.date === "2026-01-15" && i.label.includes("cheque 1"))?.amountFils).toBe(60_000);
+    expect(inflows.find((i) => i.date === "2027-01-15" && i.label.includes("cheque 1"))?.amountFils).toBe(60_000);
+    expect(inflows.find((i) => i.date === "2026-07-01" && i.label.includes("cheque 2"))?.amountFils).toBe(60_000);
+    expect(inflows.find((i) => i.date === "2027-07-01")).toBeUndefined();
+  });
+
+  it("4 cheques with null date: skips that cheque", () => {
+    const prop = {
+      ...baseProp,
+      rent_cheques_per_year: 4,
+      rent_date_1: "2026-01-15",
+      rent_date_2: "2026-03-01",
+      rent_date_3: "2026-06-01",
+      rent_date_4: null,
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    expect(inflows.filter((i) => i.label.includes("cheque 1")).length).toBe(2);
+    expect(inflows.filter((i) => i.label.includes("cheque 2")).length).toBe(2);
+    expect(inflows.filter((i) => i.label.includes("cheque 3")).length).toBe(2);
+    expect(inflows.filter((i) => i.label.includes("cheque 4")).length).toBe(0);
+  });
+
+  it("12 cheques (monthly): generates monthly events from rent_date_1", () => {
+    const prop = {
+      ...baseProp,
+      rent_cheques_per_year: 12,
+      rent_date_1: "2026-01-15",
+    };
+    const inflows = generateRentalInflows([prop], "2026-04-01");
+    expect(inflows.length).toBe(3);
+    expect(inflows[0]!.date).toBe("2026-01-15");
+    expect(inflows[1]!.date).toBe("2026-02-15");
+    expect(inflows[2]!.date).toBe("2026-03-15");
+    expect(inflows[0]!.amountFils).toBe(10_000);
+    expect(inflows[0]!.label).toBe("Rent: Marina Tower (monthly)");
+  });
+
+  it("12 cheques: null rent_date_1 produces no inflows", () => {
+    const prop = {
+      ...baseProp,
+      rent_cheques_per_year: 12,
+      rent_date_1: null,
+    };
+    expect(generateRentalInflows([prop], "2027-01-01")).toHaveLength(0);
+  });
+
+  it("property with is_rental=0 produces no inflows", () => {
+    const prop = {
+      ...baseProp,
+      is_rental: 0 as const,
+      rent_cheques_per_year: 2,
+      rent_date_1: "2026-01-15",
+      rent_date_2: "2026-07-01",
+    };
+    expect(generateRentalInflows([prop], "2027-01-01")).toHaveLength(0);
+  });
+
+  it("property with null annual_rent_fils produces no inflows", () => {
+    const prop = {
+      ...baseProp,
+      annual_rent_fils: null,
+      rent_cheques_per_year: 1,
+      rent_date_1: "2026-01-15",
+    };
+    expect(generateRentalInflows([prop], "2027-01-01")).toHaveLength(0);
   });
 });

@@ -9,6 +9,57 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
+function RentalFields() {
+  const [cheques, setCheques] = useState(1);
+
+  function dateInput(n: number) {
+    return (
+      <div style={{ maxWidth: 220 }} key={n}>
+        <label>Cheque {n} Deposit date (DD/MM/YYYY)</label>
+        <input name={`rent_date_${n}`} placeholder="01/01/2027" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="row">
+        <div style={{ maxWidth: 240 }}>
+          <label>Yearly rent (AED)</label>
+          <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
+        </div>
+        <div style={{ maxWidth: 200 }}>
+          <label>Cheques per year</label>
+          <select
+            name="rent_cheques_per_year"
+            value={cheques}
+            onChange={(e) => setCheques(Number(e.target.value))}
+          >
+            <option value={1}>1</option>
+            <option value={2}>2</option>
+            <option value={4}>4</option>
+            <option value={12}>12</option>
+          </select>
+        </div>
+      </div>
+      {cheques === 12 ? (
+        <div className="row">
+          {dateInput(1)}
+          <div style={{ maxWidth: 300, paddingTop: 28 }}>
+            <span className="muted" style={{ fontSize: 13 }}>
+              The remaining 11 monthly dates are calculated automatically.
+            </span>
+          </div>
+        </div>
+      ) : (
+        <div className="row">
+          {Array.from({ length: cheques }, (_, i) => dateInput(i + 1))}
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function PropertyForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +95,10 @@ export default function PropertyForm() {
       is_rental: isRental,
       annual_rent_aed: isRental ? numOrNull("annual_rent_aed") : null,
       rent_cheques_per_year: isRental ? numOrNull("rent_cheques_per_year") : null,
-      next_rent_date: isRental ? strOrNull("next_rent_date") : null,
+      rent_date_1: isRental ? strOrNull("rent_date_1") : null,
+      rent_date_2: isRental ? strOrNull("rent_date_2") : null,
+      rent_date_3: isRental ? strOrNull("rent_date_3") : null,
+      rent_date_4: isRental ? strOrNull("rent_date_4") : null,
       notes: strOrNull("notes"),
     };
 
@@ -141,29 +195,7 @@ export default function PropertyForm() {
             />{" "}
             This property is rented out
           </label>
-          {isRental && (
-            <>
-              <div className="row">
-                <div style={{ maxWidth: 240 }}>
-                  <label>Yearly rent (AED)</label>
-                  <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
-                </div>
-                <div style={{ maxWidth: 200 }}>
-                  <label>Cheques per year</label>
-                  <select name="rent_cheques_per_year" defaultValue={1}>
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={4}>4</option>
-                    <option value={12}>12</option>
-                  </select>
-                </div>
-                <div style={{ maxWidth: 220 }}>
-                  <label>Next rent date (DD/MM/YYYY)</label>
-                  <input name="next_rent_date" placeholder="01/01/2027" />
-                </div>
-              </div>
-            </>
-          )}
+          {isRental && <RentalFields />}
         </>
       )}
       <label>Notes</label>

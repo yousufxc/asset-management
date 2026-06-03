@@ -35,7 +35,10 @@ export const PropertyInputSchema = z.object({
   is_rental: z.boolean().default(false),
   annual_rent_aed: aedAmount.optional().nullable(),
   rent_cheques_per_year: z.number().int().refine((v) => [1, 2, 4, 12].includes(v), "must be 1, 2, 4, or 12").optional().nullable(),
-  next_rent_date: uaeDate.optional().nullable(),
+  rent_date_1: uaeDate.optional().nullable(),
+  rent_date_2: uaeDate.optional().nullable(),
+  rent_date_3: uaeDate.optional().nullable(),
+  rent_date_4: uaeDate.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type PropertyInput = z.infer<typeof PropertyInputSchema>;
