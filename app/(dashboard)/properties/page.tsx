@@ -5,7 +5,6 @@
  */
 
 import PropertyForm from "./PropertyForm";
-import InstallmentForm from "./InstallmentForm";
 import { MarkPaidButton, DeleteButton } from "./InstallmentActions";
 import { listProperties, listAllInstallments } from "@/lib/db/queries";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
@@ -37,9 +36,6 @@ export default function PropertiesPage() {
     <>
       <h2>Property</h2>
       <PropertyForm />
-      <InstallmentForm
-        properties={properties.map((p) => ({ id: p.id, name: p.name, subcategory: p.subcategory }))}
-      />
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Your properties ({properties.length})</h3>

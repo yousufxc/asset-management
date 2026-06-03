@@ -1,13 +1,8 @@
 "use client";
 
-/**
- * REFERENCE client form (DeepSeek: mirror this shape for cash & commodities).
- * - AED entered as plain decimals; UAE dates as DD/MM/YYYY (server converts).
- * - Surfaces server validation errors instead of failing silently.
- */
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { parseUaeDateToIso } from "@/lib/core/units";
 
 function RentalFields() {
   const [cheques, setCheques] = useState(1);
@@ -66,6 +61,17 @@ export default function PropertyForm() {
   const [saving, setSaving] = useState(false);
   const [isRental, setIsRental] = useState(false);
   const [subcategory, setSubcategory] = useState("off_plan");
+  const [isOpen, setIsOpen] = useState(false);
+  const [installments, setInstallments] = useState<{ key: number }[]>([]);
+  const instKey = useRef(0);
+
+  function addInstallment() {
+    setInstallments((prev) => [...prev, { key: instKey.current++ }]);
+  }
+
+  function removeInstallment(key: number) {
+    setInstallments((prev) => prev.filter((inst) => inst.key !== key));
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,9 +87,11 @@ export default function PropertyForm() {
       return v === "" || v === null ? null : String(v);
     };
 
+    const selectedSubcategory = String(fd.get("subcategory") ?? "off_plan");
+
     const payload = {
       name: String(fd.get("name") ?? ""),
-      subcategory: String(fd.get("subcategory") ?? "off_plan"),
+      subcategory: selectedSubcategory,
       property_type: strOrNull("property_type"),
       city: strOrNull("city"),
       area: strOrNull("area"),
@@ -102,106 +110,226 @@ export default function PropertyForm() {
       notes: strOrNull("notes"),
     };
 
+    // Gather + VALIDATE installment rows BEFORE creating the property, so bad
+    // input fails fast and never leaves a property with missing installments.
+    // (Installments are the core liability data behind the runway — a silently
+    // dropped one looks identical to a saved one to the owner.)
+    const instRows: { due_date: string; amount_aed: number; milestone_label: string | null }[] = [];
+    if (selectedSubcategory === "off_plan") {
+      const rowErrors: string[] = [];
+      for (let i = 0; i < installments.length; i++) {
+        const due = String(fd.get(`inst_due_date_${i}`) ?? "").trim();
+        const amount = Number(fd.get(`inst_amount_aed_${i}`));
+        try {
+          parseUaeDateToIso(due);
+        } catch {
+          rowErrors.push(`Installment ${i + 1}: invalid date "${due}" (use DD/MM/YYYY)`);
+          continue;
+        }
+        if (!Number.isFinite(amount) || amount < 0) {
+          rowErrors.push(`Installment ${i + 1}: invalid amount`);
+          continue;
+        }
+        instRows.push({ due_date: due, amount_aed: amount, milestone_label: strOrNull(`inst_milestone_${i}`) });
+      }
+      if (rowErrors.length > 0) {
+        setSaving(false);
+        setError(rowErrors.join(" · ") + " — nothing was saved.");
+        return; // create nothing; let the user fix and resubmit cleanly
+      }
+    }
+
     const res = await fetch("/api/properties", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    setSaving(false);
     if (!res.ok) {
+      setSaving(false);
       const data = await res.json().catch(() => ({}));
       setError(data?.error ? JSON.stringify(data.error) + (data.issues ? " " + JSON.stringify(data.issues.fieldErrors) : "") : "Save failed");
       return;
     }
+
+    const { property } = await res.json();
+    const propertyId = property.id;
+
+    // Save each installment and CHECK the result — never swallow a failure.
+    const failed: string[] = [];
+    for (const row of instRows) {
+      const instRes = await fetch("/api/installments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_id: propertyId, status: "upcoming", source: "manual", ...row }),
+      });
+      if (!instRes.ok) {
+        const d = await instRes.json().catch(() => ({}));
+        const reason = d?.error ? `${d.error}` : `HTTP ${instRes.status}`;
+        failed.push(`${row.due_date} / AED ${row.amount_aed} (${reason})`);
+      }
+    }
+
+    if (failed.length > 0) {
+      // Property saved but some installments did not. Surface loudly — do NOT
+      // report success. (Rare after the upfront validation above.)
+      setSaving(false);
+      setError(
+        `Property "${payload.name}" was saved, but these installments did NOT save and must be re-added (delete the property and re-create if needed): ${failed.join(" · ")}`,
+      );
+      router.refresh();
+      return;
+    }
+
+    setSaving(false);
     (e.target as HTMLFormElement).reset();
     setIsRental(false);
     setSubcategory("off_plan");
+    setInstallments([]);
     router.refresh();
   }
 
+  if (!isOpen) {
+    return (
+      <div style={{ marginBottom: 18 }}>
+        <button type="button" style={{ marginTop: 0 }} onClick={() => setIsOpen(true)}>
+          + Add Property
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <form onSubmit={onSubmit} className="card">
-      <h3 style={{ marginTop: 0 }}>Add property</h3>
-      <div className="row">
-        <div style={{ flex: 2, minWidth: 220 }}>
-          <label>Name *</label>
-          <input name="name" required placeholder="Marina Tower 1204" />
+    <div className="card">
+      <form onSubmit={onSubmit}>
+        <h3 style={{ marginTop: 0 }}>Add property</h3>
+        <div className="row">
+          <div style={{ flex: 2, minWidth: 220 }}>
+            <label>Name *</label>
+            <input name="name" required placeholder="Marina Tower 1204" />
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Existing / Off-plan *</label>
+            <select
+              name="subcategory"
+              value={subcategory}
+              onChange={(e) => {
+                setSubcategory(e.target.value);
+                if (e.target.value === "off_plan") setIsRental(false);
+              }}
+            >
+              <option value="off_plan">Off-plan</option>
+              <option value="existing">Existing</option>
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Property type</label>
+            <select name="property_type" defaultValue="apartment">
+              <option value="apartment">Apartment</option>
+              <option value="penthouse">Penthouse</option>
+              <option value="townhouse">Townhouse</option>
+              <option value="villa">Villa</option>
+            </select>
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Existing / Off-plan *</label>
-          <select
-            name="subcategory"
-            value={subcategory}
-            onChange={(e) => {
-              setSubcategory(e.target.value);
-              if (e.target.value === "off_plan") setIsRental(false);
-            }}
-          >
-            <option value="off_plan">Off-plan</option>
-            <option value="existing">Existing</option>
-          </select>
+        <div className="row">
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>City</label>
+            <input name="city" placeholder="Dubai" />
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Area</label>
+            <input name="area" placeholder="Dubai Marina" />
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Developer</label>
+            <input name="developer" placeholder="Emaar" />
+          </div>
+          <div style={{ flex: 1, minWidth: 120 }}>
+            <label>Size (sqft)</label>
+            <input name="size_sqft" type="number" step="any" />
+          </div>
         </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Property type</label>
-          <select name="property_type" defaultValue="apartment">
-            <option value="apartment">Apartment</option>
-            <option value="penthouse">Penthouse</option>
-            <option value="townhouse">Townhouse</option>
-            <option value="villa">Villa</option>
-          </select>
+        <div className="row">
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Value when bought (AED)</label>
+            <input name="purchase_price_aed" type="number" step="0.01" placeholder="purchase price" />
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Current value (AED)</label>
+            <input name="current_value_aed" type="number" step="0.01" />
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Valued on (DD/MM/YYYY)</label>
+            <input name="valued_at" placeholder="07/03/2026" />
+          </div>
         </div>
-      </div>
-      <div className="row">
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>City</label>
-          <input name="city" placeholder="Dubai" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Area</label>
-          <input name="area" placeholder="Dubai Marina" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Developer</label>
-          <input name="developer" placeholder="Emaar" />
-        </div>
-        <div style={{ flex: 1, minWidth: 120 }}>
-          <label>Size (sqft)</label>
-          <input name="size_sqft" type="number" step="any" />
-        </div>
-      </div>
-      <div className="row">
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Value when bought (AED)</label>
-          <input name="purchase_price_aed" type="number" step="0.01" placeholder="purchase price" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Current value (AED)</label>
-          <input name="current_value_aed" type="number" step="0.01" />
-        </div>
-        <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Valued on (DD/MM/YYYY)</label>
-          <input name="valued_at" placeholder="07/03/2026" />
-        </div>
-      </div>
-      {subcategory === "existing" && (
-        <>
-          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              name="is_rental"
-              type="checkbox"
-              style={{ width: "auto" }}
-              checked={isRental}
-              onChange={(e) => setIsRental(e.target.checked)}
-            />{" "}
-            This property is rented out
-          </label>
-          {isRental && <RentalFields />}
-        </>
-      )}
-      <label>Notes</label>
-      <textarea name="notes" rows={2} />
-      {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
-      <button type="submit" disabled={saving}>{saving ? "Saving…" : "Add property"}</button>
-    </form>
+        {subcategory === "existing" && (
+          <>
+            <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                name="is_rental"
+                type="checkbox"
+                style={{ width: "auto" }}
+                checked={isRental}
+                onChange={(e) => setIsRental(e.target.checked)}
+              />{" "}
+              This property is rented out
+            </label>
+            {isRental && <RentalFields />}
+          </>
+        )}
+
+        {subcategory === "off_plan" && installments.length > 0 && (
+          <>
+            <h4 style={{ marginTop: 16, marginBottom: 0 }}>Payment schedule</h4>
+            {installments.map((inst, i) => (
+              <div className="row" key={inst.key} style={{ alignItems: "flex-end" }}>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label>Due date (DD/MM/YYYY) *</label>
+                  <input name={`inst_due_date_${i}`} required placeholder="15/09/2026" />
+                </div>
+                <div style={{ flex: 1, minWidth: 130 }}>
+                  <label>Amount (AED) *</label>
+                  <input name={`inst_amount_aed_${i}`} type="number" step="0.01" required />
+                </div>
+                <div style={{ flex: 2, minWidth: 200 }}>
+                  <label>Milestone</label>
+                  <input name={`inst_milestone_${i}`} placeholder="20% on completion of foundation" />
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => removeInstallment(inst.key)}
+                    style={{ background: "transparent", color: "var(--muted)", padding: "9px 10px", marginTop: 0 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {subcategory === "off_plan" && (
+          <button type="button" onClick={addInstallment} style={{ background: "var(--panel-2)", color: "var(--text)", marginTop: 8 }}>
+            + Add installment
+          </button>
+        )}
+
+        <label>Notes</label>
+        <textarea name="notes" rows={2} />
+        {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
+        <button type="submit" disabled={saving}>{saving ? "Saving…" : "Add property"}</button>
+      </form>
+
+      <hr style={{ margin: "20px 0 12px", borderColor: "var(--border)" }} />
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        style={{ marginTop: 0, background: "var(--panel-2)", color: "var(--muted)" }}
+      >
+        Close
+      </button>
+    </div>
   );
 }
