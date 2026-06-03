@@ -35,7 +35,10 @@ export const PropertyInputSchema = z.object({
   is_rental: z.boolean().default(false),
   annual_rent_aed: aedAmount.optional().nullable(),
   rent_cheques_per_year: z.number().int().refine((v) => [1, 2, 4, 12].includes(v), "must be 1, 2, 4, or 12").optional().nullable(),
-  next_rent_date: uaeDate.optional().nullable(),
+  rent_date_1: uaeDate.optional().nullable(),
+  rent_date_2: uaeDate.optional().nullable(),
+  rent_date_3: uaeDate.optional().nullable(),
+  rent_date_4: uaeDate.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type PropertyInput = z.infer<typeof PropertyInputSchema>;
@@ -58,35 +61,26 @@ export const InstallmentInputSchema = z.object({
 export type InstallmentInput = z.infer<typeof InstallmentInputSchema>;
 
 // ---------------------------------------------------------------------------
-// CASH ACCOUNT
+// CASH ACCOUNT — manual entry only: account label + balance. All cash is liquid.
 // ---------------------------------------------------------------------------
 export const CashAccountInputSchema = z.object({
   label: z.string().min(1),
-  bank_name: z.string().optional().nullable(),
-  account_type: z.enum(["current", "savings", "fixed_deposit", "other"]).optional().nullable(),
   current_balance_aed: z.number().finite().default(0),
-  is_liquid: z.boolean().default(true),
-  last_updated: uaeDate.optional().nullable(),
-  notes: z.string().optional().nullable(),
 });
 export type CashAccountInput = z.infer<typeof CashAccountInputSchema>;
 
 // ---------------------------------------------------------------------------
-// COMMODITY (weight + purity + type)
+// COMMODITY — manual entry: type + amount (weight+unit) + current/bought price
+//   PER UNIT + purchase date + current-price date.
 // ---------------------------------------------------------------------------
 export const CommodityInputSchema = z.object({
-  name: z.string().min(1),
   metal_type: z.enum(["gold", "silver", "platinum", "palladium", "other"]),
   weight: z.number().positive(),
   weight_unit: z.enum(["gram", "kg", "troy_oz", "tola"]),
-  purity_fraction: z.number().gt(0).lte(1),
-  form: z.enum(["bar", "coin", "jewelry", "other"]).optional().nullable(),
-  quantity: z.number().int().min(1).default(1),
-  storage_location: z.string().optional().nullable(),
-  acquisition_price_aed: aedAmount.optional().nullable(),
-  manual_value_aed: aedAmount.optional().nullable(),
-  valued_at: uaeDate.optional().nullable(),
-  notes: z.string().optional().nullable(),
+  current_price_per_unit_aed: aedAmount,
+  bought_price_per_unit_aed: aedAmount.optional().nullable(),
+  purchase_date: uaeDate.optional().nullable(),
+  current_price_date: uaeDate.optional().nullable(),
 });
 export type CommodityInput = z.infer<typeof CommodityInputSchema>;
 

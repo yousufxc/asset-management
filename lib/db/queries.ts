@@ -31,10 +31,12 @@ export function insertProperty(input: PropertyInput): Property {
   const stmt = db.prepare(`
     INSERT INTO properties
       (name, subcategory, property_type, city, area, developer, size_sqft, purchase_price_fils,
-       current_value_fils, valued_at, is_rental, annual_rent_fils, rent_cheques_per_year, next_rent_date, notes)
+       current_value_fils, valued_at, is_rental, annual_rent_fils, rent_cheques_per_year,
+       rent_date_1, rent_date_2, rent_date_3, rent_date_4, notes)
     VALUES
       (@name, @subcategory, @property_type, @city, @area, @developer, @size_sqft, @purchase_price_fils,
-       @current_value_fils, @valued_at, @is_rental, @annual_rent_fils, @rent_cheques_per_year, @next_rent_date, @notes)
+       @current_value_fils, @valued_at, @is_rental, @annual_rent_fils, @rent_cheques_per_year,
+       @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4, @notes)
   `);
   const info = stmt.run({
     name: input.name,
@@ -50,7 +52,10 @@ export function insertProperty(input: PropertyInput): Property {
     is_rental: input.is_rental ? 1 : 0,
     annual_rent_fils: aedOrNull(input.annual_rent_aed),
     rent_cheques_per_year: input.is_rental ? input.rent_cheques_per_year ?? null : null,
-    next_rent_date: input.is_rental ? uaeOrNull(input.next_rent_date) : null,
+    rent_date_1: input.is_rental ? uaeOrNull(input.rent_date_1) : null,
+    rent_date_2: input.is_rental ? uaeOrNull(input.rent_date_2) : null,
+    rent_date_3: input.is_rental ? uaeOrNull(input.rent_date_3) : null,
+    rent_date_4: input.is_rental ? uaeOrNull(input.rent_date_4) : null,
     notes: input.notes ?? null,
   });
   return getProperty(Number(info.lastInsertRowid))!;
@@ -202,19 +207,12 @@ export function installmentExistsByKey(
 export function insertCashAccount(input: CashAccountInput): CashAccount {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO cash_accounts
-      (label, bank_name, account_type, current_balance_fils, is_liquid, last_updated, notes)
-    VALUES
-      (@label, @bank_name, @account_type, @current_balance_fils, @is_liquid, @last_updated, @notes)
+    INSERT INTO cash_accounts (label, current_balance_fils)
+    VALUES (@label, @current_balance_fils)
   `);
   const info = stmt.run({
     label: input.label,
-    bank_name: input.bank_name ?? null,
-    account_type: input.account_type ?? null,
     current_balance_fils: aedToFils(input.current_balance_aed),
-    is_liquid: input.is_liquid ? 1 : 0,
-    last_updated: uaeOrNull(input.last_updated),
-    notes: input.notes ?? null,
   });
   return getDb()
     .prepare(`SELECT * FROM cash_accounts WHERE id = ?`)
@@ -232,25 +230,20 @@ export function insertCommodity(input: CommodityInput): Commodity {
   const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO commodities
-      (name, metal_type, weight, weight_unit, purity_fraction, form, quantity,
-       storage_location, acquisition_price_fils, manual_value_fils, valued_at, notes)
+      (metal_type, weight, weight_unit, current_price_per_unit_fils,
+       bought_price_per_unit_fils, purchase_date, current_price_date)
     VALUES
-      (@name, @metal_type, @weight, @weight_unit, @purity_fraction, @form, @quantity,
-       @storage_location, @acquisition_price_fils, @manual_value_fils, @valued_at, @notes)
+      (@metal_type, @weight, @weight_unit, @current_price_per_unit_fils,
+       @bought_price_per_unit_fils, @purchase_date, @current_price_date)
   `);
   const info = stmt.run({
-    name: input.name,
     metal_type: input.metal_type,
     weight: input.weight,
     weight_unit: input.weight_unit,
-    purity_fraction: input.purity_fraction,
-    form: input.form ?? null,
-    quantity: input.quantity,
-    storage_location: input.storage_location ?? null,
-    acquisition_price_fils: aedOrNull(input.acquisition_price_aed),
-    manual_value_fils: aedOrNull(input.manual_value_aed),
-    valued_at: uaeOrNull(input.valued_at),
-    notes: input.notes ?? null,
+    current_price_per_unit_fils: aedToFils(input.current_price_per_unit_aed),
+    bought_price_per_unit_fils: aedOrNull(input.bought_price_per_unit_aed),
+    purchase_date: uaeOrNull(input.purchase_date),
+    current_price_date: uaeOrNull(input.current_price_date),
   });
   return getDb()
     .prepare(`SELECT * FROM commodities WHERE id = ?`)

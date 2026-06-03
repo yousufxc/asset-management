@@ -9,8 +9,6 @@ export type InstallmentStatus = "upcoming" | "paid" | "overdue";
 export type InstallmentSource = "manual" | "pdf";
 export type MetalType = "gold" | "silver" | "platinum" | "palladium" | "other";
 export type WeightUnit = "gram" | "kg" | "troy_oz" | "tola";
-export type CommodityForm = "bar" | "coin" | "jewelry" | "other";
-export type AccountType = "current" | "savings" | "fixed_deposit" | "other";
 
 export interface Property {
   id: number;
@@ -27,7 +25,10 @@ export interface Property {
   is_rental: 0 | 1;
   annual_rent_fils: number | null;
   rent_cheques_per_year: number | null; // 1|2|4|12
-  next_rent_date: string | null; // ISO
+  rent_date_1: string | null; // ISO
+  rent_date_2: string | null; // ISO
+  rent_date_3: string | null; // ISO
+  rent_date_4: string | null; // ISO
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -52,31 +53,20 @@ export interface Installment {
 export interface CashAccount {
   id: number;
   label: string;
-  bank_name: string | null;
-  account_type: AccountType | null;
-  currency: "AED";
   current_balance_fils: number;
-  is_liquid: 0 | 1;
-  last_updated: string | null;
-  notes: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface Commodity {
   id: number;
-  name: string;
   metal_type: MetalType;
-  weight: number;
+  weight: number; // the amount
   weight_unit: WeightUnit;
-  purity_fraction: number; // 0..1
-  form: CommodityForm | null;
-  quantity: number;
-  storage_location: string | null;
-  acquisition_price_fils: number | null;
-  manual_value_fils: number | null;
-  valued_at: string | null;
-  notes: string | null;
+  current_price_per_unit_fils: number; // price per weight_unit, now
+  bought_price_per_unit_fils: number | null; // price per weight_unit, when bought
+  purchase_date: string | null; // ISO
+  current_price_date: string | null; // ISO
   created_at: string;
   updated_at: string;
 }

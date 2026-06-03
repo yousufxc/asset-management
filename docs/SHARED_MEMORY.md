@@ -184,15 +184,12 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
   runway core → runway UI → 90-day warning → metals → bank. One PR each. Keep tests
   green and verify live before every PR.
 
-
-
 - **2026-06-02 — DeepSeek → Feature 5 (Runway UI).** Dashboard updated with headline
   runway card + show-your-work timeline expansion. Reads liquid cash, unpaid
   installments, and rental inflows via real cheque-timing model (rent_cheques_per_year
   + next_rent_date). Typecheck clean, all tests green, live dashboard confirmed.
   Schema change: YES (rent_cheques_per_year + next_rent_date columns). PR opening as
   `feat/runway-ui`.
-
 
 - **2026-06-02 — DeepSeek → Feature 4+5 (Runway core + UI).** `computeRunway` implemented
   in `lib/core/runway.ts` (pure, event-driven). Dashboard page updated: reads liquid
@@ -205,3 +202,9 @@ it here, mark the affected task ⛔ in TASKS.md, and keep going on everything el
 - **2026-06-02 — DeepSeek → Feature 6 (Liquidity warning).** Added `checkLiquidityWarning` to `lib/core/runway.ts` (thin wrapper around `computeRunway`, breached driven by `withinHorizon`). Dashboard shows warning banner when 90-day liquidity is insufficient. Typecheck clean, all tests green. No schema change. PR opening as `feat/liquidity-warning`.
 
  c609ddb (feat: 90-day liquidity warning + dashboard runway card)
+- **2026-06-02 — DeepSeek → Feature 7 (Metals spot).** `getSpotFilsPerGram` in
+  `lib/integrations/metals.ts` (Metals.dev API → USD/troy_oz → AED/g → fils/g).
+  Commodities page now shows live spot values with "as of HH:MM" timestamp +
+  staleness. Value cell expands to show full lineage (weight→grams, purity, spot,
+  quantity). Mocked network test. Typecheck clean, 25 tests green. No schema change.
+  PR opening as `feat/metals-spot`.

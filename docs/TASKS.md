@@ -29,21 +29,20 @@ Roles:
 | P1-UI-INSTALL | Installment entry form (payment schedule) | Claude | ✅ | Reference built: `InstallmentForm.tsx` on the Property page. DeepSeek follow-up: add edit / mark-paid / delete. |
 | P1-API-INSTALL | `app/api/installments/route.ts` | Claude | ✅ | Built. Zod-gated, validates `property_id` exists, returns 400 otherwise. |
 | P1-OVERDUE | Derive `overdue` status on read | DeepSeek | 🟨 | **RESOLVED: compute on read, never mutate.** Pure helper `lib/core/installments.ts → installmentStatus(installment, asOfIso)` returns `upcoming\|paid\|overdue` (overdue = due_date < asOf AND not paid). Unit-tested. Wire it into the property page schedule + dashboard so overdue shows live. No jobs. |
-| P1-PDF-1 | `pdfToMarkdown` (local strip, `pdf-parse`) | DeepSeek | 🟨 | Local only, no network. Strips headers/footers/page furniture. |
-| P1-PDF-2 | `parseScheduleFromMarkdown` (Claude API) | DeepSeek | 🟨 | Uses `ANTHROPIC_API_KEY`. Returns JSON validated by `ParsedScheduleSchema`. No prose/fences. |
-| P1-PDF-3 | Ingest endpoint: upload → md → parse → validate → dedup → balance check → write | DeepSeek | 🟨 | Re-ingest adds 0 rows. Failures surfaced for manual review, never written. |
-| P1-TEST-PDF | Tests for the PDF pipeline (mock the Claude call) | DeepSeek | 🟨 | Validation rejects bad JSON; dedup proven; date parsing proven. |
+| P1-PDF-1 | `pdfToMarkdown` (local strip, `pdf-parse`) | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** PDF ingestion pipeline removed. |
+| P1-PDF-2 | `parseScheduleFromMarkdown` (Claude API) | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** |
+| P1-PDF-3 | Ingest endpoint: upload → md → parse → validate → dedup → balance check → write | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** |
+| P1-TEST-PDF | Tests for the PDF pipeline (mock the Claude call) | DeepSeek | ❌ removed | **Removed 2026-06-04 (owner).** |
 
 ## Phase 2 — Core dashboard (DO NOT START until Phase 1 signed off)
 
 | ID | Task | Owner | Status | Acceptance criteria |
 |----|------|-------|--------|---------------------|
-
 | P2-RUNWAY | Implement `computeRunway` (`lib/core/runway.ts`) | DeepSeek | 🟨 | Pure, deterministic (no `Date.now()` inside; `asOf` is an input). **RESOLVED: count rental income as an inflow** on its due date; rent events appear as positive items in `RunwayResult.timeline`. Hand-checked unit tests: no shortfall, exact-zero, shortfall date+amount, with rent inflows. |
 | P2-RUNWAY-UI | Headline runway card + show-your-work timeline | DeepSeek | 🟨 | Number expands to full event ledger (rule 2.1). |
 | P2-WARN | 90-day liquidity warning | DeepSeek | 🟨 | Flags when liquid + inflows < liabilities in window. |
 > c609ddb (feat: 90-day liquidity warning + dashboard runway card)
-| P2-METALS | Metals.dev `getSpotFilsPerGram` + wire commodity valuation | DeepSeek | ⬜ | Returns fils/gram pure; feeds `commodityValueFils`. **RESOLVED: live spot, stamped.** Always display value with an "as of <timestamp>" label + staleness; store the fetch time; never show a metal value without its as-of time. |
+| P2-METALS | Metals.dev `getSpotFilsPerGram` + wire commodity valuation | DeepSeek | 🟨 | Returns fils/gram pure; feeds `commodityValueFils`. **RESOLVED: live spot, stamped.** Always display value with an "as of <timestamp>" label + staleness; store the fetch time; never show a metal value without its as-of time. |
 | ~~P2-BANK~~ | ~~GoCardless balance sync~~ | — | ❌ removed | **Removed 2026-06-02 (owner).** No automated bank sync. Cash balances are entered manually via the existing Cash form. |
 
 ## Phase 3 / 4
