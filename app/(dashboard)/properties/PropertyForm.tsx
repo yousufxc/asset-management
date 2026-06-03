@@ -14,6 +14,7 @@ export default function PropertyForm() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isRental, setIsRental] = useState(false);
+  const [subcategory, setSubcategory] = useState("off_plan");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -60,6 +61,7 @@ export default function PropertyForm() {
     }
     (e.target as HTMLFormElement).reset();
     setIsRental(false);
+    setSubcategory("off_plan");
     router.refresh();
   }
 
@@ -73,7 +75,14 @@ export default function PropertyForm() {
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Existing / Off-plan *</label>
-          <select name="subcategory" defaultValue="off_plan">
+          <select
+            name="subcategory"
+            value={subcategory}
+            onChange={(e) => {
+              setSubcategory(e.target.value);
+              if (e.target.value === "off_plan") setIsRental(false);
+            }}
+          >
             <option value="off_plan">Off-plan</option>
             <option value="existing">Existing</option>
           </select>
@@ -120,37 +129,41 @@ export default function PropertyForm() {
           <input name="valued_at" placeholder="07/03/2026" />
         </div>
       </div>
-      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input
-          name="is_rental"
-          type="checkbox"
-          style={{ width: "auto" }}
-          checked={isRental}
-          onChange={(e) => setIsRental(e.target.checked)}
-        />{" "}
-        This property is rented out
-      </label>
-      {isRental && (
+      {subcategory === "existing" && (
         <>
-          <div className="row">
-            <div style={{ maxWidth: 240 }}>
-              <label>Yearly rent (AED)</label>
-              <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
-            </div>
-            <div style={{ maxWidth: 200 }}>
-              <label>Cheques per year</label>
-              <select name="rent_cheques_per_year" defaultValue={1}>
-                <option value={1}>1</option>
-                <option value={2}>2</option>
-                <option value={4}>4</option>
-                <option value={12}>12</option>
-              </select>
-            </div>
-            <div style={{ maxWidth: 220 }}>
-              <label>Next rent date (DD/MM/YYYY)</label>
-              <input name="next_rent_date" placeholder="01/01/2027" />
-            </div>
-          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              name="is_rental"
+              type="checkbox"
+              style={{ width: "auto" }}
+              checked={isRental}
+              onChange={(e) => setIsRental(e.target.checked)}
+            />{" "}
+            This property is rented out
+          </label>
+          {isRental && (
+            <>
+              <div className="row">
+                <div style={{ maxWidth: 240 }}>
+                  <label>Yearly rent (AED)</label>
+                  <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
+                </div>
+                <div style={{ maxWidth: 200 }}>
+                  <label>Cheques per year</label>
+                  <select name="rent_cheques_per_year" defaultValue={1}>
+                    <option value={1}>1</option>
+                    <option value={2}>2</option>
+                    <option value={4}>4</option>
+                    <option value={12}>12</option>
+                  </select>
+                </div>
+                <div style={{ maxWidth: 220 }}>
+                  <label>Next rent date (DD/MM/YYYY)</label>
+                  <input name="next_rent_date" placeholder="01/01/2027" />
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
       <label>Notes</label>
