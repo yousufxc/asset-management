@@ -1,13 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-
-interface PropertyOption {
-  id: number;
-  name: string;
-  subcategory: string;
-}
 
 function RentalFields() {
   const [cheques, setCheques] = useState(1);
@@ -60,120 +54,23 @@ function RentalFields() {
   );
 }
 
-function PaymentScheduleFields({ properties }: { properties: PropertyOption[] }) {
-  const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  if (properties.length === 0) {
-    return (
-      <>
-        <h4>Add payment schedule</h4>
-        <p className="muted">Save the property first, then you can attach its installment schedule here.</p>
-      </>
-    );
-  }
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    setSaving(true);
-    const fd = new FormData(e.currentTarget);
-    const strOrNull = (k: string) => {
-      const v = fd.get(k);
-      return v === "" || v === null ? null : String(v);
-    };
-
-    const payload = {
-      property_id: Number(fd.get("property_id")),
-      due_date: String(fd.get("due_date") ?? ""),
-      amount_aed: Number(fd.get("amount_aed")),
-      milestone_label: strOrNull("milestone_label"),
-      status: String(fd.get("status") ?? "upcoming"),
-      source: "manual",
-    };
-
-    const res = await fetch("/api/installments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(
-        data?.error
-          ? JSON.stringify(data.error) +
-              (data.issues ? " " + JSON.stringify(data.issues.fieldErrors) : "")
-          : "Save failed",
-      );
-      return;
-    }
-    (e.target as HTMLFormElement).reset();
-    router.refresh();
-  }
-
-  const offPlanProperties = properties.filter((p) => p.subcategory === "off_plan");
-
-  if (offPlanProperties.length === 0) {
-    return (
-      <>
-        <h4>Add payment schedule</h4>
-        <p className="muted">No off-plan properties yet. Save an off-plan property first.</p>
-      </>
-    );
-  }
-
-  return (
-    <form onSubmit={onSubmit}>
-      <h4>Add payment schedule</h4>
-      <div className="row">
-        <div style={{ flex: 2, minWidth: 220 }}>
-          <label>Property *</label>
-          <select name="property_id" required defaultValue={offPlanProperties[0]?.id}>
-            {offPlanProperties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div style={{ flex: 1, minWidth: 150 }}>
-          <label>Due date (DD/MM/YYYY) *</label>
-          <input name="due_date" required placeholder="15/09/2026" />
-        </div>
-      </div>
-      <div className="row">
-        <div style={{ flex: 1, minWidth: 150 }}>
-          <label>Amount (AED) *</label>
-          <input name="amount_aed" type="number" step="0.01" required />
-        </div>
-        <div style={{ flex: 2, minWidth: 220 }}>
-          <label>Milestone</label>
-          <input name="milestone_label" placeholder="20% on completion of foundation" />
-        </div>
-        <div style={{ flex: 1, minWidth: 140 }}>
-          <label>Status</label>
-          <select name="status" defaultValue="upcoming">
-            <option value="upcoming">Upcoming</option>
-            <option value="paid">Paid</option>
-            <option value="overdue">Overdue</option>
-          </select>
-        </div>
-      </div>
-      {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
-      <button type="submit" disabled={saving}>{saving ? "Saving…" : "Add installment"}</button>
-    </form>
-  );
-}
-
-export default function PropertyForm({ properties }: { properties: PropertyOption[] }) {
+export default function PropertyForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isRental, setIsRental] = useState(false);
   const [subcategory, setSubcategory] = useState("off_plan");
   const [isOpen, setIsOpen] = useState(false);
+  const [installments, setInstallments] = useState<{ key: number }[]>([]);
+  const instKey = useRef(0);
+
+  function addInstallment() {
+    setInstallments((prev) => [...prev, { key: instKey.current++ }]);
+  }
+
+  function removeInstallment(key: number) {
+    setInstallments((prev) => prev.filter((inst) => inst.key !== key));
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -189,9 +86,11 @@ export default function PropertyForm({ properties }: { properties: PropertyOptio
       return v === "" || v === null ? null : String(v);
     };
 
+    const selectedSubcategory = String(fd.get("subcategory") ?? "off_plan");
+
     const payload = {
       name: String(fd.get("name") ?? ""),
-      subcategory: String(fd.get("subcategory") ?? "off_plan"),
+      subcategory: selectedSubcategory,
       property_type: strOrNull("property_type"),
       city: strOrNull("city"),
       area: strOrNull("area"),
@@ -215,15 +114,40 @@ export default function PropertyForm({ properties }: { properties: PropertyOptio
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    setSaving(false);
     if (!res.ok) {
+      setSaving(false);
       const data = await res.json().catch(() => ({}));
       setError(data?.error ? JSON.stringify(data.error) + (data.issues ? " " + JSON.stringify(data.issues.fieldErrors) : "") : "Save failed");
       return;
     }
+
+    const { property } = await res.json();
+    const propertyId = property.id;
+
+    if (selectedSubcategory === "off_plan") {
+      for (let i = 0; i < installments.length; i++) {
+        const instPayload = {
+          property_id: propertyId,
+          due_date: String(fd.get(`inst_due_date_${i}`) ?? ""),
+          amount_aed: Number(fd.get(`inst_amount_aed_${i}`)),
+          milestone_label: strOrNull(`inst_milestone_${i}`),
+          status: "upcoming",
+          source: "manual",
+        };
+
+        await fetch("/api/installments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(instPayload),
+        });
+      }
+    }
+
+    setSaving(false);
     (e.target as HTMLFormElement).reset();
     setIsRental(false);
     setSubcategory("off_plan");
+    setInstallments([]);
     router.refresh();
   }
 
@@ -317,18 +241,49 @@ export default function PropertyForm({ properties }: { properties: PropertyOptio
             {isRental && <RentalFields />}
           </>
         )}
+
+        {subcategory === "off_plan" && installments.length > 0 && (
+          <>
+            <h4 style={{ marginTop: 16, marginBottom: 0 }}>Payment schedule</h4>
+            {installments.map((inst, i) => (
+              <div className="row" key={inst.key} style={{ alignItems: "flex-end" }}>
+                <div style={{ flex: 1, minWidth: 150 }}>
+                  <label>Due date (DD/MM/YYYY) *</label>
+                  <input name={`inst_due_date_${i}`} required placeholder="15/09/2026" />
+                </div>
+                <div style={{ flex: 1, minWidth: 130 }}>
+                  <label>Amount (AED) *</label>
+                  <input name={`inst_amount_aed_${i}`} type="number" step="0.01" required />
+                </div>
+                <div style={{ flex: 2, minWidth: 200 }}>
+                  <label>Milestone</label>
+                  <input name={`inst_milestone_${i}`} placeholder="20% on completion of foundation" />
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => removeInstallment(inst.key)}
+                    style={{ background: "transparent", color: "var(--muted)", padding: "9px 10px", marginTop: 0 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+
+        {subcategory === "off_plan" && (
+          <button type="button" onClick={addInstallment} style={{ background: "var(--panel-2)", color: "var(--text)", marginTop: 8 }}>
+            + Add installment
+          </button>
+        )}
+
         <label>Notes</label>
         <textarea name="notes" rows={2} />
         {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
         <button type="submit" disabled={saving}>{saving ? "Saving…" : "Add property"}</button>
       </form>
-
-      {subcategory === "off_plan" && (
-        <>
-          <hr style={{ margin: "20px 0", borderColor: "var(--border)" }} />
-          <PaymentScheduleFields properties={properties} />
-        </>
-      )}
 
       <hr style={{ margin: "20px 0 12px", borderColor: "var(--border)" }} />
       <button

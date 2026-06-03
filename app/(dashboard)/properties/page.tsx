@@ -35,9 +35,7 @@ export default function PropertiesPage() {
   return (
     <>
       <h2>Property</h2>
-      <PropertyForm
-        properties={properties.map((p) => ({ id: p.id, name: p.name, subcategory: p.subcategory }))}
-      />
+      <PropertyForm />
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Your properties ({properties.length})</h3>
