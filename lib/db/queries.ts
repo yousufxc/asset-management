@@ -13,6 +13,7 @@ import { aedToFils, parseUaeDateToIso } from "@/lib/core/units";
 import { normalizeDescription, transactionHash } from "@/lib/core/dedup";
 import type {
   PropertyInput,
+  PropertyUpdate,
   InstallmentInput,
   CashAccountInput,
   CommodityInput,
@@ -67,6 +68,37 @@ export function getProperty(id: number): Property | undefined {
 
 export function listProperties(): Property[] {
   return getDb().prepare(`SELECT * FROM properties ORDER BY created_at DESC`).all() as unknown as Property[];
+}
+
+export function updateProperty(id: number, data: PropertyUpdate): Property | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.name !== undefined) { sets.push("name = @name"); params.name = data.name; }
+  if (data.subcategory !== undefined) { sets.push("subcategory = @subcategory"); params.subcategory = data.subcategory; }
+  if (data.property_type !== undefined) { sets.push("property_type = @property_type"); params.property_type = data.property_type; }
+  if (data.city !== undefined) { sets.push("city = @city"); params.city = data.city; }
+  if (data.area !== undefined) { sets.push("area = @area"); params.area = data.area; }
+  if (data.developer !== undefined) { sets.push("developer = @developer"); params.developer = data.developer; }
+  if (data.size_sqft !== undefined) { sets.push("size_sqft = @size_sqft"); params.size_sqft = data.size_sqft; }
+  if (data.purchase_price_aed !== undefined) { sets.push("purchase_price_fils = @purchase_price_fils"); params.purchase_price_fils = aedOrNull(data.purchase_price_aed); }
+  if (data.current_value_aed !== undefined) { sets.push("current_value_fils = @current_value_fils"); params.current_value_fils = aedOrNull(data.current_value_aed); }
+  if (data.valued_at !== undefined) { sets.push("valued_at = @valued_at"); params.valued_at = uaeOrNull(data.valued_at); }
+  if (data.is_rental !== undefined) { sets.push("is_rental = @is_rental"); params.is_rental = data.is_rental ? 1 : 0; }
+  if (data.annual_rent_aed !== undefined) { sets.push("annual_rent_fils = @annual_rent_fils"); params.annual_rent_fils = aedOrNull(data.annual_rent_aed); }
+  if (data.rent_cheques_per_year !== undefined) { sets.push("rent_cheques_per_year = @rent_cheques_per_year"); params.rent_cheques_per_year = data.rent_cheques_per_year; }
+  if (data.rent_date_1 !== undefined) { sets.push("rent_date_1 = @rent_date_1"); params.rent_date_1 = uaeOrNull(data.rent_date_1); }
+  if (data.rent_date_2 !== undefined) { sets.push("rent_date_2 = @rent_date_2"); params.rent_date_2 = uaeOrNull(data.rent_date_2); }
+  if (data.rent_date_3 !== undefined) { sets.push("rent_date_3 = @rent_date_3"); params.rent_date_3 = uaeOrNull(data.rent_date_3); }
+  if (data.rent_date_4 !== undefined) { sets.push("rent_date_4 = @rent_date_4"); params.rent_date_4 = uaeOrNull(data.rent_date_4); }
+  if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
+
+  if (sets.length === 0) return getProperty(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE properties SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getProperty(id);
 }
 
 // INSTALLMENTS ---------------------------------------------------------------

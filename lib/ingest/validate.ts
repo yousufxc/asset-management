@@ -57,6 +57,31 @@ export const PropertyInputSchema = z.object({
 export type PropertyInput = z.infer<typeof PropertyInputSchema>;
 
 // ---------------------------------------------------------------------------
+// PROPERTY UPDATE (partial — fields allowed in PATCH)
+// ---------------------------------------------------------------------------
+export const PropertyUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  subcategory: z.enum(["off_plan", "existing"]).optional(),
+  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa"]).optional().nullable(),
+  city: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  developer: z.string().optional().nullable(),
+  size_sqft: z.number().positive().optional().nullable(),
+  purchase_price_aed: aedAmount.optional().nullable(),
+  current_value_aed: aedAmount.optional().nullable(),
+  valued_at: uaeDate.optional().nullable(),
+  is_rental: z.boolean().optional(),
+  annual_rent_aed: aedAmount.optional().nullable(),
+  rent_cheques_per_year: z.number().int().refine((v) => [1, 2, 4, 12].includes(v), "must be 1, 2, 4, or 12").optional().nullable(),
+  rent_date_1: uaeDate.optional().nullable(),
+  rent_date_2: uaeDate.optional().nullable(),
+  rent_date_3: uaeDate.optional().nullable(),
+  rent_date_4: uaeDate.optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type PropertyUpdate = z.infer<typeof PropertyUpdateSchema>;
+
+// ---------------------------------------------------------------------------
 // INSTALLMENT (manual form AND PDF pipeline target this shape)
 // ---------------------------------------------------------------------------
 export const InstallmentInputSchema = z.object({
