@@ -1,9 +1,7 @@
 import CommodityForm from "./CommodityForm";
 import { listCommodities } from "@/lib/db/queries";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
-import { commodityValueFils } from "@/lib/core/valuation";
-import { getSpotFilsPerGram } from "@/lib/integrations/metals";
-import type { MetalType } from "@/lib/types";
+import { commodityTotalFils } from "@/lib/core/valuation";
 
 export const dynamic = "force-dynamic";
 
@@ -15,33 +13,8 @@ const METAL_LABEL: Record<string, string> = {
   other: "Other",
 };
 
-function daysBetweenIso(a: string, b: string): number {
-  const da = new Date(`${a}T00:00:00Z`).getTime();
-  const db = new Date(`${b}T00:00:00Z`).getTime();
-  return Math.floor((db - da) / 86_400_000);
-}
-
-export default async function CommoditiesPage() {
+export default function CommoditiesPage() {
   const commodities = listCommodities();
-
-  // Determine which metal types are present and fetch spot prices for them
-  const metalTypes = [...new Set(commodities.map((c) => c.metal_type as MetalType))];
-  const spotMap = new Map<string, { spotFilsPerGram: number; fetchedAt: string }>();
-
-  for (const mt of metalTypes) {
-    if (mt === "other") continue; // no spot for "other"
-    try {
-      const spot = await getSpotFilsPerGram(mt);
-      spotMap.set(mt, spot);
-    } catch {
-      // Spot fetch failed — skip this metal type, show "spot unavailable"
-    }
-  }
-
-  const fetchedAt = spotMap.size > 0 ? [...spotMap.values()][0]!.fetchedAt : null;
-  const fetchStaleness = fetchedAt
-    ? `${daysBetweenIso(fetchedAt, new Date().toISOString())}h ago`
-    : "unavailable";
 
   return (
     <>
@@ -56,84 +29,75 @@ export default async function CommoditiesPage() {
           <table>
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Metal</th>
-                <th>Weight</th>
-                <th>Purity (%)</th>
-                <th>Qty</th>
-                <th>Est. value (AED)</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Current price</th>
+                <th>Current value</th>
+                <th>Bought price</th>
+                <th>Profit / loss</th>
+                <th>Priced on</th>
               </tr>
             </thead>
             <tbody>
               {commodities.map((c) => {
-                const spot = spotMap.get(c.metal_type);
-                const valuation = spot
-                  ? commodityValueFils({
-                      weight: c.weight,
-                      weightUnit: c.weight_unit,
-                      purityFraction: c.purity_fraction,
-                      spotFilsPerGram: spot.spotFilsPerGram,
-                      quantity: c.quantity,
-                    })
-                  : null;
+                const value = commodityTotalFils({
+                  weight: c.weight,
+                  pricePerUnitFils: c.current_price_per_unit_fils,
+                });
+                const cost =
+                  c.bought_price_per_unit_fils != null
+                    ? commodityTotalFils({
+                        weight: c.weight,
+                        pricePerUnitFils: c.bought_price_per_unit_fils,
+                      })
+                    : null;
+                const pl = cost ? value.totalFils - cost.totalFils : null;
 
                 return (
                   <tr key={c.id}>
-                    <td>
-                      {c.name}
-                      {c.notes && (
-                        <details className="work">
-                          <summary>Notes</summary>
-                          <div className="work-body">{c.notes}</div>
-                        </details>
-                      )}
-                    </td>
                     <td>{METAL_LABEL[c.metal_type] ?? c.metal_type}</td>
                     <td>
                       {c.weight} {c.weight_unit}
                     </td>
-                    <td>{(c.purity_fraction * 100).toFixed(1)}%</td>
-                    <td>{c.quantity}</td>
                     <td>
-                      {valuation ? (
-                        <details className="work">
-                          <summary>
-                            {formatAed(valuation.valueFils)}
-                            <span className="muted" style={{ marginLeft: 8, fontSize: 12 }}>
-                              as of{" "}
-                              {spot
-                                ? new Date(spot.fetchedAt).toLocaleTimeString("en-AE", {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  })
-                                : "?"}{" "}
-                              ({fetchStaleness})
-                            </span>
-                          </summary>
-                          <div className="work-body">
-                            <div>Weight: {c.weight} {c.weight_unit}</div>
-                            <div>Purity fraction: {c.purity_fraction}</div>
-                            <div>
-                              Pure grams: {valuation.pureGrams.toFixed(2)} g (
-                              {c.weight} {c.weight_unit} × {c.purity_fraction})
-                            </div>
-                            <div>
-                              Spot price: {formatAed(valuation.spotFilsPerGram)}/g pure
-                            </div>
-                            <div>Quantity: {valuation.quantity}</div>
-                            <hr />
-                            <div>
-                              <strong>
-                                Value: {formatAed(valuation.valueFils)}
-                              </strong>{" "}
-                              = round({valuation.pureGrams.toFixed(2)} g ×{" "}
-                              {valuation.spotFilsPerGram} fils/g) × {valuation.quantity}
-                            </div>
+                      {formatAed(c.current_price_per_unit_fils)}/{c.weight_unit}
+                    </td>
+                    <td>
+                      <details className="work">
+                        <summary>{formatAed(value.totalFils)}</summary>
+                        <div className="work-body">
+                          <div>
+                            Amount: {c.weight} {c.weight_unit}
                           </div>
-                        </details>
+                          <div>
+                            Current price: {formatAed(c.current_price_per_unit_fils)} per{" "}
+                            {c.weight_unit}
+                          </div>
+                          <hr />
+                          <div>
+                            <strong>Current value: {formatAed(value.totalFils)}</strong>{" "}
+                            = {c.weight} × {formatAed(c.current_price_per_unit_fils)}
+                          </div>
+                        </div>
+                      </details>
+                    </td>
+                    <td>
+                      {c.bought_price_per_unit_fils != null
+                        ? `${formatAed(c.bought_price_per_unit_fils)}/${c.weight_unit}`
+                        : "—"}
+                    </td>
+                    <td>
+                      {pl == null ? (
+                        "—"
                       ) : (
-                        <span className="muted">spot unavailable</span>
+                        <span style={{ color: pl >= 0 ? "var(--good)" : "var(--bad)" }}>
+                          {pl >= 0 ? "+" : "−"}
+                          {formatAed(Math.abs(pl))}
+                        </span>
                       )}
+                    </td>
+                    <td className="muted">
+                      {c.current_price_date ? formatIsoToUae(c.current_price_date) : "—"}
                     </td>
                   </tr>
                 );

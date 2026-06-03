@@ -31,8 +31,8 @@ export default function DashboardPage() {
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
 
-  // ── Liquid cash ─────────────────────────────────────────────────────────
-  const liquidAccounts = accounts.filter((a) => a.is_liquid === 1);
+  // ── Liquid cash (all cash counts as liquid — owner decision 2026-06-04) ───
+  const liquidAccounts = accounts;
   const liquidFils = liquidAccounts.reduce((sum, a) => sum + a.current_balance_fils, 0);
 
   // ── Liabilities (unpaid installments) ────────────────────────────────────

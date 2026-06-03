@@ -71,45 +71,34 @@ CREATE INDEX IF NOT EXISTS idx_installments_due      ON installments(due_date);
 CREATE INDEX IF NOT EXISTS idx_installments_status   ON installments(status);
 
 -- ----------------------------------------------------------------------------
--- ASSET CLASS 2: CASH (bank accounts). The primary "liquid" pool for runway.
+-- ASSET CLASS 2: CASH (bank accounts). Manual entry only: an account label and a
+--   balance. ALL cash counts as liquid for the runway (owner decision 2026-06-04).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cash_accounts (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-  label                 TEXT    NOT NULL,               -- e.g. "Emirates NBD Current"
-  bank_name             TEXT,
-  account_type          TEXT    CHECK (account_type IS NULL OR account_type IN ('current', 'savings', 'fixed_deposit', 'other')),
-  currency              TEXT    NOT NULL DEFAULT 'AED' CHECK (currency = 'AED'),
-  current_balance_fils  INTEGER NOT NULL DEFAULT 0,
-  is_liquid             INTEGER NOT NULL DEFAULT 1 CHECK (is_liquid IN (0, 1)), -- fixed deposits may be 0
-  last_updated          TEXT,                            -- ISO date balance manually confirmed (staleness)
-  notes                 TEXT,
+  label                 TEXT    NOT NULL,               -- bank account name, e.g. "Emirates NBD Current"
+  current_balance_fils  INTEGER NOT NULL DEFAULT 0,     -- manually entered balance
   created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
 -- ----------------------------------------------------------------------------
--- ASSET CLASS 3: COMMODITIES (physical precious metals; weight + purity + type)
---   Value is derived: weight_in_grams * purity_fraction * spot_aed_per_gram.
---   purity_fraction is a 0..1 fraction (24K = 1.0, 22K = 0.9167, .999 = 0.999).
---   The UI may accept karat and convert via lib/core/units.ts before storing.
+-- ASSET CLASS 3: COMMODITIES (manual entry — owner decision 2026-06-04).
+--   Track: type, amount (weight + unit), current price PER UNIT, price-when-bought
+--   PER UNIT, date of purchase, date of the current price.
+--   Total value = round(weight * current_price_per_unit_fils). No live spot, no purity.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS commodities (
-  id                     INTEGER PRIMARY KEY AUTOINCREMENT,
-  name                   TEXT    NOT NULL,              -- e.g. "1kg PAMP gold bar"
-  metal_type             TEXT    NOT NULL CHECK (metal_type IN ('gold', 'silver', 'platinum', 'palladium', 'other')),
-  weight                 REAL    NOT NULL CHECK (weight > 0),
-  weight_unit            TEXT    NOT NULL CHECK (weight_unit IN ('gram', 'kg', 'troy_oz', 'tola')),
-  purity_fraction        REAL    NOT NULL CHECK (purity_fraction > 0 AND purity_fraction <= 1),
-  form                   TEXT    CHECK (form IS NULL OR form IN ('bar', 'coin', 'jewelry', 'other')),
-  quantity               INTEGER NOT NULL DEFAULT 1 CHECK (quantity >= 1),
-  storage_location       TEXT,
-  acquisition_price_fils INTEGER CHECK (acquisition_price_fils IS NULL OR acquisition_price_fils >= 0),
-  -- Optional cached manual value; live valuation is computed from spot at read time.
-  manual_value_fils      INTEGER CHECK (manual_value_fils IS NULL OR manual_value_fils >= 0),
-  valued_at              TEXT,
-  notes                  TEXT,
-  created_at             TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  updated_at             TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+  metal_type                  TEXT    NOT NULL CHECK (metal_type IN ('gold', 'silver', 'platinum', 'palladium', 'other')),
+  weight                      REAL    NOT NULL CHECK (weight > 0),                 -- the amount
+  weight_unit                 TEXT    NOT NULL CHECK (weight_unit IN ('gram', 'kg', 'troy_oz', 'tola')),
+  current_price_per_unit_fils INTEGER NOT NULL CHECK (current_price_per_unit_fils >= 0),  -- price per weight_unit, now
+  bought_price_per_unit_fils  INTEGER CHECK (bought_price_per_unit_fils IS NULL OR bought_price_per_unit_fils >= 0), -- per weight_unit, when bought
+  purchase_date               TEXT,                            -- ISO date of purchase
+  current_price_date          TEXT,                            -- ISO date the current price is as-of
+  created_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
 -- ----------------------------------------------------------------------------
@@ -163,11 +152,11 @@ CREATE VIEW IF NOT EXISTS v_installments AS
   FROM installments;
 
 CREATE VIEW IF NOT EXISTS v_cash_accounts AS
-  SELECT id, label, bank_name, account_type, currency,
-         current_balance_fils, is_liquid, last_updated
+  SELECT id, label, current_balance_fils
   FROM cash_accounts;
 
 CREATE VIEW IF NOT EXISTS v_commodities AS
-  SELECT id, name, metal_type, weight, weight_unit, purity_fraction,
-         form, quantity, storage_location, manual_value_fils, valued_at
+  SELECT id, metal_type, weight, weight_unit,
+         current_price_per_unit_fils, bought_price_per_unit_fils,
+         purchase_date, current_price_date
   FROM commodities;
