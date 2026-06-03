@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { parseUaeDateToIso } from "@/lib/core/units";
 
 function RentalFields() {
   const [cheques, setCheques] = useState(1);
@@ -109,6 +110,35 @@ export default function PropertyForm() {
       notes: strOrNull("notes"),
     };
 
+    // Gather + VALIDATE installment rows BEFORE creating the property, so bad
+    // input fails fast and never leaves a property with missing installments.
+    // (Installments are the core liability data behind the runway — a silently
+    // dropped one looks identical to a saved one to the owner.)
+    const instRows: { due_date: string; amount_aed: number; milestone_label: string | null }[] = [];
+    if (selectedSubcategory === "off_plan") {
+      const rowErrors: string[] = [];
+      for (let i = 0; i < installments.length; i++) {
+        const due = String(fd.get(`inst_due_date_${i}`) ?? "").trim();
+        const amount = Number(fd.get(`inst_amount_aed_${i}`));
+        try {
+          parseUaeDateToIso(due);
+        } catch {
+          rowErrors.push(`Installment ${i + 1}: invalid date "${due}" (use DD/MM/YYYY)`);
+          continue;
+        }
+        if (!Number.isFinite(amount) || amount < 0) {
+          rowErrors.push(`Installment ${i + 1}: invalid amount`);
+          continue;
+        }
+        instRows.push({ due_date: due, amount_aed: amount, milestone_label: strOrNull(`inst_milestone_${i}`) });
+      }
+      if (rowErrors.length > 0) {
+        setSaving(false);
+        setError(rowErrors.join(" · ") + " — nothing was saved.");
+        return; // create nothing; let the user fix and resubmit cleanly
+      }
+    }
+
     const res = await fetch("/api/properties", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -124,23 +154,30 @@ export default function PropertyForm() {
     const { property } = await res.json();
     const propertyId = property.id;
 
-    if (selectedSubcategory === "off_plan") {
-      for (let i = 0; i < installments.length; i++) {
-        const instPayload = {
-          property_id: propertyId,
-          due_date: String(fd.get(`inst_due_date_${i}`) ?? ""),
-          amount_aed: Number(fd.get(`inst_amount_aed_${i}`)),
-          milestone_label: strOrNull(`inst_milestone_${i}`),
-          status: "upcoming",
-          source: "manual",
-        };
-
-        await fetch("/api/installments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(instPayload),
-        });
+    // Save each installment and CHECK the result — never swallow a failure.
+    const failed: string[] = [];
+    for (const row of instRows) {
+      const instRes = await fetch("/api/installments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_id: propertyId, status: "upcoming", source: "manual", ...row }),
+      });
+      if (!instRes.ok) {
+        const d = await instRes.json().catch(() => ({}));
+        const reason = d?.error ? `${d.error}` : `HTTP ${instRes.status}`;
+        failed.push(`${row.due_date} / AED ${row.amount_aed} (${reason})`);
       }
+    }
+
+    if (failed.length > 0) {
+      // Property saved but some installments did not. Surface loudly — do NOT
+      // report success. (Rare after the upfront validation above.)
+      setSaving(false);
+      setError(
+        `Property "${payload.name}" was saved, but these installments did NOT save and must be re-added (delete the property and re-create if needed): ${failed.join(" · ")}`,
+      );
+      router.refresh();
+      return;
     }
 
     setSaving(false);

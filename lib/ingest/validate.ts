@@ -11,11 +11,24 @@
  */
 
 import { z } from "zod";
+import { parseUaeDateToIso } from "@/lib/core/units";
 
 const aedAmount = z.number().nonnegative().finite();
+// Accept UAE DD/MM/YYYY AND reject impossible calendar dates (e.g. 32/13/2026,
+// 31/02/2026) at validation time, so routes return a clean 400 instead of a 500
+// when the insert helper later tries to parse the date. Single source of truth:
+// the same parser used by the DB layer (lib/core/units.ts).
 const uaeDate = z
   .string()
-  .regex(/^\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}$/, "expected DD/MM/YYYY");
+  .regex(/^\d{1,2}[/.\-]\d{1,2}[/.\-]\d{4}$/, "expected DD/MM/YYYY")
+  .refine((v) => {
+    try {
+      parseUaeDateToIso(v);
+      return true;
+    } catch {
+      return false;
+    }
+  }, "invalid calendar date");
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "expected YYYY-MM-DD");
 
 // ---------------------------------------------------------------------------
