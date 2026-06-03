@@ -103,3 +103,45 @@ details.work .work-body { margin-top: 8px; padding: 12px; background: var(--pane
   color: var(--muted);
 }
 .stub code { color: var(--accent); }
+
+.property-link {
+  color: var(--text);
+  text-decoration: none;
+  cursor: pointer;
+}
+.property-link:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.selected-row td {
+  background: var(--panel-2);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  color: var(--muted);
+  min-width: 150px;
+  flex-shrink: 0;
+}
+
+.detail-edit-form {
+  margin-top: 0;
+}
