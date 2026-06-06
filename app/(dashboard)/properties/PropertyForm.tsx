@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { parseDateToIso } from "@/lib/core/units";
+import { numeralOnly } from "./numeralOnly";
 
 function RentalFields() {
   const [cheques, setCheques] = useState(1);
@@ -65,6 +66,7 @@ export default function PropertyForm() {
   const [isOpen, setIsOpen] = useState(false);
   const [installments, setInstallments] = useState<{ key: number }[]>([]);
   const instKey = useRef(0);
+  const today = new Date().toISOString().split("T")[0];
 
   function addInstallment() {
     setInstallments((prev) => [...prev, { key: instKey.current++ }]);
@@ -101,6 +103,7 @@ export default function PropertyForm() {
       size_sqft: numOrNull("size_sqft"),
       annual_service_charge_aed: numOrNull("annual_service_charge_aed"),
       purchase_price_aed: numOrNull("purchase_price_aed"),
+      purchased_at: strOrNull("purchased_at"),
       current_value_aed: numOrNull("current_value_aed"),
       valued_at: strOrNull("valued_at"),
       is_rental: isRental,
@@ -264,25 +267,29 @@ export default function PropertyForm() {
           </div>
           <div style={{ flex: 1, minWidth: 120 }}>
             <label>Size (sqft)</label>
-            <input name="size_sqft" type="number" step="any" />
+            <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Annual Service Charge (AED)</label>
-            <input name="annual_service_charge_aed" type="number" step="0.01" />
+            <input name="annual_service_charge_aed" type="number" step="0.01" onKeyDown={numeralOnly} />
           </div>
         </div>
         <div className="row">
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Value when bought (AED)</label>
-            <input name="purchase_price_aed" type="number" step="0.01" placeholder="purchase price" />
+            <input name="purchase_price_aed" type="number" step="0.01" placeholder="purchase price" onKeyDown={numeralOnly} />
+          </div>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Date of purchase</label>
+            <input name="purchased_at" type="date" max={today} />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Current value (AED)</label>
-            <input name="current_value_aed" type="number" step="0.01" />
+            <input name="current_value_aed" type="number" step="0.01" onKeyDown={numeralOnly} />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Valued on</label>
-            <input name="valued_at" type="date" />
+            <input name="valued_at" type="date" max={today} />
           </div>
         </div>
         {subcategory === "existing" && (

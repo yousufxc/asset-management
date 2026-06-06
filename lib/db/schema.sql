@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS properties (
   developer           TEXT,                              -- off-plan developer
   size_sqft           REAL,                              -- for AVM: median price/sqft * size
   annual_service_charge_fils INTEGER CHECK (annual_service_charge_fils IS NULL OR annual_service_charge_fils >= 0),
-  purchase_price_fils INTEGER CHECK (purchase_price_fils IS NULL OR purchase_price_fils >= 0),
+   purchase_price_fils INTEGER CHECK (purchase_price_fils IS NULL OR purchase_price_fils >= 0),
+   purchased_at       TEXT,                              -- ISO date of purchase
   current_value_fils  INTEGER CHECK (current_value_fils  IS NULL OR current_value_fils  >= 0),
   valued_at           TEXT,                              -- ISO date of last manual valuation (staleness)
   is_rental           INTEGER NOT NULL DEFAULT 0 CHECK (is_rental IN (0, 1)),
@@ -143,7 +144,7 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(txn_date);
 -- ----------------------------------------------------------------------------
 CREATE VIEW IF NOT EXISTS v_properties AS
   SELECT id, name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
-         annual_service_charge_fils, purchase_price_fils, current_value_fils, valued_at,
+         annual_service_charge_fils, purchase_price_fils, purchased_at, current_value_fils, valued_at,
          is_rental, annual_rent_fils, rent_cheques_per_year,
          rent_date_1, rent_date_2, rent_date_3, rent_date_4
   FROM properties;
