@@ -13,6 +13,8 @@ import {
 import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
 import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
+import { commodityTotalFils } from "@/lib/core/valuation";
+import AssetPieChart, { type Slice } from "./AssetPieChart";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +29,29 @@ export default function DashboardPage() {
   const accounts = listCashAccounts();
   const commodities = listCommodities();
   const installments = listAllInstallments();
+
+  const propertyTotalFils = properties.reduce(
+    (sum, p) => sum + (p.current_value_fils ?? 0),
+    0,
+  );
+  const cashTotalFils = accounts.reduce(
+    (sum, a) => sum + a.current_balance_fils,
+    0,
+  );
+  const commodityTotalFilsAgg = commodities.reduce(
+    (sum, c) =>
+      sum +
+      commodityTotalFils({
+        weight: c.weight,
+        pricePerUnitFils: c.current_price_per_unit_fils,
+      }).totalFils,
+    0,
+  );
+  const chartData: Slice[] = [
+    { name: "Property", value: propertyTotalFils },
+    { name: "Cash", value: cashTotalFils },
+    { name: "Commodities", value: commodityTotalFilsAgg },
+  ];
 
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
@@ -219,6 +244,9 @@ export default function DashboardPage() {
           </div>
         </details>
       </div>
+
+      {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
+      <AssetPieChart data={chartData} />
 
       {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
       <div className="row">
