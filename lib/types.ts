@@ -23,6 +23,7 @@ export interface Property {
   size_sqft: number | null;
   annual_service_charge_fils: number | null;
   purchase_price_fils: number | null;
+  purchased_at: string | null;
   current_value_fils: number | null;
   valued_at: string | null;
   is_rental: 0 | 1;

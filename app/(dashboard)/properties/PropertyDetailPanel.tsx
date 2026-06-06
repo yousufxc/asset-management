@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Property } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed } from "@/lib/core/units";
+import { numeralOnly } from "./numeralOnly";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -51,6 +52,7 @@ export default function PropertyDetailPanel({ property }: { property: Property }
   const [editSubcategory, setEditSubcategory] = useState<string>(property.subcategory);
   const [editIsRental, setEditIsRental] = useState(!!property.is_rental);
   const [editCheques, setEditCheques] = useState<number>(property.rent_cheques_per_year ?? 1);
+  const today = new Date().toISOString().split("T")[0];
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -103,6 +105,9 @@ export default function PropertyDetailPanel({ property }: { property: Property }
     const purchasePrice = numOrNull("purchase_price_aed");
     const existingPurchase = property.purchase_price_fils != null ? filsToAed(property.purchase_price_fils) : null;
     if (purchasePrice !== existingPurchase) payload.purchase_price_aed = purchasePrice;
+
+    const purchasedAt = strOrNull("purchased_at");
+    if (purchasedAt !== (property.purchased_at ?? null)) payload.purchased_at = purchasedAt;
 
     const currentValue = numOrNull("current_value_aed");
     const existingValue = property.current_value_fils != null ? filsToAed(property.current_value_fils) : null;
@@ -200,6 +205,10 @@ export default function PropertyDetailPanel({ property }: { property: Property }
       <div className="detail-row">
         <span className="detail-label">Purchase price</span>
         <span>{formatAedValue(property.purchase_price_fils)}</span>
+      </div>
+      <div className="detail-row">
+        <span className="detail-label">Date of purchase</span>
+        <span>{formatIsoDisplay(property.purchased_at)}</span>
       </div>
       <div className="detail-row">
         <span className="detail-label">Current value</span>
@@ -306,25 +315,29 @@ export default function PropertyDetailPanel({ property }: { property: Property }
         </div>
         <div style={{ flex: 1, minWidth: 120 }}>
           <label>Size (sqft)</label>
-          <input name="size_sqft" type="number" step="any" defaultValue={property.size_sqft ?? ""} />
+          <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} defaultValue={property.size_sqft ?? ""} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Annual Service Charge (AED)</label>
-          <input name="annual_service_charge_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.annual_service_charge_fils)} />
+          <input name="annual_service_charge_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.annual_service_charge_fils)} />
         </div>
       </div>
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Value when bought (AED)</label>
-          <input name="purchase_price_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.purchase_price_fils)} placeholder="purchase price" />
+          <input name="purchase_price_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.purchase_price_fils)} placeholder="purchase price" />
+        </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Date of purchase</label>
+          <input name="purchased_at" type="date" max={today} defaultValue={property.purchased_at ?? ""} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Current value (AED)</label>
-          <input name="current_value_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.current_value_fils)} />
+          <input name="current_value_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.current_value_fils)} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Valued on</label>
-          <input name="valued_at" type="date" defaultValue={property.valued_at ?? ""} />
+          <input name="valued_at" type="date" max={today} defaultValue={property.valued_at ?? ""} />
         </div>
       </div>
       {editSubcategory === "existing" && (

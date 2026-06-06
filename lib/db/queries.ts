@@ -32,12 +32,12 @@ export function insertProperty(input: PropertyInput): Property {
   const stmt = db.prepare(`
     INSERT INTO properties
       (name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
-       annual_service_charge_fils, purchase_price_fils,
+       annual_service_charge_fils, purchase_price_fils, purchased_at,
        current_value_fils, valued_at, is_rental, annual_rent_fils, rent_cheques_per_year,
        rent_date_1, rent_date_2, rent_date_3, rent_date_4, notes)
     VALUES
       (@name, @subcategory, @property_type, @bedrooms, @city, @area, @developer, @size_sqft,
-       @annual_service_charge_fils, @purchase_price_fils,
+       @annual_service_charge_fils, @purchase_price_fils, @purchased_at,
        @current_value_fils, @valued_at, @is_rental, @annual_rent_fils, @rent_cheques_per_year,
        @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4, @notes)
   `);
@@ -52,6 +52,7 @@ export function insertProperty(input: PropertyInput): Property {
     size_sqft: input.size_sqft ?? null,
     annual_service_charge_fils: aedOrNull(input.annual_service_charge_aed),
     purchase_price_fils: aedOrNull(input.purchase_price_aed),
+    purchased_at: dateOrNull(input.purchased_at),
     current_value_fils: aedOrNull(input.current_value_aed),
     valued_at: dateOrNull(input.valued_at),
     is_rental: input.is_rental ? 1 : 0,
@@ -89,6 +90,7 @@ export function updateProperty(id: number, data: PropertyUpdate): Property | und
   if (data.size_sqft !== undefined) { sets.push("size_sqft = @size_sqft"); params.size_sqft = data.size_sqft; }
   if (data.annual_service_charge_aed !== undefined) { sets.push("annual_service_charge_fils = @annual_service_charge_fils"); params.annual_service_charge_fils = aedOrNull(data.annual_service_charge_aed); }
   if (data.purchase_price_aed !== undefined) { sets.push("purchase_price_fils = @purchase_price_fils"); params.purchase_price_fils = aedOrNull(data.purchase_price_aed); }
+  if (data.purchased_at !== undefined) { sets.push("purchased_at = @purchased_at"); params.purchased_at = dateOrNull(data.purchased_at); }
   if (data.current_value_aed !== undefined) { sets.push("current_value_fils = @current_value_fils"); params.current_value_fils = aedOrNull(data.current_value_aed); }
   if (data.valued_at !== undefined) { sets.push("valued_at = @valued_at"); params.valued_at = dateOrNull(data.valued_at); }
   if (data.is_rental !== undefined) { sets.push("is_rental = @is_rental"); params.is_rental = data.is_rental ? 1 : 0; }

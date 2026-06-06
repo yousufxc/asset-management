@@ -14,8 +14,6 @@ import { z } from "zod";
 import { parseDateToIso } from "@/lib/core/units";
 
 const aedAmount = z.number().nonnegative().finite();
-// Accept dates in ISO (YYYY-MM-DD) or UAE (DD/MM/YYYY) format AND reject
-// impossible calendar dates (e.g. 32/13/2026, 31/02/2026) at validation time.
 const dateString = z
   .string()
   .refine((v) => {
@@ -26,6 +24,18 @@ const dateString = z
       return false;
     }
   }, "invalid date (use YYYY-MM-DD or DD/MM/YYYY)");
+
+const noFutureDate = dateString.refine(
+  (v) => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      return parseDateToIso(v) <= today;
+    } catch {
+      return false;
+    }
+  },
+  "date cannot be in the future",
+);
 
 // ---------------------------------------------------------------------------
 // PROPERTY
@@ -41,8 +51,9 @@ export const PropertyInputSchema = z.object({
   size_sqft: z.number().positive().optional().nullable(),
   annual_service_charge_aed: aedAmount.optional().nullable(),
   purchase_price_aed: aedAmount.optional().nullable(),
+  purchased_at: noFutureDate.optional().nullable(),
   current_value_aed: aedAmount.optional().nullable(),
-  valued_at: dateString.optional().nullable(),
+  valued_at: noFutureDate.optional().nullable(),
   is_rental: z.boolean().default(false),
   annual_rent_aed: aedAmount.optional().nullable(),
   rent_cheques_per_year: z.number().int().refine((v) => [1, 2, 4, 12].includes(v), "must be 1, 2, 4, or 12").optional().nullable(),
@@ -68,8 +79,9 @@ export const PropertyUpdateSchema = z.object({
   size_sqft: z.number().positive().optional().nullable(),
   annual_service_charge_aed: aedAmount.optional().nullable(),
   purchase_price_aed: aedAmount.optional().nullable(),
+  purchased_at: noFutureDate.optional().nullable(),
   current_value_aed: aedAmount.optional().nullable(),
-  valued_at: dateString.optional().nullable(),
+  valued_at: noFutureDate.optional().nullable(),
   is_rental: z.boolean().optional(),
   annual_rent_aed: aedAmount.optional().nullable(),
   rent_cheques_per_year: z.number().int().refine((v) => [1, 2, 4, 12].includes(v), "must be 1, 2, 4, or 12").optional().nullable(),
