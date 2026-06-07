@@ -1,0 +1,37 @@
+import { NextResponse } from "next/server";
+import { CashAccountUpdateSchema } from "@/lib/ingest/validate";
+import { getCashAccount, updateCashAccount } from "@/lib/db/queries";
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: idStr } = await params;
+  const id = Number(idStr);
+  if (!Number.isInteger(id) || id < 1) {
+    return NextResponse.json({ error: "Invalid account id" }, { status: 400 });
+  }
+
+  const existing = getCashAccount(id);
+  if (!existing) {
+    return NextResponse.json({ error: "Account not found" }, { status: 404 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = CashAccountUpdateSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.flatten() },
+      { status: 400 },
+    );
+  }
+
+  const result = updateCashAccount(id, parsed.data);
+  return NextResponse.json({ account: result }, { status: 200 });
+}

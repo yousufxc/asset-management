@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { numeralOnly } from "./numeralOnly";
 
 export default function CashForm() {
   const router = useRouter();
@@ -17,10 +18,15 @@ export default function CashForm() {
       const v = fd.get(k);
       return v === "" || v === null ? null : Number(v);
     };
+    const strOrNull = (k: string) => {
+      const v = fd.get(k);
+      return v === "" || v === null ? null : String(v);
+    };
 
     const payload = {
       label: String(fd.get("label") ?? ""),
       current_balance_aed: numOrNull("current_balance_aed") ?? 0,
+      notes: strOrNull("notes"),
     };
 
     const res = await fetch("/api/cash", {
@@ -53,9 +59,18 @@ export default function CashForm() {
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Cash balance (AED)</label>
-          <input name="current_balance_aed" type="number" step="0.01" defaultValue={0} />
+          <input
+            name="current_balance_aed"
+            type="number"
+            step="0.01"
+            defaultValue={0}
+            placeholder="Enter cash balance here"
+            onKeyDown={numeralOnly}
+          />
         </div>
       </div>
+      <label>Notes</label>
+      <textarea name="notes" rows={2} placeholder="Optional notes about this account" />
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
       <button type="submit" disabled={saving}>{saving ? "Saving…" : "Add balance"}</button>
     </form>

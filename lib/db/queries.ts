@@ -16,6 +16,7 @@ import type {
   PropertyUpdate,
   InstallmentInput,
   CashAccountInput,
+  CashAccountUpdate,
   CommodityInput,
 } from "@/lib/ingest/validate";
 import type { Property, Installment, CashAccount, Commodity } from "@/lib/types";
@@ -247,22 +248,45 @@ export function installmentExistsByKey(
 export function insertCashAccount(input: CashAccountInput): CashAccount {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO cash_accounts (label, current_balance_fils)
-    VALUES (@label, @current_balance_fils)
+    INSERT INTO cash_accounts (label, current_balance_fils, notes)
+    VALUES (@label, @current_balance_fils, @notes)
   `);
   const info = stmt.run({
     label: input.label,
     current_balance_fils: aedToFils(input.current_balance_aed),
+    notes: input.notes ?? null,
   });
   return getDb()
     .prepare(`SELECT * FROM cash_accounts WHERE id = ?`)
     .get(Number(info.lastInsertRowid)) as unknown as CashAccount;
 }
 
+export function getCashAccount(id: number): CashAccount | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM cash_accounts WHERE id = ?`)
+    .get(id) as unknown as CashAccount | undefined;
+}
+
 export function listCashAccounts(): CashAccount[] {
   return getDb()
     .prepare(`SELECT * FROM cash_accounts ORDER BY created_at DESC`)
     .all() as unknown as CashAccount[];
+}
+
+export function updateCashAccount(id: number, data: CashAccountUpdate): CashAccount | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.label !== undefined) { sets.push("label = @label"); params.label = data.label; }
+  if (data.current_balance_aed !== undefined) { sets.push("current_balance_fils = @current_balance_fils"); params.current_balance_fils = aedToFils(data.current_balance_aed); }
+  if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
+
+  if (sets.length === 0) return getCashAccount(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE cash_accounts SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getCashAccount(id);
 }
 
 // COMMODITIES ----------------------------------------------------------------

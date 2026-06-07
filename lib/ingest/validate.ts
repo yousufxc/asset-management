@@ -115,9 +115,17 @@ export type InstallmentInput = z.infer<typeof InstallmentInputSchema>;
 // ---------------------------------------------------------------------------
 export const CashAccountInputSchema = z.object({
   label: z.string().min(1),
-  current_balance_aed: z.number().finite().default(0),
+  current_balance_aed: z.number().nonnegative().finite().default(0),
+  notes: z.string().optional().nullable(),
 });
 export type CashAccountInput = z.infer<typeof CashAccountInputSchema>;
+
+export const CashAccountUpdateSchema = z.object({
+  label: z.string().min(1).optional(),
+  current_balance_aed: z.number().nonnegative().finite().optional(),
+  notes: z.string().optional().nullable(),
+});
+export type CashAccountUpdate = z.infer<typeof CashAccountUpdateSchema>;
 
 // ---------------------------------------------------------------------------
 // COMMODITY — manual entry: type + amount (weight+unit) + current/bought price
