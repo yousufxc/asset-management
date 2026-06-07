@@ -58,6 +58,7 @@ export interface CashAccount {
   id: number;
   label: string;
   current_balance_fils: number;
+  notes: string | null;
   created_at: string;
   updated_at: string;
 }

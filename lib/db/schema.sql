@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
   id                    INTEGER PRIMARY KEY AUTOINCREMENT,
   label                 TEXT    NOT NULL,               -- bank account name, e.g. "Emirates NBD Current"
   current_balance_fils  INTEGER NOT NULL DEFAULT 0,     -- manually entered balance
+  notes                 TEXT,
   created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
