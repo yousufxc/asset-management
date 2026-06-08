@@ -18,6 +18,7 @@ import type {
   CashAccountInput,
   CashAccountUpdate,
   CommodityInput,
+  CommodityUpdate,
 } from "@/lib/ingest/validate";
 import type { Property, Installment, CashAccount, Commodity } from "@/lib/types";
 
@@ -295,29 +296,57 @@ export function insertCommodity(input: CommodityInput): Commodity {
   const stmt = db.prepare(`
     INSERT INTO commodities
       (metal_type, weight, weight_unit, current_price_per_unit_fils,
-       bought_price_per_unit_fils, purchase_date, current_price_date)
+       bought_price_per_unit_fils, purchase_date, current_price_date, notes)
     VALUES
       (@metal_type, @weight, @weight_unit, @current_price_per_unit_fils,
-       @bought_price_per_unit_fils, @purchase_date, @current_price_date)
+       @bought_price_per_unit_fils, @purchase_date, @current_price_date, @notes)
   `);
   const info = stmt.run({
     metal_type: input.metal_type,
     weight: input.weight,
     weight_unit: input.weight_unit,
     current_price_per_unit_fils: aedToFils(input.current_price_per_unit_aed),
-    bought_price_per_unit_fils: aedOrNull(input.bought_price_per_unit_aed),
-    purchase_date: dateOrNull(input.purchase_date),
+    bought_price_per_unit_fils: aedToFils(input.bought_price_per_unit_aed),
+    purchase_date: dateOrNull(input.purchase_date)!,
     current_price_date: dateOrNull(input.current_price_date),
+    notes: input.notes ?? null,
   });
   return getDb()
     .prepare(`SELECT * FROM commodities WHERE id = ?`)
     .get(Number(info.lastInsertRowid)) as unknown as Commodity;
 }
 
+export function getCommodity(id: number): Commodity | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM commodities WHERE id = ?`)
+    .get(id) as unknown as Commodity | undefined;
+}
+
 export function listCommodities(): Commodity[] {
   return getDb()
     .prepare(`SELECT * FROM commodities ORDER BY created_at DESC`)
     .all() as unknown as Commodity[];
+}
+
+export function updateCommodity(id: number, data: CommodityUpdate): Commodity | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.metal_type !== undefined) { sets.push("metal_type = @metal_type"); params.metal_type = data.metal_type; }
+  if (data.weight !== undefined) { sets.push("weight = @weight"); params.weight = data.weight; }
+  if (data.weight_unit !== undefined) { sets.push("weight_unit = @weight_unit"); params.weight_unit = data.weight_unit; }
+  if (data.current_price_per_unit_aed !== undefined) { sets.push("current_price_per_unit_fils = @current_price_per_unit_fils"); params.current_price_per_unit_fils = aedToFils(data.current_price_per_unit_aed); }
+  if (data.bought_price_per_unit_aed !== undefined) { sets.push("bought_price_per_unit_fils = @bought_price_per_unit_fils"); params.bought_price_per_unit_fils = aedToFils(data.bought_price_per_unit_aed); }
+  if (data.purchase_date !== undefined) { sets.push("purchase_date = @purchase_date"); params.purchase_date = dateOrNull(data.purchase_date); }
+  if (data.current_price_date !== undefined) { sets.push("current_price_date = @current_price_date"); params.current_price_date = dateOrNull(data.current_price_date); }
+  if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
+
+  if (sets.length === 0) return getCommodity(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE commodities SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getCommodity(id);
 }
 
 // TRANSACTIONS (dedup-aware) -------------------------------------------------

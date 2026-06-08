@@ -135,12 +135,25 @@ export const CommodityInputSchema = z.object({
   metal_type: z.enum(["gold", "silver", "platinum", "palladium", "other"]),
   weight: z.number().positive(),
   weight_unit: z.enum(["gram", "kg", "troy_oz", "tola"]),
-  current_price_per_unit_aed: aedAmount,
-  bought_price_per_unit_aed: aedAmount.optional().nullable(),
-  purchase_date: dateString.optional().nullable(),
-  current_price_date: dateString.optional().nullable(),
+  current_price_per_unit_aed: aedAmount.optional().default(0),
+  bought_price_per_unit_aed: aedAmount,
+  purchase_date: noFutureDate,
+  current_price_date: noFutureDate.optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 export type CommodityInput = z.infer<typeof CommodityInputSchema>;
+
+export const CommodityUpdateSchema = z.object({
+  metal_type: z.enum(["gold", "silver", "platinum", "palladium", "other"]).optional(),
+  weight: z.number().positive().optional(),
+  weight_unit: z.enum(["gram", "kg", "troy_oz", "tola"]).optional(),
+  current_price_per_unit_aed: aedAmount.optional(),
+  bought_price_per_unit_aed: aedAmount.optional(),
+  purchase_date: noFutureDate.optional(),
+  current_price_date: noFutureDate.optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type CommodityUpdate = z.infer<typeof CommodityUpdateSchema>;
 
 // ---------------------------------------------------------------------------
 // INSTALLMENT UPDATE (partial — fields allowed in PATCH)

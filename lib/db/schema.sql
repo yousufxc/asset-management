@@ -97,10 +97,11 @@ CREATE TABLE IF NOT EXISTS commodities (
   metal_type                  TEXT    NOT NULL CHECK (metal_type IN ('gold', 'silver', 'platinum', 'palladium', 'other')),
   weight                      REAL    NOT NULL CHECK (weight > 0),                 -- the amount
   weight_unit                 TEXT    NOT NULL CHECK (weight_unit IN ('gram', 'kg', 'troy_oz', 'tola')),
-  current_price_per_unit_fils INTEGER NOT NULL CHECK (current_price_per_unit_fils >= 0),  -- price per weight_unit, now
-  bought_price_per_unit_fils  INTEGER CHECK (bought_price_per_unit_fils IS NULL OR bought_price_per_unit_fils >= 0), -- per weight_unit, when bought
-  purchase_date               TEXT,                            -- ISO date of purchase
+  current_price_per_unit_fils INTEGER NOT NULL DEFAULT 0 CHECK (current_price_per_unit_fils >= 0),  -- price per weight_unit, now
+  bought_price_per_unit_fils  INTEGER NOT NULL CHECK (bought_price_per_unit_fils >= 0), -- per weight_unit, when bought
+  purchase_date               TEXT    NOT NULL,               -- ISO date of purchase
   current_price_date          TEXT,                            -- ISO date the current price is as-of
+  notes                       TEXT,
   created_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
@@ -162,5 +163,5 @@ CREATE VIEW IF NOT EXISTS v_cash_accounts AS
 CREATE VIEW IF NOT EXISTS v_commodities AS
   SELECT id, metal_type, weight, weight_unit,
          current_price_per_unit_fils, bought_price_per_unit_fils,
-         purchase_date, current_price_date
+         purchase_date, current_price_date, notes
   FROM commodities;
