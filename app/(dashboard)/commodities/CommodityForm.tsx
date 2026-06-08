@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { numeralOnly } from "./numeralOnly";
 
 const UNIT_LABEL: Record<string, string> = {
   gram: "gram",
@@ -10,11 +11,14 @@ const UNIT_LABEL: Record<string, string> = {
   tola: "tola",
 };
 
+const today = new Date().toLocaleDateString("en-CA");
+
 export default function CommodityForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [unit, setUnit] = useState("");
+  const [hasCurrentPrice, setHasCurrentPrice] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,6 +42,7 @@ export default function CommodityForm() {
       bought_price_per_unit_aed: numOrNull("bought_price_per_unit_aed"),
       purchase_date: strOrNull("purchase_date"),
       current_price_date: strOrNull("current_price_date"),
+      notes: strOrNull("notes"),
     };
 
     const res = await fetch("/api/commodities", {
@@ -58,6 +63,7 @@ export default function CommodityForm() {
     }
     (e.target as HTMLFormElement).reset();
     setUnit("");
+    setHasCurrentPrice(false);
     router.refresh();
   }
 
@@ -80,7 +86,15 @@ export default function CommodityForm() {
         </div>
         <div style={{ flex: 1, minWidth: 120 }}>
           <label>Amount *</label>
-          <input name="weight" type="number" step="any" required defaultValue={1} />
+          <input
+            name="weight"
+            type="number"
+            step="any"
+            required
+            defaultValue={1}
+            placeholder="Enter quantity amount here"
+            onKeyDown={numeralOnly}
+          />
         </div>
         <div style={{ flex: 1, minWidth: 140 }}>
           <label>Unit *</label>
@@ -99,24 +113,42 @@ export default function CommodityForm() {
       </div>
       <div className="row">
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label>Current price (AED per {perUnit}) *</label>
-          <input name="current_price_per_unit_aed" type="number" step="0.01" required />
+          <label>Price when bought (AED per {perUnit}) *</label>
+          <input
+            name="bought_price_per_unit_aed"
+            type="number"
+            step="0.01"
+            required
+            placeholder="Enter the price per unit when bought here"
+            onKeyDown={numeralOnly}
+          />
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label>Price when bought (AED per {perUnit})</label>
-          <input name="bought_price_per_unit_aed" type="number" step="0.01" />
+          <label>Current price (AED per {perUnit})</label>
+          <input
+            name="current_price_per_unit_aed"
+            type="number"
+            step="0.01"
+            placeholder="Enter current price here"
+            onKeyDown={numeralOnly}
+            onChange={(e) => setHasCurrentPrice(e.target.value !== "")}
+          />
         </div>
       </div>
       <div className="row">
         <div style={{ flex: 1, minWidth: 180 }}>
-          <label>Date of purchase</label>
-          <input name="purchase_date" type="date" />
+          <label>Date of purchase *</label>
+          <input name="purchase_date" type="date" max={today} required />
         </div>
-        <div style={{ flex: 1, minWidth: 180 }}>
-          <label>Date of current price</label>
-          <input name="current_price_date" type="date" />
-        </div>
+        {hasCurrentPrice && (
+          <div style={{ flex: 1, minWidth: 180 }}>
+            <label>Date of current price *</label>
+            <input name="current_price_date" type="date" max={today} required />
+          </div>
+        )}
       </div>
+      <label>Notes</label>
+      <textarea name="notes" rows={2} placeholder="Optional notes about this holding" />
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
       <button type="submit" disabled={saving}>
         {saving ? "Saving…" : "Add commodity"}
