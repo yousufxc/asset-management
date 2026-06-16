@@ -9,7 +9,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <nav>
           <Link href="/dashboard">Dashboard</Link>
           <Link href="/properties">Property</Link>
-          <Link href="/cash">Cash</Link>
+          <Link href="/cash">Saving Accounts</Link>
           <Link href="/commodities">Commodities</Link>
         </nav>
       </aside>

@@ -111,11 +111,15 @@ export const InstallmentInputSchema = z.object({
 export type InstallmentInput = z.infer<typeof InstallmentInputSchema>;
 
 // ---------------------------------------------------------------------------
-// CASH ACCOUNT — manual entry only: account label + balance. All cash is liquid.
+// SAVING ACCOUNTS — manual entry only: account label, balance, optional
+//   fixed-deposit fields, and interest rate. All cash is liquid.
 // ---------------------------------------------------------------------------
 export const CashAccountInputSchema = z.object({
   label: z.string().min(1),
   current_balance_aed: z.number().nonnegative().finite().default(0),
+  interest_rate: z.number().nonnegative().finite().optional().nullable(),
+  is_fixed_deposit: z.boolean().default(false),
+  fixed_deposit_period_months: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type CashAccountInput = z.infer<typeof CashAccountInputSchema>;
@@ -123,6 +127,9 @@ export type CashAccountInput = z.infer<typeof CashAccountInputSchema>;
 export const CashAccountUpdateSchema = z.object({
   label: z.string().min(1).optional(),
   current_balance_aed: z.number().nonnegative().finite().optional(),
+  interest_rate: z.number().nonnegative().finite().optional().nullable(),
+  is_fixed_deposit: z.boolean().optional(),
+  fixed_deposit_period_months: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type CashAccountUpdate = z.infer<typeof CashAccountUpdateSchema>;
