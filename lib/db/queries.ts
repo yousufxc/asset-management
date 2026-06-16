@@ -73,6 +73,11 @@ export function getProperty(id: number): Property | undefined {
   return getDb().prepare(`SELECT * FROM properties WHERE id = ?`).get(id) as unknown as Property | undefined;
 }
 
+export function deleteProperty(id: number): void {
+  getDb().prepare(`DELETE FROM installments WHERE property_id = ?`).run(id);
+  getDb().prepare(`DELETE FROM properties WHERE id = ?`).run(id);
+}
+
 export function listProperties(): Property[] {
   return getDb().prepare(`SELECT * FROM properties ORDER BY created_at DESC`).all() as unknown as Property[];
 }

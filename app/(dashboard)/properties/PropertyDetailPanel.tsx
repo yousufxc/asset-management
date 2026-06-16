@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Property } from "@/lib/types";
-import { filsToAed, formatIsoToUae, formatAed } from "@/lib/core/units";
+import type { Property, Installment } from "@/lib/types";
+import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -43,11 +43,29 @@ function aedInputOrEmpty(fils: number | null): string {
 }
 
 
-export default function PropertyDetailPanel({ property }: { property: Property }) {
+export default function PropertyDetailPanel({ property, installments }: { property: Property; installments: Installment[] }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const [removing, setRemoving] = useState(false);
+
+  const [editInsts, setEditInsts] = useState<Record<number, { due_date: string; amount_aed: string; milestone_label: string }>>({});
+
+  useEffect(() => {
+    if (editing && property.subcategory === "off_plan") {
+      const map: Record<number, { due_date: string; amount_aed: string; milestone_label: string }> = {};
+      for (const inst of installments) {
+        map[inst.id] = {
+          due_date: inst.due_date,
+          amount_aed: inst.amount_fils != null ? filsToAed(inst.amount_fils).toString() : "",
+          milestone_label: inst.milestone_label ?? "",
+        };
+      }
+      setEditInsts(map);
+    }
+  }, [editing, property.subcategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [editSubcategory, setEditSubcategory] = useState<string>(property.subcategory);
   const [editIsRental, setEditIsRental] = useState(!!property.is_rental);
@@ -153,6 +171,79 @@ export default function PropertyDetailPanel({ property }: { property: Property }
       return;
     }
     setEditing(false);
+    router.refresh();
+  }
+
+  async function handleRemove() {
+    if (!confirm(`Remove "${property.name}"? This cannot be undone.`)) return;
+    setRemoving(true);
+    const res = await fetch(`/api/properties/${property.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setRemoving(false);
+      setError("Failed to remove property");
+      return;
+    }
+    router.push("/properties");
+    router.refresh();
+  }
+
+  async function handleSaveInstalment(instId: number) {
+    const data = editInsts[instId];
+    if (!data) return;
+    try {
+      parseDateToIso(data.due_date);
+    } catch {
+      setError("Invalid date format for instalment.");
+      return;
+    }
+    const amount = Number(data.amount_aed);
+    if (!Number.isFinite(amount) || amount < 0) {
+      setError("Invalid amount for instalment.");
+      return;
+    }
+    const res = await fetch(`/api/installments/${instId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        due_date: data.due_date,
+        amount_aed: amount,
+        milestone_label: data.milestone_label || null,
+      }),
+    });
+    if (!res.ok) {
+      setError("Failed to save instalment.");
+      return;
+    }
+    setError(null);
+    router.refresh();
+  }
+
+  async function handleDeleteInstalment(instId: number) {
+    if (!confirm("Delete this instalment?")) return;
+    const res = await fetch(`/api/installments/${instId}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("Failed to delete instalment.");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleAddInstalment() {
+    const res = await fetch("/api/installments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        property_id: property.id,
+        due_date: new Date().toISOString().slice(0, 10),
+        amount_aed: 0,
+        status: "upcoming",
+        source: "manual",
+      }),
+    });
+    if (!res.ok) {
+      setError("Failed to add instalment.");
+      return;
+    }
     router.refresh();
   }
 
@@ -315,11 +406,11 @@ export default function PropertyDetailPanel({ property }: { property: Property }
         </div>
         <div style={{ flex: 1, minWidth: 120 }}>
           <label>Size (sqft)</label>
-          <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} defaultValue={property.size_sqft ?? ""} />
+          <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} defaultValue={property.size_sqft ?? ""} placeholder="Enter size of property" />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Annual Service Charge (AED)</label>
-          <input name="annual_service_charge_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.annual_service_charge_fils)} />
+          <input name="annual_service_charge_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.annual_service_charge_fils)} placeholder="Enter annual service charge" />
         </div>
       </div>
       <div className="row">
@@ -333,7 +424,7 @@ export default function PropertyDetailPanel({ property }: { property: Property }
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Current value (AED)</label>
-          <input name="current_value_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.current_value_fils)} />
+          <input name="current_value_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.current_value_fils)} placeholder="Enter current value of property" />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Valued on</label>
@@ -392,16 +483,100 @@ export default function PropertyDetailPanel({ property }: { property: Property }
       )}
       <label>Notes</label>
       <textarea name="notes" rows={2} defaultValue={property.notes ?? ""} />
+      {editSubcategory === "off_plan" && (
+        <>
+          <h4 style={{ marginTop: 16, marginBottom: 8 }}>Payment schedule</h4>
+          {installments.length === 0 ? (
+            <p className="muted" style={{ fontSize: 13 }}>No instalments yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {installments.map((inst) => {
+                const ed = editInsts[inst.id] ?? { due_date: inst.due_date, amount_aed: inst.amount_fils != null ? filsToAed(inst.amount_fils).toString() : "", milestone_label: inst.milestone_label ?? "" };
+                return (
+                  <div key={inst.id} style={{ display: "flex", gap: 8, alignItems: "flex-end", padding: "6px 0", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 130 }}>
+                      <label style={{ fontSize: 11, margin: "0 0 2px" }}>Due date</label>
+                      <input
+                        type="date"
+                        value={ed.due_date}
+                        onChange={(e) => setEditInsts((prev) => ({ ...prev, [inst.id]: { ...prev[inst.id] ?? ed, due_date: e.target.value } }))}
+                        style={{ fontSize: 12, padding: "4px 6px" }}
+                      />
+                    </div>
+                    <div style={{ minWidth: 110 }}>
+                      <label style={{ fontSize: 11, margin: "0 0 2px" }}>Amount (AED)</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={ed.amount_aed ?? ""}
+                        onKeyDown={numeralOnly}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d+(\.\d*)?$/.test(val)) {
+                            setEditInsts((prev) => ({ ...prev, [inst.id]: { ...prev[inst.id] ?? ed, amount_aed: val } }));
+                          }
+                        }}
+                        style={{ fontSize: 12, padding: "4px 6px" }}
+                      />
+                    </div>
+                    <div style={{ minWidth: 140, flex: 1 }}>
+                      <label style={{ fontSize: 11, margin: "0 0 2px" }}>Milestone</label>
+                      <input
+                        type="text"
+                        value={ed.milestone_label ?? ""}
+                        onChange={(e) => setEditInsts((prev) => ({ ...prev, [inst.id]: { ...prev[inst.id] ?? ed, milestone_label: e.target.value } }))}
+                        style={{ fontSize: 12, padding: "4px 6px" }}
+                      />
+                    </div>
+                    <span className={`pill ${inst.status}`} style={{ alignSelf: "center", marginBottom: 0 }}>{inst.status}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveInstalment(inst.id)}
+                      style={{ marginTop: 0, fontSize: 11, padding: "4px 10px" }}
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteInstalment(inst.id)}
+                      style={{ marginTop: 0, fontSize: 11, padding: "4px 10px", background: "var(--bad)", color: "#fff" }}
+                    >
+                      Del
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleAddInstalment}
+            style={{ marginTop: 8, fontSize: 12, background: "var(--panel-2)", color: "var(--text)", padding: "6px 12px" }}
+          >
+            + Add instalment
+          </button>
+        </>
+      )}
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
-      <div className="row" style={{ gap: 8 }}>
-        <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
         <button
           type="button"
-          onClick={handleCancel}
-          style={{ marginTop: 14, background: "var(--panel-2)", color: "var(--muted)" }}
+          onClick={handleRemove}
+          disabled={removing}
+          style={{ marginTop: 0, background: "var(--bad)", color: "#fff", fontSize: 12, padding: "6px 12px" }}
         >
-          Cancel
+          {removing ? "Removing…" : "Remove Property"}
         </button>
+        <div className="row" style={{ gap: 8 }}>
+          <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            style={{ marginTop: 0, background: "var(--panel-2)", color: "var(--muted)" }}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   );
