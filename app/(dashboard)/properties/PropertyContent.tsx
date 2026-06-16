@@ -58,6 +58,8 @@ export default function PropertyContent({
                   <th>Bought for</th>
                   <th>Current value</th>
                   <th>Valuation freshness</th>
+                  <th>Capital Appreciation</th>
+                  <th>Annual Profit</th>
                 </tr>
               </thead>
               <tbody>
@@ -111,6 +113,24 @@ export default function PropertyContent({
                       <td>{p.purchase_price_fils != null ? formatAed(p.purchase_price_fils) : "—"}</td>
                       <td>{p.current_value_fils != null ? formatAed(p.current_value_fils) : "—"}</td>
                       <td className="muted">{daysSince(p.valued_at)}</td>
+                      <td>
+                        {(() => {
+                          if (p.purchase_price_fils != null && p.current_value_fils != null && p.purchase_price_fils > 0) {
+                            const diff = ((p.current_value_fils - p.purchase_price_fils) / p.purchase_price_fils) * 100;
+                            const color = diff >= 0 ? "var(--good)" : "var(--bad)";
+                            return <span style={{ color }}>{diff >= 0 ? "+" : ""}{diff.toFixed(1)}%</span>;
+                          }
+                          return <span className="muted">—</span>;
+                        })()}
+                      </td>
+                      <td>
+                        {(() => {
+                          if (p.subcategory === "off_plan") return <span className="muted">—</span>;
+                          if (!p.is_rental) return <span className="muted">Vacant</span>;
+                          const annualProfit = (p.annual_rent_fils ?? 0) - (p.annual_service_charge_fils ?? 0);
+                          return <span style={{ color: annualProfit >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(annualProfit)}</span>;
+                        })()}
+                      </td>
                     </tr>
                   );
                 })}
@@ -121,7 +141,7 @@ export default function PropertyContent({
 
         {selectedProperty && (
           <div style={{ flex: 1, position: "sticky", top: 28 }}>
-            <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} />
+            <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} installments={installments.filter((i) => i.property_id === selectedProperty.id).sort((a, b) => a.due_date.localeCompare(b.due_date))} />
           </div>
         )}
       </div>

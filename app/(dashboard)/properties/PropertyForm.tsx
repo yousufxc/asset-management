@@ -65,6 +65,8 @@ export default function PropertyForm() {
   const [subcategory, setSubcategory] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [installments, setInstallments] = useState<{ key: number }[]>([]);
+  const [purchasePrice, setPurchasePrice] = useState("");
+  const [instPercentages, setInstPercentages] = useState<Record<number, string>>({});
   const instKey = useRef(0);
   const today = new Date().toISOString().split("T")[0];
 
@@ -120,28 +122,35 @@ export default function PropertyForm() {
     // input fails fast and never leaves a property with missing installments.
     // (Installments are the core liability data behind the runway — a silently
     // dropped one looks identical to a saved one to the owner.)
+    const purchasePriceAed = numOrNull("purchase_price_aed");
     const instRows: { due_date: string; amount_aed: number; milestone_label: string | null }[] = [];
     if (selectedSubcategory === "off_plan") {
       const rowErrors: string[] = [];
+      if (purchasePriceAed === null) {
+        setSaving(false);
+        setError("Payment schedule requires 'Value when bought (AED)' to calculate instalment amounts.");
+        return;
+      }
       for (let i = 0; i < installments.length; i++) {
         const due = String(fd.get(`inst_due_date_${i}`) ?? "").trim();
-        const amount = Number(fd.get(`inst_amount_aed_${i}`));
+        const percentage = Number(fd.get(`inst_percentage_${i}`));
         try {
           parseDateToIso(due);
         } catch {
           rowErrors.push(`Installment ${i + 1}: invalid date "${due}"`);
           continue;
         }
-        if (!Number.isFinite(amount) || amount < 0) {
-          rowErrors.push(`Installment ${i + 1}: invalid amount`);
+        if (!Number.isFinite(percentage) || percentage < 0 || percentage > 100) {
+          rowErrors.push(`Installment ${i + 1}: percentage must be 0–100`);
           continue;
         }
+        const amount = Math.round((percentage / 100) * purchasePriceAed * 100) / 100;
         instRows.push({ due_date: due, amount_aed: amount, milestone_label: strOrNull(`inst_milestone_${i}`) });
       }
       if (rowErrors.length > 0) {
         setSaving(false);
         setError(rowErrors.join(" · ") + " — nothing was saved.");
-        return; // create nothing; let the user fix and resubmit cleanly
+        return;
       }
     }
 
@@ -191,12 +200,15 @@ export default function PropertyForm() {
     setIsRental(false);
     setSubcategory("");
     setInstallments([]);
+    setInstPercentages({});
+    setPurchasePrice("");
+    setIsOpen(false);
     router.refresh();
   }
 
   if (!isOpen) {
     return (
-      <div style={{ marginBottom: 18 }}>
+      <div style={{ marginBottom: 18, display: "flex", justifyContent: "flex-end" }}>
         <button type="button" style={{ marginTop: 0 }} onClick={() => setIsOpen(true)}>
           + Add Property
         </button>
@@ -267,17 +279,17 @@ export default function PropertyForm() {
           </div>
           <div style={{ flex: 1, minWidth: 120 }}>
             <label>Size (sqft)</label>
-            <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} />
+            <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} placeholder="Enter size of property" />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Annual Service Charge (AED)</label>
-            <input name="annual_service_charge_aed" type="number" step="0.01" onKeyDown={numeralOnly} />
+            <input name="annual_service_charge_aed" type="number" step="0.01" onKeyDown={numeralOnly} placeholder="Enter annual service charge" />
           </div>
         </div>
         <div className="row">
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Value when bought (AED)</label>
-            <input name="purchase_price_aed" type="number" step="0.01" placeholder="purchase price" onKeyDown={numeralOnly} />
+            <input name="purchase_price_aed" type="number" step="0.01" placeholder="purchase price" onKeyDown={numeralOnly} value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Date of purchase</label>
@@ -285,7 +297,7 @@ export default function PropertyForm() {
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Current value (AED)</label>
-            <input name="current_value_aed" type="number" step="0.01" onKeyDown={numeralOnly} />
+            <input name="current_value_aed" type="number" step="0.01" onKeyDown={numeralOnly} placeholder="Enter current value of property" />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Valued on</label>
@@ -311,31 +323,68 @@ export default function PropertyForm() {
         {subcategory === "off_plan" && installments.length > 0 && (
           <>
             <h4 style={{ marginTop: 16, marginBottom: 0 }}>Payment schedule</h4>
-            {installments.map((inst, i) => (
-              <div className="row" key={inst.key} style={{ alignItems: "flex-end" }}>
-                <div style={{ flex: 1, minWidth: 150 }}>
-                  <label>Due date *</label>
-                  <input name={`inst_due_date_${i}`} type="date" required />
+            {installments.map((inst, i) => {
+              const perc = Number(instPercentages[inst.key] ?? "");
+              const ppNum = Number(purchasePrice);
+              const computedAmount = ppNum && perc >= 0 && perc <= 100
+                ? ((perc / 100) * ppNum).toFixed(2)
+                : null;
+              return (
+                <div className="row" key={inst.key} style={{ alignItems: "flex-end" }}>
+                  <div style={{ flex: 1, minWidth: 150 }}>
+                    <label>Due date *</label>
+                    <input name={`inst_due_date_${i}`} type="date" required />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 130 }}>
+                    <label>Instalment percentage *</label>
+                    <input
+                      name={`inst_percentage_${i}`}
+                      type="text"
+                      inputMode="decimal"
+                      required
+                      value={instPercentages[inst.key] ?? ""}
+                      onKeyDown={numeralOnly}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "") {
+                          setInstPercentages((prev) => ({ ...prev, [inst.key]: "" }));
+                          return;
+                        }
+                        if (/^\d+(\.\d*)?$/.test(val)) {
+                          const num = Number(val);
+                          if (num >= 0 && num <= 100) {
+                            setInstPercentages((prev) => ({ ...prev, [inst.key]: val }));
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 150 }}>
+                    <label>Instalment amount</label>
+                    <span style={{
+                      display: "inline-block",
+                      padding: "9px 10px",
+                      color: computedAmount !== null ? "var(--text)" : "var(--muted)",
+                    }}>
+                      {computedAmount !== null ? `AED ${Number(computedAmount).toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "—"}
+                    </span>
+                  </div>
+                  <div style={{ flex: 2, minWidth: 200 }}>
+                    <label>Milestone</label>
+                    <input name={`inst_milestone_${i}`} placeholder="20% on completion of foundation" />
+                  </div>
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => removeInstallment(inst.key)}
+                      style={{ background: "transparent", color: "var(--muted)", padding: "9px 10px", marginTop: 0 }}
+                    >
+                      ×
+                    </button>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 130 }}>
-                  <label>Amount (AED) *</label>
-                  <input name={`inst_amount_aed_${i}`} type="number" step="0.01" required />
-                </div>
-                <div style={{ flex: 2, minWidth: 200 }}>
-                  <label>Milestone</label>
-                  <input name={`inst_milestone_${i}`} placeholder="20% on completion of foundation" />
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => removeInstallment(inst.key)}
-                    style={{ background: "transparent", color: "var(--muted)", padding: "9px 10px", marginTop: 0 }}
-                  >
-                    ×
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </>
         )}
 
