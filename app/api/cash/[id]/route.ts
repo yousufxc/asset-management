@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { CashAccountUpdateSchema } from "@/lib/ingest/validate";
-import { getCashAccount, updateCashAccount } from "@/lib/db/queries";
+import { getCashAccount, updateCashAccount, deleteCashAccount } from "@/lib/db/queries";
 
 export async function PATCH(
   request: Request,
@@ -34,4 +34,23 @@ export async function PATCH(
 
   const result = updateCashAccount(id, parsed.data);
   return NextResponse.json({ account: result }, { status: 200 });
+}
+
+export async function DELETE(
+  _request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id: idStr } = await params;
+  const id = Number(idStr);
+  if (!Number.isInteger(id) || id < 1) {
+    return NextResponse.json({ error: "Invalid account id" }, { status: 400 });
+  }
+
+  const existing = getCashAccount(id);
+  if (!existing) {
+    return NextResponse.json({ error: "Account not found" }, { status: 404 });
+  }
+
+  deleteCashAccount(id);
+  return NextResponse.json({ ok: true }, { status: 200 });
 }

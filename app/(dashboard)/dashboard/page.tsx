@@ -49,7 +49,7 @@ export default function DashboardPage() {
   );
   const chartData: Slice[] = [
     { name: "Property", value: propertyTotalFils },
-    { name: "Cash", value: cashTotalFils },
+    { name: "Saving Accounts", value: cashTotalFils },
     { name: "Commodities", value: commodityTotalFilsAgg },
   ];
 
@@ -256,7 +256,7 @@ export default function DashboardPage() {
           <Link href="/properties">Manage →</Link>
         </div>
         <div className="card" style={{ flex: 1, minWidth: 200 }}>
-          <div className="muted">Cash accounts</div>
+          <div className="muted">Saving Accounts</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{accounts.length}</div>
           <Link href="/cash">Manage →</Link>
         </div>

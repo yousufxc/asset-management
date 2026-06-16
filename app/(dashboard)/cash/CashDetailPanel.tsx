@@ -24,6 +24,21 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [isFixedDeposit, setIsFixedDeposit] = useState(account.is_fixed_deposit === 1);
+
+  async function handleRemove() {
+    if (!confirm(`Remove "${account.label}"? This cannot be undone.`)) return;
+    setRemoving(true);
+    const res = await fetch(`/api/cash/${account.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setRemoving(false);
+      setError("Failed to remove account");
+      return;
+    }
+    router.push("/cash");
+    router.refresh();
+  }
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,6 +63,14 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
     const balanceVal = numOrNull("current_balance_aed");
     const existingBalance = filsToAed(account.current_balance_fils);
     if (balanceVal !== existingBalance) payload.current_balance_aed = balanceVal;
+
+    const interestRate = numOrNull("interest_rate");
+    if (interestRate !== (account.interest_rate ?? null)) payload.interest_rate = interestRate;
+
+    if (isFixedDeposit !== (account.is_fixed_deposit === 1)) payload.is_fixed_deposit = isFixedDeposit;
+
+    const fixedDepositPeriod = isFixedDeposit ? numOrNull("fixed_deposit_period_months") : null;
+    if (fixedDepositPeriod !== (account.fixed_deposit_period_months ?? null)) payload.fixed_deposit_period_months = fixedDepositPeriod;
 
     const notes = strOrNull("notes");
     if (notes !== (account.notes ?? null)) payload.notes = notes;
@@ -76,6 +99,7 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
   function handleCancel() {
     setEditing(false);
     setError(null);
+    setIsFixedDeposit(account.is_fixed_deposit === 1);
   }
 
   const renderReadOnly = () => (
@@ -88,6 +112,20 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
         <span className="detail-label">Balance</span>
         <span>{formatAed(account.current_balance_fils)}</span>
       </div>
+      <div className="detail-row">
+        <span className="detail-label">Fixed Deposit</span>
+        <span>{account.is_fixed_deposit ? "Yes" : "No"}</span>
+      </div>
+      <div className="detail-row">
+        <span className="detail-label">Interest Rate</span>
+        <span>{account.interest_rate != null ? `${account.interest_rate}%` : "—"}</span>
+      </div>
+      {account.is_fixed_deposit ? (
+        <div className="detail-row">
+          <span className="detail-label">Contract Period</span>
+          <span>{account.fixed_deposit_period_months != null ? `${account.fixed_deposit_period_months} months` : "—"}</span>
+        </div>
+      ) : null}
       <div className="detail-row">
         <span className="detail-label">Created</span>
         <span className="muted">{formatIsoDisplay(account.created_at)}</span>
@@ -125,22 +163,68 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
             step="0.01"
             onKeyDown={numeralOnly}
             defaultValue={aedInputOrEmpty(account.current_balance_fils)}
-            placeholder="Enter cash balance here"
+            placeholder="Enter Cash Balance"
           />
         </div>
       </div>
+      <div className="row">
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Interest Rate</label>
+          <input
+            name="interest_rate"
+            type="number"
+            step="0.01"
+            defaultValue={account.interest_rate ?? ""}
+            placeholder="Enter Interest Rate"
+            onKeyDown={numeralOnly}
+          />
+        </div>
+        {isFixedDeposit ? (
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label>Fixed Deposit Period</label>
+            <input
+              name="fixed_deposit_period_months"
+              type="number"
+              step="1"
+              defaultValue={account.fixed_deposit_period_months ?? ""}
+              placeholder="Enter Contract Period in Months"
+              onKeyDown={numeralOnly}
+            />
+          </div>
+        ) : null}
+      </div>
+      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          name="is_fixed_deposit"
+          type="checkbox"
+          style={{ width: "auto" }}
+          checked={isFixedDeposit}
+          onChange={(e) => setIsFixedDeposit(e.target.checked)}
+        />{" "}
+        Fixed Deposit
+      </label>
       <label>Notes</label>
       <textarea name="notes" rows={3} defaultValue={account.notes ?? ""} placeholder="Optional notes about this account" />
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
-      <div className="row" style={{ gap: 8 }}>
-        <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
         <button
           type="button"
-          onClick={handleCancel}
-          style={{ marginTop: 14, background: "var(--panel-2)", color: "var(--muted)" }}
+          onClick={handleRemove}
+          disabled={removing}
+          style={{ marginTop: 0, background: "var(--bad)", color: "#fff", fontSize: 12, padding: "6px 12px" }}
         >
-          Cancel
+          {removing ? "Removing…" : "Remove Account"}
         </button>
+        <div className="row" style={{ gap: 8 }}>
+          <button type="submit" disabled={saving}>{saving ? "Saving…" : "Save changes"}</button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            style={{ marginTop: 14, background: "var(--panel-2)", color: "var(--muted)" }}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -160,7 +244,15 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
       </div>
       {editing ? renderEditForm() : renderReadOnly()}
       {!editing && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
+          <button
+            type="button"
+            onClick={handleRemove}
+            disabled={removing}
+            style={{ marginTop: 0, background: "var(--bad)", color: "#fff", fontSize: 12, padding: "6px 12px" }}
+          >
+            {removing ? "Removing…" : "Remove Account"}
+          </button>
           <button
             type="button"
             onClick={() => setEditing(true)}

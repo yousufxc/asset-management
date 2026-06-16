@@ -22,7 +22,7 @@ export default function CashContent({
 
   return (
     <>
-      <h2>Cash</h2>
+      <h2>Saving Accounts</h2>
       <CashForm />
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
@@ -37,6 +37,9 @@ export default function CashContent({
                   <tr>
                     <th>Bank account</th>
                     <th>Balance</th>
+                    <th>Fixed Deposit</th>
+                    <th>Interest Rate</th>
+                    <th>Contract Period</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -60,6 +63,9 @@ export default function CashContent({
                           </a>
                         </td>
                         <td>{formatAed(a.current_balance_fils)}</td>
+                        <td>{a.is_fixed_deposit ? "Yes" : "—"}</td>
+                        <td>{a.interest_rate != null ? `${a.interest_rate}%` : "—"}</td>
+                        <td>{a.fixed_deposit_period_months != null ? `${a.fixed_deposit_period_months} mo` : "—"}</td>
                       </tr>
                     );
                   })}

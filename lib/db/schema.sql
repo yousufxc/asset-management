@@ -74,16 +74,20 @@ CREATE INDEX IF NOT EXISTS idx_installments_due      ON installments(due_date);
 CREATE INDEX IF NOT EXISTS idx_installments_status   ON installments(status);
 
 -- ----------------------------------------------------------------------------
--- ASSET CLASS 2: CASH (bank accounts). Manual entry only: an account label and a
---   balance. ALL cash counts as liquid for the runway (owner decision 2026-06-04).
+-- ASSET CLASS 2: SAVING ACCOUNTS (bank accounts). Manual entry only: an account
+--   label, balance, optional fixed-deposit fields, and interest rate.
+--   ALL cash counts as liquid for the runway (owner decision 2026-06-04).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS cash_accounts (
-  id                    INTEGER PRIMARY KEY AUTOINCREMENT,
-  label                 TEXT    NOT NULL,               -- bank account name, e.g. "Emirates NBD Current"
-  current_balance_fils  INTEGER NOT NULL DEFAULT 0,     -- manually entered balance
-  notes                 TEXT,
-  created_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  updated_at            TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+  label                       TEXT    NOT NULL,               -- bank account name, e.g. "Emirates NBD Savings"
+  current_balance_fils        INTEGER NOT NULL DEFAULT 0,     -- manually entered balance
+  interest_rate               REAL,                            -- annual interest rate percentage (e.g. 4.5 for 4.5%)
+  is_fixed_deposit            INTEGER NOT NULL DEFAULT 0 CHECK (is_fixed_deposit IN (0, 1)),
+  fixed_deposit_period_months INTEGER,                         -- contract period in months (only relevant when is_fixed_deposit=1)
+  notes                       TEXT,
+  created_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
 -- ----------------------------------------------------------------------------
@@ -157,7 +161,7 @@ CREATE VIEW IF NOT EXISTS v_installments AS
   FROM installments;
 
 CREATE VIEW IF NOT EXISTS v_cash_accounts AS
-  SELECT id, label, current_balance_fils
+  SELECT id, label, current_balance_fils, interest_rate, is_fixed_deposit, fixed_deposit_period_months
   FROM cash_accounts;
 
 CREATE VIEW IF NOT EXISTS v_commodities AS
