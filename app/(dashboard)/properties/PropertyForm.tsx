@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { parseDateToIso } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
 
-function RentalFields() {
+function RentalFields({ rentalType, setRentalType }: { rentalType: string; setRentalType: (v: string) => void }) {
   const [cheques, setCheques] = useState(1);
 
   function dateInput(n: number) {
@@ -19,39 +19,101 @@ function RentalFields() {
 
   return (
     <>
-      <div className="row">
-        <div style={{ maxWidth: 240 }}>
-          <label>Yearly rent (AED)</label>
-          <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
-        </div>
-        <div style={{ maxWidth: 200 }}>
-          <label>Cheques per year</label>
-          <select
-            name="rent_cheques_per_year"
-            value={cheques}
-            onChange={(e) => setCheques(Number(e.target.value))}
-          >
-            <option value="" disabled>Select</option>
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={4}>4</option>
-            <option value={12}>12</option>
-          </select>
-        </div>
+      <div className="row" style={{ gap: 20 }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            name="rental_type"
+            type="radio"
+            value="long_term"
+            style={{ width: "auto" }}
+            checked={rentalType === "long_term"}
+            onChange={(e) => setRentalType(e.target.value)}
+          />{" "}
+          Long-term Rent
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            name="rental_type"
+            type="radio"
+            value="short_term"
+            style={{ width: "auto" }}
+            checked={rentalType === "short_term"}
+            onChange={(e) => setRentalType(e.target.value)}
+          />{" "}
+          Short-term Rent
+        </label>
       </div>
-      {cheques === 12 ? (
-        <div className="row">
-          {dateInput(1)}
-          <div style={{ maxWidth: 300, paddingTop: 28 }}>
-            <span className="muted" style={{ fontSize: 13 }}>
-              The remaining 11 monthly dates are calculated automatically.
-            </span>
+      {rentalType === "long_term" && (
+        <>
+          <div className="row">
+            <div style={{ maxWidth: 240 }}>
+              <label>Yearly rent (AED)</label>
+              <input name="annual_rent_aed" type="number" step="0.01" placeholder="annual rent" />
+            </div>
+            <div style={{ maxWidth: 200 }}>
+              <label>Cheques per year</label>
+              <select
+                name="rent_cheques_per_year"
+                value={cheques}
+                onChange={(e) => setCheques(Number(e.target.value))}
+              >
+                <option value="" disabled>Select</option>
+                <option value={1}>1</option>
+                <option value={2}>2</option>
+                <option value={4}>4</option>
+                <option value={12}>12</option>
+              </select>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="row">
-          {Array.from({ length: cheques }, (_, i) => dateInput(i + 1))}
-        </div>
+          {cheques === 12 ? (
+            <div className="row">
+              {dateInput(1)}
+              <div style={{ maxWidth: 300, paddingTop: 28 }}>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  The remaining 11 monthly dates are calculated automatically.
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="row">
+              {Array.from({ length: cheques }, (_, i) => dateInput(i + 1))}
+            </div>
+          )}
+        </>
+      )}
+      {rentalType === "short_term" && (
+        <>
+          <div className="row">
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <label>Property Management Company Name</label>
+              <input name="pm_company_name" placeholder="Enter name of property management company" />
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <label>Percentage of Company Commission (%)</label>
+              <input name="pm_commission_pct" type="number" step="0.01" min="0" max="100" onKeyDown={numeralOnly} placeholder="Enter commission percent of the property management" />
+            </div>
+          </div>
+          <div className="row">
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <label>Expected Annual Rent (AED)</label>
+              <input name="short_term_annual_rent_aed" type="number" step="0.01" onKeyDown={numeralOnly} placeholder="Enter expected annual rent" />
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <label>Frequency of Annual Return</label>
+              <select name="short_term_return_frequency" defaultValue="">
+                <option value="" disabled>Select</option>
+                <option value="monthly">Monthly</option>
+                <option value="quarterly">Quarterly</option>
+              </select>
+            </div>
+          </div>
+          <div className="row">
+            <div style={{ maxWidth: 220 }}>
+              <label>Final rental deposit date</label>
+              <input name="short_term_rent_deposit_date" type="date" />
+            </div>
+          </div>
+        </>
       )}
     </>
   );
@@ -62,6 +124,7 @@ export default function PropertyForm() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isRental, setIsRental] = useState(false);
+  const [rentalType, setRentalType] = useState("long_term");
   const [subcategory, setSubcategory] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [installments, setInstallments] = useState<{ key: number }[]>([]);
@@ -109,12 +172,18 @@ export default function PropertyForm() {
       current_value_aed: numOrNull("current_value_aed"),
       valued_at: strOrNull("valued_at"),
       is_rental: isRental,
+      rental_type: isRental ? rentalType : null,
       annual_rent_aed: isRental ? numOrNull("annual_rent_aed") : null,
       rent_cheques_per_year: isRental ? numOrNull("rent_cheques_per_year") : null,
       rent_date_1: isRental ? strOrNull("rent_date_1") : null,
       rent_date_2: isRental ? strOrNull("rent_date_2") : null,
       rent_date_3: isRental ? strOrNull("rent_date_3") : null,
       rent_date_4: isRental ? strOrNull("rent_date_4") : null,
+      pm_company_name: isRental && rentalType === "short_term" ? strOrNull("pm_company_name") : null,
+      pm_commission_pct: isRental && rentalType === "short_term" ? numOrNull("pm_commission_pct") : null,
+      short_term_annual_rent_aed: isRental && rentalType === "short_term" ? numOrNull("short_term_annual_rent_aed") : null,
+      short_term_return_frequency: isRental && rentalType === "short_term" ? strOrNull("short_term_return_frequency") : null,
+      short_term_rent_deposit_date: isRental && rentalType === "short_term" ? strOrNull("short_term_rent_deposit_date") : null,
       notes: strOrNull("notes"),
     };
 
@@ -198,6 +267,7 @@ export default function PropertyForm() {
     setSaving(false);
     (e.target as HTMLFormElement).reset();
     setIsRental(false);
+    setRentalType("long_term");
     setSubcategory("");
     setInstallments([]);
     setInstPercentages({});
@@ -316,7 +386,7 @@ export default function PropertyForm() {
               />{" "}
               This property is rented out
             </label>
-            {isRental && <RentalFields />}
+            {isRental && <RentalFields rentalType={rentalType} setRentalType={setRentalType} />}
           </>
         )}
 

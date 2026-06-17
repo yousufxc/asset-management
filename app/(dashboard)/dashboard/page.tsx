@@ -73,7 +73,10 @@ export default function DashboardPage() {
 
   // ── Rental inflows (real cheques-per-year timing) ───────────────────────
   const rentalProperties = properties.filter(
-    (p) => p.is_rental === 1 && p.annual_rent_fils && p.annual_rent_fils > 0,
+    (p) => p.is_rental === 1 && (
+      (p.annual_rent_fils && p.annual_rent_fils > 0) ||
+      (p.short_term_annual_rent_fils && p.short_term_annual_rent_fils > 0)
+    ),
   );
 
   // Find latest liability date for generating enough rent events

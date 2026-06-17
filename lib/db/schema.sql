@@ -39,12 +39,18 @@ CREATE TABLE IF NOT EXISTS properties (
   current_value_fils  INTEGER CHECK (current_value_fils  IS NULL OR current_value_fils  >= 0),
   valued_at           TEXT,                              -- ISO date of last manual valuation (staleness)
   is_rental           INTEGER NOT NULL DEFAULT 0 CHECK (is_rental IN (0, 1)),
+  rental_type         TEXT    CHECK (rental_type IS NULL OR rental_type IN ('long_term', 'short_term')),  -- NULL = long_term for legacy
   annual_rent_fils    INTEGER CHECK (annual_rent_fils IS NULL OR annual_rent_fils >= 0),  -- yearly rent (UAE rents are quoted annually)
   rent_cheques_per_year INTEGER CHECK (rent_cheques_per_year IS NULL OR rent_cheques_per_year IN (1, 2, 4, 12)),
   rent_date_1         TEXT,                              -- ISO: cheque 1 deposit date (also first monthly cheque for 12/year)
   rent_date_2         TEXT,                              -- ISO: cheque 2 (null if <2 or monthly)
   rent_date_3         TEXT,                              -- ISO: cheque 3 (null if <3 or monthly)
   rent_date_4         TEXT,                              -- ISO: cheque 4 (null if <4 or monthly)
+  pm_company_name     TEXT,                              -- short-term: property management company name
+  pm_commission_pct   REAL    CHECK (pm_commission_pct IS NULL OR (pm_commission_pct >= 0 AND pm_commission_pct <= 100)),  -- short-term: commission 0-100
+  short_term_annual_rent_fils INTEGER CHECK (short_term_annual_rent_fils IS NULL OR short_term_annual_rent_fils >= 0),     -- short-term: expected annual rent
+  short_term_return_frequency TEXT CHECK (short_term_return_frequency IS NULL OR short_term_return_frequency IN ('monthly', 'quarterly')),  -- short-term: deposit frequency
+  short_term_rent_deposit_date TEXT,                     -- ISO: short-term final/last rental deposit date (non-recurring)
   notes               TEXT,
   created_at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -148,22 +154,37 @@ CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(txn_date);
 --   sanitized views — never base tables, never anything holding secrets.
 --   (API keys live in .env.local, never in the DB, so none are exposed here.)
 -- ----------------------------------------------------------------------------
+-- Safe migration for existing databases: add columns if they don't already exist.
+-- (New databases get these from CREATE TABLE above.)
+ALTER TABLE properties ADD COLUMN rental_type                TEXT CHECK (rental_type IS NULL OR rental_type IN ('long_term', 'short_term'));
+ALTER TABLE properties ADD COLUMN pm_company_name            TEXT;
+ALTER TABLE properties ADD COLUMN pm_commission_pct          REAL CHECK (pm_commission_pct IS NULL OR (pm_commission_pct >= 0 AND pm_commission_pct <= 100));
+ALTER TABLE properties ADD COLUMN short_term_annual_rent_fils INTEGER CHECK (short_term_annual_rent_fils IS NULL OR short_term_annual_rent_fils >= 0);
+ALTER TABLE properties ADD COLUMN short_term_return_frequency TEXT CHECK (short_term_return_frequency IS NULL OR short_term_return_frequency IN ('monthly', 'quarterly'));
+ALTER TABLE properties ADD COLUMN short_term_rent_deposit_date TEXT;
+
+DROP VIEW IF EXISTS v_properties;
 CREATE VIEW IF NOT EXISTS v_properties AS
   SELECT id, name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
          annual_service_charge_fils, purchase_price_fils, purchased_at, current_value_fils, valued_at,
-         is_rental, annual_rent_fils, rent_cheques_per_year,
-         rent_date_1, rent_date_2, rent_date_3, rent_date_4
+         is_rental, rental_type, annual_rent_fils, rent_cheques_per_year,
+         rent_date_1, rent_date_2, rent_date_3, rent_date_4,
+         pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
+         short_term_return_frequency, short_term_rent_deposit_date
   FROM properties;
 
+DROP VIEW IF EXISTS v_installments;
 CREATE VIEW IF NOT EXISTS v_installments AS
   SELECT id, property_id, due_date, amount_fils, milestone_label,
          status, paid_date, paid_amount_fils
   FROM installments;
 
+DROP VIEW IF EXISTS v_cash_accounts;
 CREATE VIEW IF NOT EXISTS v_cash_accounts AS
   SELECT id, label, current_balance_fils, interest_rate, is_fixed_deposit, fixed_deposit_period_months
   FROM cash_accounts;
 
+DROP VIEW IF EXISTS v_commodities;
 CREATE VIEW IF NOT EXISTS v_commodities AS
   SELECT id, metal_type, weight, weight_unit,
          current_price_per_unit_fils, bought_price_per_unit_fils,

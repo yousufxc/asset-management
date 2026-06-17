@@ -127,6 +127,14 @@ export default function PropertyContent({
                         {(() => {
                           if (p.subcategory === "off_plan") return <span className="muted">—</span>;
                           if (!p.is_rental) return <span className="muted">Vacant</span>;
+                          if ((p.rental_type ?? "long_term") === "short_term" && p.short_term_annual_rent_fils != null) {
+                            const grossRent = p.short_term_annual_rent_fils;
+                            const commissionPct = p.pm_commission_pct ?? 0;
+                            const netRent = Math.round(grossRent * (100 - commissionPct) / 100);
+                            const serviceCharge = p.annual_service_charge_fils ?? 0;
+                            const annualProfit = netRent - serviceCharge;
+                            return <span style={{ color: annualProfit >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(annualProfit)}</span>;
+                          }
                           const annualProfit = (p.annual_rent_fils ?? 0) - (p.annual_service_charge_fils ?? 0);
                           return <span style={{ color: annualProfit >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(annualProfit)}</span>;
                         })()}

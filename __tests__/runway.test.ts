@@ -205,12 +205,18 @@ describe("generateRentalInflows", () => {
     id: 1,
     name: "Marina Tower",
     is_rental: 1,
+    rental_type: "long_term",
     annual_rent_fils: 120_000, // AED 1,200
     rent_cheques_per_year: 1,
     rent_date_1: null,
     rent_date_2: null,
     rent_date_3: null,
     rent_date_4: null,
+    pm_company_name: null,
+    pm_commission_pct: null,
+    short_term_annual_rent_fils: null,
+    short_term_return_frequency: null,
+    short_term_rent_deposit_date: null,
   };
 
   it("1 cheque: generates annual event at the given date", () => {
@@ -297,5 +303,174 @@ describe("generateRentalInflows", () => {
       rent_date_1: "2026-01-15",
     };
     expect(generateRentalInflows([prop], "2027-01-01")).toHaveLength(0);
+  });
+
+  it("short-term monthly: 12 deposits backward from final date, non-recurring", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 120_000, // AED 1,200 gross
+      pm_commission_pct: 10, // 10%
+      short_term_return_frequency: "monthly",
+      short_term_rent_deposit_date: "2026-12-31",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    // Net annual = 120_000 * 0.9 = 108_000, per month = 9_000
+    // 12 monthly deposits from Dec 31 backward: Dec, Nov, ... Jan
+    expect(inflows.length).toBe(12);
+    expect(inflows[0]!.date).toBe("2026-12-31");
+    expect(inflows[0]!.amountFils).toBe(9_000);
+    expect(inflows[11]!.date).toBe("2026-01-31");
+    // No year 2 deposits (non-recurring)
+    expect(inflows.every((i) => i.date.startsWith("2026"))).toBe(true);
+  });
+
+  it("short-term quarterly: 4 deposits backward from final date", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 120_000,
+      pm_commission_pct: 0,
+      short_term_return_frequency: "quarterly",
+      short_term_rent_deposit_date: "2026-12-31",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    // No commission, per quarter = 120_000 / 4 = 30_000
+    expect(inflows.length).toBe(4);
+    expect(inflows[0]!.date).toBe("2026-12-31");
+    expect(inflows[0]!.amountFils).toBe(30_000);
+    expect(inflows[3]!.date).toBe("2026-03-31");
+  });
+
+  it("short-term with commission correctly reduces net amount", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 100_000,
+      pm_commission_pct: 25, // 25% commission
+      short_term_return_frequency: "quarterly",
+      short_term_rent_deposit_date: "2026-12-31",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    // Net = 100_000 * 0.75 = 75_000, per quarter = 18_750
+    expect(inflows[0]!.amountFils).toBe(18_750);
+  });
+
+  it("short-term: deposits capped by maxDate (only past-date deposits included)", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 120_000,
+      pm_commission_pct: 0,
+      short_term_return_frequency: "monthly",
+      short_term_rent_deposit_date: "2026-06-30",
+    };
+    // maxDate = 2026-03-01. Deposits backward: Jun, May, Apr, Mar — only Mar is <= maxDate? No.
+    // Actually: Jun 30 > Mar 1, May 31 > Mar 1, Apr 30 > Mar 1, Mar 30 > Mar 1.
+    // All past deposits fall after maxDate except... wait the deposit dates are in 2026.
+    // Let me use a different maxDate that is earlier.
+    const inflows = generateRentalInflows([prop], "2026-04-15");
+    // Jun 30 > Apr 15, May 31 > Apr 15, Apr 30 > Apr 15 — all after. Only deposits on or before Apr 15.
+    // Actually: Jun 30 > Apr 15 (skip), May 31 > Apr 15 (skip), Apr 30 > Apr 15 (skip), Mar 30 <= Apr 15 → include.
+    // So Mar, Feb, Jan, Dec (of prior year) will be included because they're <= maxDate.
+    // But we cap at 12 deposits, and backward from Jun 30: Jun, May, Apr, Mar, Feb, Jan, Dec 2025, etc.
+    // Those <= Apr 15: Mar 30, Feb 28, Jan 30, Dec 2025, Nov, Oct, Sep, Aug, Jul, Jun 2025. That's 10 deposits.
+    expect(inflows.length).toBeGreaterThan(0);
+    expect(inflows.every((i) => i.date <= "2026-04-15")).toBe(true);
+  });
+
+  it("short-term with missing frequency produces no inflows", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 120_000,
+      pm_commission_pct: 0,
+      short_term_return_frequency: null,
+      short_term_rent_deposit_date: "2026-12-31",
+    };
+    expect(generateRentalInflows([prop], "2027-06-01")).toHaveLength(0);
+  });
+
+  it("short-term with missing final date produces no inflows", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 120_000,
+      pm_commission_pct: 0,
+      short_term_return_frequency: "monthly",
+      short_term_rent_deposit_date: null,
+    };
+    expect(generateRentalInflows([prop], "2027-06-01")).toHaveLength(0);
+  });
+
+  it("short-term with 0 commission and monthly: 12 equal deposits", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 60_000,
+      pm_commission_pct: 0,
+      short_term_return_frequency: "monthly",
+      short_term_rent_deposit_date: "2026-06-30",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    expect(inflows.length).toBe(12); // 12 monthly capped at one year
+    expect(inflows.every((i) => i.amountFils === 5_000)).toBe(true); // 60_000 / 12
+  });
+
+  it("legacy rental_type=null coalesces to long_term and still generates inflows", () => {
+    const prop = {
+      ...baseProp,
+      rental_type: null,
+      rent_cheques_per_year: 1,
+      rent_date_1: "2026-02-15",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    expect(inflows.length).toBeGreaterThanOrEqual(1);
+    expect(inflows[0]!.label).toContain("cheque 1");
+  });
+
+  it("short-term monthly: 12 deposits in 12 distinct consecutive months (no month-end rollover)", () => {
+    const prop: RentalPropertyInput = {
+      ...baseProp,
+      rental_type: "short_term",
+      annual_rent_fils: null,
+      rent_cheques_per_year: null,
+      short_term_annual_rent_fils: 120_000,
+      pm_commission_pct: 0,
+      short_term_return_frequency: "monthly",
+      short_term_rent_deposit_date: "2026-12-31",
+    };
+    const inflows = generateRentalInflows([prop], "2027-06-01");
+    // Extract year-month pairs; 12 distinct months expected
+    const yearMonths = inflows.map((i) => i.date.slice(0, 7));
+    const unique = new Set(yearMonths);
+    expect(unique.size).toBe(12);
+    // Months must be consecutive backward: 2026-12, 2026-11, ..., 2026-01
+    expect(unique.has("2026-12")).toBe(true);
+    expect(unique.has("2026-11")).toBe(true);
+    expect(unique.has("2026-10")).toBe(true);
+    expect(unique.has("2026-09")).toBe(true);
+    expect(unique.has("2026-08")).toBe(true);
+    expect(unique.has("2026-07")).toBe(true);
+    expect(unique.has("2026-06")).toBe(true);
+    expect(unique.has("2026-05")).toBe(true);
+    expect(unique.has("2026-04")).toBe(true);
+    expect(unique.has("2026-03")).toBe(true);
+    expect(unique.has("2026-02")).toBe(true);
+    expect(unique.has("2026-01")).toBe(true);
   });
 });

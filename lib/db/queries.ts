@@ -35,13 +35,17 @@ export function insertProperty(input: PropertyInput): Property {
     INSERT INTO properties
       (name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
        annual_service_charge_fils, purchase_price_fils, purchased_at,
-       current_value_fils, valued_at, is_rental, annual_rent_fils, rent_cheques_per_year,
-       rent_date_1, rent_date_2, rent_date_3, rent_date_4, notes)
+       current_value_fils, valued_at, is_rental, rental_type, annual_rent_fils, rent_cheques_per_year,
+       rent_date_1, rent_date_2, rent_date_3, rent_date_4,
+       pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
+       short_term_return_frequency, short_term_rent_deposit_date, notes)
     VALUES
       (@name, @subcategory, @property_type, @bedrooms, @city, @area, @developer, @size_sqft,
        @annual_service_charge_fils, @purchase_price_fils, @purchased_at,
-       @current_value_fils, @valued_at, @is_rental, @annual_rent_fils, @rent_cheques_per_year,
-       @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4, @notes)
+       @current_value_fils, @valued_at, @is_rental, @rental_type, @annual_rent_fils, @rent_cheques_per_year,
+       @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4,
+       @pm_company_name, @pm_commission_pct, @short_term_annual_rent_fils,
+       @short_term_return_frequency, @short_term_rent_deposit_date, @notes)
   `);
   const info = stmt.run({
     name: input.name,
@@ -58,12 +62,18 @@ export function insertProperty(input: PropertyInput): Property {
     current_value_fils: aedOrNull(input.current_value_aed),
     valued_at: dateOrNull(input.valued_at),
     is_rental: input.is_rental ? 1 : 0,
+    rental_type: input.is_rental ? (input.rental_type ?? "long_term") : null,
     annual_rent_fils: aedOrNull(input.annual_rent_aed),
     rent_cheques_per_year: input.is_rental ? input.rent_cheques_per_year ?? null : null,
     rent_date_1: input.is_rental ? dateOrNull(input.rent_date_1) : null,
     rent_date_2: input.is_rental ? dateOrNull(input.rent_date_2) : null,
     rent_date_3: input.is_rental ? dateOrNull(input.rent_date_3) : null,
     rent_date_4: input.is_rental ? dateOrNull(input.rent_date_4) : null,
+    pm_company_name: input.is_rental && input.rental_type === "short_term" ? (input.pm_company_name ?? null) : null,
+    pm_commission_pct: input.is_rental && input.rental_type === "short_term" ? (input.pm_commission_pct ?? null) : null,
+    short_term_annual_rent_fils: input.is_rental && input.rental_type === "short_term" ? aedOrNull(input.short_term_annual_rent_aed) : null,
+    short_term_return_frequency: input.is_rental && input.rental_type === "short_term" ? (input.short_term_return_frequency ?? null) : null,
+    short_term_rent_deposit_date: input.is_rental && input.rental_type === "short_term" ? dateOrNull(input.short_term_rent_deposit_date) : null,
     notes: input.notes ?? null,
   });
   return getProperty(Number(info.lastInsertRowid))!;
@@ -101,12 +111,18 @@ export function updateProperty(id: number, data: PropertyUpdate): Property | und
   if (data.current_value_aed !== undefined) { sets.push("current_value_fils = @current_value_fils"); params.current_value_fils = aedOrNull(data.current_value_aed); }
   if (data.valued_at !== undefined) { sets.push("valued_at = @valued_at"); params.valued_at = dateOrNull(data.valued_at); }
   if (data.is_rental !== undefined) { sets.push("is_rental = @is_rental"); params.is_rental = data.is_rental ? 1 : 0; }
+  if (data.rental_type !== undefined) { sets.push("rental_type = @rental_type"); params.rental_type = data.rental_type; }
   if (data.annual_rent_aed !== undefined) { sets.push("annual_rent_fils = @annual_rent_fils"); params.annual_rent_fils = aedOrNull(data.annual_rent_aed); }
   if (data.rent_cheques_per_year !== undefined) { sets.push("rent_cheques_per_year = @rent_cheques_per_year"); params.rent_cheques_per_year = data.rent_cheques_per_year; }
   if (data.rent_date_1 !== undefined) { sets.push("rent_date_1 = @rent_date_1"); params.rent_date_1 = dateOrNull(data.rent_date_1); }
   if (data.rent_date_2 !== undefined) { sets.push("rent_date_2 = @rent_date_2"); params.rent_date_2 = dateOrNull(data.rent_date_2); }
   if (data.rent_date_3 !== undefined) { sets.push("rent_date_3 = @rent_date_3"); params.rent_date_3 = dateOrNull(data.rent_date_3); }
   if (data.rent_date_4 !== undefined) { sets.push("rent_date_4 = @rent_date_4"); params.rent_date_4 = dateOrNull(data.rent_date_4); }
+  if (data.pm_company_name !== undefined) { sets.push("pm_company_name = @pm_company_name"); params.pm_company_name = data.pm_company_name; }
+  if (data.pm_commission_pct !== undefined) { sets.push("pm_commission_pct = @pm_commission_pct"); params.pm_commission_pct = data.pm_commission_pct; }
+  if (data.short_term_annual_rent_aed !== undefined) { sets.push("short_term_annual_rent_fils = @short_term_annual_rent_fils"); params.short_term_annual_rent_fils = aedOrNull(data.short_term_annual_rent_aed); }
+  if (data.short_term_return_frequency !== undefined) { sets.push("short_term_return_frequency = @short_term_return_frequency"); params.short_term_return_frequency = data.short_term_return_frequency; }
+  if (data.short_term_rent_deposit_date !== undefined) { sets.push("short_term_rent_deposit_date = @short_term_rent_deposit_date"); params.short_term_rent_deposit_date = dateOrNull(data.short_term_rent_deposit_date); }
   if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
 
   if (sets.length === 0) return getProperty(id);

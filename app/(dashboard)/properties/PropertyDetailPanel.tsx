@@ -69,6 +69,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
 
   const [editSubcategory, setEditSubcategory] = useState<string>(property.subcategory);
   const [editIsRental, setEditIsRental] = useState(!!property.is_rental);
+  const [editRentalType, setEditRentalType] = useState<string>(property.rental_type ?? "long_term");
   const [editCheques, setEditCheques] = useState<number>(property.rent_cheques_per_year ?? 1);
   const today = new Date().toISOString().split("T")[0];
 
@@ -89,6 +90,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
 
     const selectedSubcategory = String(fd.get("subcategory") ?? property.subcategory);
     const isRental = selectedSubcategory === "existing" && fd.get("is_rental") === "on";
+    const formRentalType = isRental ? (String(fd.get("rental_type") ?? "long_term")) : null;
 
     const payload: Record<string, unknown> = {};
 
@@ -135,6 +137,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     if (valuedAt !== (property.valued_at ?? null)) payload.valued_at = valuedAt;
 
     if (isRental !== !!property.is_rental) payload.is_rental = isRental;
+    if (formRentalType !== (property.rental_type ?? "long_term")) payload.rental_type = formRentalType;
 
     const annualRent = isRental ? numOrNull("annual_rent_aed") : null;
     const existingAnnual = property.annual_rent_fils != null ? filsToAed(property.annual_rent_fils) : null;
@@ -149,6 +152,22 @@ export default function PropertyDetailPanel({ property, installments }: { proper
       const existing = property[`rent_date_${n}` as keyof Property];
       if (dateVal !== (existing ?? null)) payload[key] = dateVal;
     }
+
+    const pmCompanyName = isRental && formRentalType === "short_term" ? strOrNull("pm_company_name") : null;
+    if (pmCompanyName !== (property.pm_company_name ?? null)) payload.pm_company_name = pmCompanyName;
+
+    const pmCommission = isRental && formRentalType === "short_term" ? numOrNull("pm_commission_pct") : null;
+    if (pmCommission !== (property.pm_commission_pct ?? null)) payload.pm_commission_pct = pmCommission;
+
+    const shortTermAnnualRent = isRental && formRentalType === "short_term" ? numOrNull("short_term_annual_rent_aed") : null;
+    const existingShortTermAnnual = property.short_term_annual_rent_fils != null ? filsToAed(property.short_term_annual_rent_fils) : null;
+    if (shortTermAnnualRent !== existingShortTermAnnual) payload.short_term_annual_rent_aed = shortTermAnnualRent;
+
+    const returnFreq = isRental && formRentalType === "short_term" ? strOrNull("short_term_return_frequency") : null;
+    if (returnFreq !== (property.short_term_return_frequency ?? null)) payload.short_term_return_frequency = returnFreq;
+
+    const depositDate = isRental && formRentalType === "short_term" ? strOrNull("short_term_rent_deposit_date") : null;
+    if (depositDate !== (property.short_term_rent_deposit_date ?? null)) payload.short_term_rent_deposit_date = depositDate;
 
     const notes = strOrNull("notes");
     if (notes !== (property.notes ?? null)) payload.notes = notes;
@@ -252,6 +271,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     setError(null);
     setEditSubcategory(property.subcategory);
     setEditIsRental(!!property.is_rental);
+    setEditRentalType(property.rental_type ?? "long_term");
     setEditCheques(property.rent_cheques_per_year ?? 1);
   }
 
@@ -312,23 +332,54 @@ export default function PropertyDetailPanel({ property, installments }: { proper
       {property.is_rental ? (
         <>
           <div className="detail-row">
-            <span className="detail-label">Yearly rent</span>
-            <span>{formatAedValue(property.annual_rent_fils)}</span>
+            <span className="detail-label">Rental type</span>
+            <span>{property.rental_type === "short_term" ? "Short-term" : "Long-term"}</span>
           </div>
-          <div className="detail-row">
-            <span className="detail-label">Cheques per year</span>
-            <span>{property.rent_cheques_per_year}</span>
-          </div>
-          {Array.from({ length: property.rent_cheques_per_year ?? 0 }, (_, i) => {
-            const key = `rent_date_${i + 1}` as keyof Property;
-            const date = property[key] as string | null;
-            return (
-              <div className="detail-row" key={i}>
-                <span className="detail-label">Cheque {i + 1} date</span>
-                <span>{formatIsoDisplay(date)}</span>
+          {((property.rental_type ?? "long_term") === "long_term") ? (
+            <>
+              <div className="detail-row">
+                <span className="detail-label">Yearly rent</span>
+                <span>{formatAedValue(property.annual_rent_fils)}</span>
               </div>
-            );
-          })}
+              <div className="detail-row">
+                <span className="detail-label">Cheques per year</span>
+                <span>{property.rent_cheques_per_year}</span>
+              </div>
+              {Array.from({ length: property.rent_cheques_per_year ?? 0 }, (_, i) => {
+                const key = `rent_date_${i + 1}` as keyof Property;
+                const date = property[key] as string | null;
+                return (
+                  <div className="detail-row" key={i}>
+                    <span className="detail-label">Cheque {i + 1} date</span>
+                    <span>{formatIsoDisplay(date)}</span>
+                  </div>
+                );
+              })}
+            </>
+          ) : (
+            <>
+              <div className="detail-row">
+                <span className="detail-label">PM company</span>
+                <span>{property.pm_company_name ?? "—"}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Commission (%)</span>
+                <span>{property.pm_commission_pct != null ? `${property.pm_commission_pct}%` : "—"}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Expected annual rent</span>
+                <span>{formatAedValue(property.short_term_annual_rent_fils)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Return frequency</span>
+                <span>{property.short_term_return_frequency ? `${property.short_term_return_frequency.charAt(0).toUpperCase()}${property.short_term_return_frequency.slice(1)}` : "—"}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Final deposit date</span>
+                <span>{formatIsoDisplay(property.short_term_rent_deposit_date)}</span>
+              </div>
+            </>
+          )}
         </>
       ) : (
         <div className="detail-row">
@@ -445,38 +496,100 @@ export default function PropertyDetailPanel({ property, installments }: { proper
           </label>
           {editIsRental && (
             <>
-              <div className="row">
-                <div style={{ maxWidth: 240 }}>
-                  <label>Yearly rent (AED)</label>
-                  <input name="annual_rent_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.annual_rent_fils)} placeholder="annual rent" />
-                </div>
-                <div style={{ maxWidth: 200 }}>
-                  <label>Cheques per year</label>
-                  <select
-                    name="rent_cheques_per_year"
-                    value={editCheques}
-                    onChange={(e) => setEditCheques(Number(e.target.value))}
-                  >
-                    <option value="" disabled>Select</option>
-                    <option value={1}>1</option>
-                    <option value={2}>2</option>
-                    <option value={4}>4</option>
-                    <option value={12}>12</option>
-                  </select>
-                </div>
+              <div className="row" style={{ gap: 20 }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    name="rental_type"
+                    type="radio"
+                    value="long_term"
+                    style={{ width: "auto" }}
+                    checked={editRentalType === "long_term"}
+                    onChange={(e) => setEditRentalType(e.target.value)}
+                  />{" "}
+                  Long-term Rent
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input
+                    name="rental_type"
+                    type="radio"
+                    value="short_term"
+                    style={{ width: "auto" }}
+                    checked={editRentalType === "short_term"}
+                    onChange={(e) => setEditRentalType(e.target.value)}
+                  />{" "}
+                  Short-term Rent
+                </label>
               </div>
-              <div className="row">
-                {Array.from({ length: editCheques }, (_, i) => {
-                  const key = `rent_date_${i + 1}` as keyof Property;
-                  const date = property[key] as string | null;
-                  return (
-                    <div style={{ maxWidth: 220 }} key={i}>
-                      <label>Cheque {i + 1} Deposit date</label>
-                      <input name={`rent_date_${i + 1}`} type="date" defaultValue={date ?? ""} />
+              {editRentalType === "long_term" && (
+                <>
+                  <div className="row">
+                    <div style={{ maxWidth: 240 }}>
+                      <label>Yearly rent (AED)</label>
+                      <input name="annual_rent_aed" type="number" step="0.01" defaultValue={aedInputOrEmpty(property.annual_rent_fils)} placeholder="annual rent" />
                     </div>
-                  );
-                })}
-              </div>
+                    <div style={{ maxWidth: 200 }}>
+                      <label>Cheques per year</label>
+                      <select
+                        name="rent_cheques_per_year"
+                        value={editCheques}
+                        onChange={(e) => setEditCheques(Number(e.target.value))}
+                      >
+                        <option value="" disabled>Select</option>
+                        <option value={1}>1</option>
+                        <option value={2}>2</option>
+                        <option value={4}>4</option>
+                        <option value={12}>12</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="row">
+                    {Array.from({ length: editCheques }, (_, i) => {
+                      const key = `rent_date_${i + 1}` as keyof Property;
+                      const date = property[key] as string | null;
+                      return (
+                        <div style={{ maxWidth: 220 }} key={i}>
+                          <label>Cheque {i + 1} Deposit date</label>
+                          <input name={`rent_date_${i + 1}`} type="date" defaultValue={date ?? ""} />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+              {editRentalType === "short_term" && (
+                <>
+                  <div className="row">
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <label>Property Management Company Name</label>
+                      <input name="pm_company_name" defaultValue={property.pm_company_name ?? ""} placeholder="Enter name of property management company" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <label>Percentage of Company Commission (%)</label>
+                      <input name="pm_commission_pct" type="number" step="0.01" min="0" max="100" onKeyDown={numeralOnly} defaultValue={property.pm_commission_pct != null ? String(property.pm_commission_pct) : ""} placeholder="Enter commission percent of the property management" />
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <label>Expected Annual Rent (AED)</label>
+                      <input name="short_term_annual_rent_aed" type="number" step="0.01" onKeyDown={numeralOnly} defaultValue={aedInputOrEmpty(property.short_term_annual_rent_fils)} placeholder="Enter expected annual rent" />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <label>Frequency of Annual Return</label>
+                      <select name="short_term_return_frequency" defaultValue={property.short_term_return_frequency ?? ""}>
+                        <option value="" disabled>Select</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="row">
+                    <div style={{ maxWidth: 220 }}>
+                      <label>Final rental deposit date</label>
+                      <input name="short_term_rent_deposit_date" type="date" defaultValue={property.short_term_rent_deposit_date ?? ""} />
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
         </>

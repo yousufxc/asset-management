@@ -6,6 +6,8 @@
 export type PropertySubcategory = "off_plan" | "existing";
 export type PropertyType = "apartment" | "penthouse" | "townhouse" | "villa";
 export type Bedrooms = "Studio" | "1BR" | "2BR" | "3BR" | "4BR" | "5BR" | "+5BR";
+export type RentalType = "long_term" | "short_term";
+export type ShortTermReturnFrequency = "monthly" | "quarterly";
 export type InstallmentStatus = "upcoming" | "paid" | "overdue";
 export type InstallmentSource = "manual" | "pdf";
 export type MetalType = "gold" | "silver" | "platinum" | "palladium" | "other";
@@ -27,12 +29,18 @@ export interface Property {
   current_value_fils: number | null;
   valued_at: string | null;
   is_rental: 0 | 1;
+  rental_type: RentalType | null;
   annual_rent_fils: number | null;
   rent_cheques_per_year: number | null; // 1|2|4|12
   rent_date_1: string | null; // ISO
   rent_date_2: string | null; // ISO
   rent_date_3: string | null; // ISO
   rent_date_4: string | null; // ISO
+  pm_company_name: string | null;
+  pm_commission_pct: number | null; // 0-100
+  short_term_annual_rent_fils: number | null;
+  short_term_return_frequency: ShortTermReturnFrequency | null;
+  short_term_rent_deposit_date: string | null; // ISO
   notes: string | null;
   created_at: string;
   updated_at: string;

@@ -30,24 +30,38 @@ export interface RentalPropertyInput {
   id: number;
   name: string;
   is_rental: 0 | 1;
+  rental_type: string | null;
   annual_rent_fils: number | null;
   rent_cheques_per_year: number | null;
   rent_date_1: string | null; // ISO
   rent_date_2: string | null; // ISO
   rent_date_3: string | null; // ISO
   rent_date_4: string | null; // ISO
+  pm_company_name: string | null;
+  pm_commission_pct: number | null;
+  short_term_annual_rent_fils: number | null;
+  short_term_return_frequency: string | null;
+  short_term_rent_deposit_date: string | null; // ISO
 }
 
 /** Add `months` months to an ISO date string, returning a new ISO date string. */
 export function addMonthsIso(iso: string, months: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
+  const idx = (m - 1) + months;
+  const ty = y + Math.floor(idx / 12);
+  const tm = ((idx % 12) + 12) % 12; // 0–11
+  const lastDay = new Date(Date.UTC(ty, tm + 1, 0)).getUTCDate();
+  const td = Math.min(d, lastDay);
+  return `${String(ty).padStart(4, "0")}-${String(tm + 1).padStart(2, "0")}-${String(td).padStart(2, "0")}`;
 }
 
 /**
  * Generate rental inflow events from rental properties for the runway timeline.
  * Pure function — no DB, no network. maxDate caps the horizon.
+ *
+ * Long-term: recurring annual deposits based on cheques_per_year schedule.
+ * Short-term: capped 12-month contract (non-recurring). Deposits step backward
+ *   from final_deposit_date by the return frequency period.
  */
 export function generateRentalInflows(
   properties: RentalPropertyInput[],
@@ -55,13 +69,51 @@ export function generateRentalInflows(
 ): Inflow[] {
   const inflows: Inflow[] = [];
   const rentalProperties = properties.filter(
-    (p) => p.is_rental === 1 && p.annual_rent_fils && p.annual_rent_fils > 0,
+    (p) => p.is_rental === 1,
   );
 
   for (const prop of rentalProperties) {
+    const rentalType = prop.rental_type ?? "long_term";
+
+    if (rentalType === "short_term") {
+      const netAnnualRent = computeShortTermNetAnnual(prop);
+      if (netAnnualRent === null) continue;
+      const frequency = prop.short_term_return_frequency;
+      const finalDate = prop.short_term_rent_deposit_date;
+      if (!frequency || !finalDate) continue;
+
+      const periodsPerYear = frequency === "monthly" ? 12 : 4;
+      const perPeriodFils = Math.round(netAnnualRent / periodsPerYear);
+
+      // Generate up to periodsPerYear deposits stepping backward from the final date,
+      // but no more than what fits before maxDate.
+      let depositsAdded = 0;
+      let monthsBack = 0;
+      const freqMonths = frequency === "monthly" ? 1 : 3;
+
+      while (depositsAdded < periodsPerYear) {
+        const depositDate = subtractMonthsIso(finalDate, monthsBack);
+        if (depositDate > maxDate) {
+          monthsBack += freqMonths;
+          continue;
+        }
+        inflows.push({
+          id: prop.id * 2000 + depositsAdded,
+          label: `Rent: ${prop.name} (${formatShortTermLabel(prop)} — deposit ${depositsAdded + 1})`,
+          date: depositDate,
+          amountFils: perPeriodFils,
+        });
+        depositsAdded++;
+        monthsBack += freqMonths;
+      }
+      continue;
+    }
+
+    // ── LONG-TERM (existing logic) ──────────────────────────────────────
+    if (!prop.annual_rent_fils || prop.annual_rent_fils <= 0) continue;
     const chequesPerYear = prop.rent_cheques_per_year;
     if (!chequesPerYear) continue;
-    const annualRentFils = prop.annual_rent_fils!;
+    const annualRentFils = prop.annual_rent_fils;
 
     if (chequesPerYear === 12) {
       const firstDate = prop.rent_date_1;
@@ -98,6 +150,32 @@ export function generateRentalInflows(
   }
 
   return inflows;
+}
+
+/** Short-term net annual rent after commission. Integer-safe: rounds once. */
+function computeShortTermNetAnnual(prop: RentalPropertyInput): number | null {
+  if (!prop.short_term_annual_rent_fils || prop.short_term_annual_rent_fils <= 0) return null;
+  const gross = prop.short_term_annual_rent_fils;
+  const commissionPct = prop.pm_commission_pct ?? 0;
+  return Math.round(gross * (100 - commissionPct) / 100);
+}
+
+/** Subtracts `months` months from an ISO date string, returning a new ISO date string. */
+function subtractMonthsIso(iso: string, months: number): string {
+  const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
+  const idx = (m - 1) - months;
+  const ty = y + Math.floor(idx / 12);
+  const tm = ((idx % 12) + 12) % 12; // 0–11
+  const lastDay = new Date(Date.UTC(ty, tm + 1, 0)).getUTCDate();
+  const td = Math.min(d, lastDay);
+  return `${String(ty).padStart(4, "0")}-${String(tm + 1).padStart(2, "0")}-${String(td).padStart(2, "0")}`;
+}
+
+function formatShortTermLabel(prop: RentalPropertyInput): string {
+  const parts: string[] = [];
+  if (prop.pm_company_name) parts.push(prop.pm_company_name);
+  if (prop.pm_commission_pct != null) parts.push(`${prop.pm_commission_pct}% comm`);
+  return parts.join(" · ");
 }
 
 export interface RunwayInput {

@@ -40,8 +40,22 @@ export function getDb(): DatabaseSyncT {
   // CREATE TABLE/VIEW IF NOT EXISTS). Schema changes use `npm run db:reset` — no
   // ad-hoc migrations in Phase 1 (documented decision; one definition per
   // table/view, no drift).
+  // ALTER TABLE statements in schema.sql add columns to existing databases.
+  // On fresh databases (db:reset), columns already exist from CREATE TABLE so
+  // ALTER fails. We split and catch to handle both paths safely.
   const schema = readFileSync(SCHEMA_PATH, "utf8");
-  db.exec(schema);
+  const statements = schema.split(";\n").map((s) => s.trim()).filter(Boolean);
+  for (const stmt of statements) {
+    try {
+      db.exec(stmt);
+    } catch (e) {
+      // ALTER TABLE ADD COLUMN fails when column already exists (fresh DB) — safe to ignore.
+      // Other errors (syntax, constraint violations) are re-thrown.
+      const msg = String(e);
+      if (msg.includes("duplicate column name") || msg.includes("already exists")) continue;
+      throw e;
+    }
+  }
 
   _db = db;
   return _db;
