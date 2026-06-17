@@ -215,7 +215,7 @@ export default function CommodityContent({
                           margin: 0,
                         }}
                       >
-                        Type <span style={{ fontSize: 10, verticalAlign: "middle" }}>▾</span>
+                        Type ▾
                       </button>
                       {filterOpen && (
                         <div
