@@ -121,7 +121,11 @@ export default function CommodityContent({
 
   function handleSort(col: SortCol) {
     if (sortCol === col) {
-      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+      if (sortDir === "asc") {
+        setSortDir("desc");
+      } else {
+        setSortCol(null);
+      }
     } else {
       setSortCol(col);
       setSortDir("asc");
@@ -159,18 +163,21 @@ export default function CommodityContent({
               <thead>
                 <tr>
                   <th>
-                    <select
-                      value={metalTypeFilter}
-                      onChange={(e) => setMetalTypeFilter(e.target.value)}
-                      style={{ width: "auto", padding: "2px 4px", fontSize: "inherit", fontWeight: "inherit", margin: 0, background: "transparent", border: "1px solid var(--border)", borderRadius: 4, color: "inherit", cursor: "pointer" }}
-                    >
-                      <option value="">Type</option>
+                    <span>
+                      Type{" "}
+                      <select
+                        value={metalTypeFilter}
+                        onChange={(e) => setMetalTypeFilter(e.target.value)}
+                        style={{ border: "none", background: "transparent", color: "inherit", fontSize: "inherit", fontWeight: "inherit", cursor: "pointer", padding: 0, margin: 0, width: "auto" }}
+                      >
+                        <option value="">All</option>
                       <option value="gold">Gold</option>
                       <option value="silver">Silver</option>
                       <option value="platinum">Platinum</option>
                       <option value="palladium">Palladium</option>
                       <option value="other">Other</option>
                     </select>
+                    </span>
                   </th>
                   <th {...thProps("amount")}>Amount{sortArrow("amount")}</th>
                   <th {...thProps("date_purchased")}>Date Purchased{sortArrow("date_purchased")}</th>
