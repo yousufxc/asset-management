@@ -17,6 +17,7 @@ export default function CommodityForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
   const [unit, setUnit] = useState("");
   const [hasCurrentPrice, setHasCurrentPrice] = useState(false);
 
@@ -64,10 +65,21 @@ export default function CommodityForm() {
     (e.target as HTMLFormElement).reset();
     setUnit("");
     setHasCurrentPrice(false);
+    setIsOpen(false);
     router.refresh();
   }
 
   const perUnit = unit ? UNIT_LABEL[unit] ?? unit : "unit";
+
+  if (!isOpen) {
+    return (
+      <div style={{ marginBottom: 18, display: "flex", justifyContent: "flex-end" }}>
+        <button type="button" style={{ marginTop: 0 }} onClick={() => setIsOpen(true)}>
+          + Add Commodity
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={onSubmit} className="card">

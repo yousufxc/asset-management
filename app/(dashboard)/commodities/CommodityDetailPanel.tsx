@@ -40,6 +40,7 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState(false);
   const [unit, setUnit] = useState<string>(commodity.weight_unit);
   const [hasCurrentPrice, setHasCurrentPrice] = useState(
     commodity.current_price_per_unit_fils > 0
@@ -124,6 +125,19 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
     setError(null);
     setUnit(commodity.weight_unit);
     setHasCurrentPrice(commodity.current_price_per_unit_fils > 0);
+  }
+
+  async function handleRemove() {
+    if (!confirm("Remove this holding? This cannot be undone.")) return;
+    setRemoving(true);
+    const res = await fetch(`/api/commodities/${commodity.id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setRemoving(false);
+      setError("Failed to remove holding");
+      return;
+    }
+    router.push("/commodities");
+    router.refresh();
   }
 
   const renderReadOnly = () => (
@@ -288,21 +302,31 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
         placeholder="Optional notes about this holding"
       />
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
-      <div className="row" style={{ gap: 8 }}>
-        <button type="submit" disabled={saving}>
-          {saving ? "Saving…" : "Save changes"}
-        </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
         <button
           type="button"
-          onClick={handleCancel}
-          style={{
-            marginTop: 14,
-            background: "var(--panel-2)",
-            color: "var(--muted)",
-          }}
+          onClick={handleRemove}
+          disabled={removing}
+          style={{ marginTop: 0, background: "var(--bad)", color: "#fff", fontSize: 12, padding: "6px 12px" }}
         >
-          Cancel
+          {removing ? "Removing…" : "Remove Holding"}
         </button>
+        <div className="row" style={{ gap: 8 }}>
+          <button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          <button
+            type="button"
+            onClick={handleCancel}
+            style={{
+              marginTop: 0,
+              background: "var(--panel-2)",
+              color: "var(--muted)",
+            }}
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </form>
   );

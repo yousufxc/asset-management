@@ -359,6 +359,10 @@ export function listCommodities(): Commodity[] {
     .all() as unknown as Commodity[];
 }
 
+export function deleteCommodity(id: number): void {
+  getDb().prepare(`DELETE FROM commodities WHERE id = ?`).run(id);
+}
+
 export function updateCommodity(id: number, data: CommodityUpdate): Commodity | undefined {
   const db = getDb();
   const sets: string[] = [];
