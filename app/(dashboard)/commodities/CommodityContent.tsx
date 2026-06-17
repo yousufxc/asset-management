@@ -147,23 +147,7 @@ export default function CommodityContent({
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
         <div className="card" style={{ flex: selectedCommodity ? 1 : undefined }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ marginTop: 0 }}>Holdings ({commodities.length})</h3>
-            {commodities.length > 0 && (
-              <select
-                value={metalTypeFilter}
-                onChange={(e) => setMetalTypeFilter(e.target.value)}
-                style={{ width: "auto", marginTop: 0 }}
-              >
-                <option value="">All types</option>
-                <option value="gold">Gold</option>
-                <option value="silver">Silver</option>
-                <option value="platinum">Platinum</option>
-                <option value="palladium">Palladium</option>
-                <option value="other">Other</option>
-              </select>
-            )}
-          </div>
+          <h3 style={{ marginTop: 0 }}>Holdings ({commodities.length})</h3>
           {sorted.length === 0 ? (
             <p className="muted">
               {commodities.length === 0
@@ -174,7 +158,20 @@ export default function CommodityContent({
             <table>
               <thead>
                 <tr>
-                  <th>Type</th>
+                  <th>
+                    <select
+                      value={metalTypeFilter}
+                      onChange={(e) => setMetalTypeFilter(e.target.value)}
+                      style={{ width: "auto", padding: "2px 4px", fontSize: "inherit", fontWeight: "inherit", margin: 0, background: "transparent", border: "1px solid var(--border)", borderRadius: 4, color: "inherit", cursor: "pointer" }}
+                    >
+                      <option value="">Type</option>
+                      <option value="gold">Gold</option>
+                      <option value="silver">Silver</option>
+                      <option value="platinum">Platinum</option>
+                      <option value="palladium">Palladium</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </th>
                   <th {...thProps("amount")}>Amount{sortArrow("amount")}</th>
                   <th {...thProps("date_purchased")}>Date Purchased{sortArrow("date_purchased")}</th>
                   <th {...thProps("bought_price")}>Bought price{sortArrow("bought_price")}</th>
