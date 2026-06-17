@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Commodity } from "@/lib/types";
 import { formatAed, formatIsoToUae, toGrams } from "@/lib/core/units";
@@ -15,6 +15,8 @@ const METAL_LABEL: Record<string, string> = {
   palladium: "Palladium",
   other: "Other",
 };
+
+const ALL_METAL_TYPES = ["gold", "silver", "platinum", "palladium", "other"] as const;
 
 type SortCol = "amount" | "date_purchased" | "bought_price" | "value_bought" | "current_price" | "current_value" | "profit_loss" | "profit_loss_pct";
 
@@ -36,9 +38,22 @@ export default function CommodityContent({
   selectedCommodity: Commodity | null;
 }) {
   const router = useRouter();
-  const [metalTypeFilter, setMetalTypeFilter] = useState("");
+  const [metalTypeFilter, setMetalTypeFilter] = useState<Set<string>>(new Set(ALL_METAL_TYPES));
+  const [filterOpen, setFilterOpen] = useState(false);
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const filterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!filterOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
+        setFilterOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [filterOpen]);
 
   const enriched = useMemo(() => {
     return commodities.map((c) => {
@@ -52,10 +67,12 @@ export default function CommodityContent({
     });
   }, [commodities]);
 
+  const isAllSelected = metalTypeFilter.size === ALL_METAL_TYPES.length;
+
   const filtered = useMemo(() => {
-    if (!metalTypeFilter) return enriched;
-    return enriched.filter((e) => e.commodity.metal_type === metalTypeFilter);
-  }, [enriched, metalTypeFilter]);
+    if (isAllSelected) return enriched;
+    return enriched.filter((e) => metalTypeFilter.has(e.commodity.metal_type));
+  }, [enriched, metalTypeFilter, isAllSelected]);
 
   const sorted = useMemo(() => {
     if (!sortCol) return filtered;
@@ -144,6 +161,26 @@ export default function CommodityContent({
     };
   }
 
+  function toggleMetalType(type: string) {
+    setMetalTypeFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setMetalTypeFilter(new Set(ALL_METAL_TYPES));
+  }
+
+  function clearAll() {
+    setMetalTypeFilter(new Set());
+  }
+
   return (
     <>
       <h2>Commodities</h2>
@@ -162,22 +199,71 @@ export default function CommodityContent({
             <table>
               <thead>
                 <tr>
-                  <th>
-                    <span>
-                      Type{" "}
-                      <select
-                        value={metalTypeFilter}
-                        onChange={(e) => setMetalTypeFilter(e.target.value)}
-                        style={{ border: "none", background: "transparent", color: "inherit", fontSize: "inherit", fontWeight: "inherit", cursor: "pointer", padding: 0, margin: 0, width: "auto" }}
+                  <th style={{ position: "relative" }}>
+                    <div ref={filterRef} style={{ position: "relative", display: "inline-block" }}>
+                      <button
+                        type="button"
+                        onClick={() => setFilterOpen((p) => !p)}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          color: "inherit",
+                          fontSize: "inherit",
+                          fontWeight: "inherit",
+                          cursor: "pointer",
+                          padding: 0,
+                          margin: 0,
+                        }}
                       >
-                        <option value="">All</option>
-                      <option value="gold">Gold</option>
-                      <option value="silver">Silver</option>
-                      <option value="platinum">Platinum</option>
-                      <option value="palladium">Palladium</option>
-                      <option value="other">Other</option>
-                    </select>
-                    </span>
+                        Type ▾
+                      </button>
+                      {filterOpen && (
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: "100%",
+                            left: 0,
+                            zIndex: 20,
+                            background: "var(--panel)",
+                            border: "1px solid var(--border)",
+                            borderRadius: 6,
+                            padding: "6px 0",
+                            minWidth: 150,
+                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={selectAll}
+                            style={dropdownBtnStyle}
+                          >
+                            ✓ Select All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={clearAll}
+                            style={dropdownBtnStyle}
+                          >
+                            ✗ Clear All
+                          </button>
+                          <hr style={{ margin: "4px 8px", borderColor: "var(--border)" }} />
+                          {ALL_METAL_TYPES.map((mt) => (
+                            <button
+                              key={mt}
+                              type="button"
+                              onClick={() => toggleMetalType(mt)}
+                              style={{
+                                ...dropdownBtnStyle,
+                                fontWeight: metalTypeFilter.has(mt) ? 600 : 400,
+                              }}
+                            >
+                              {metalTypeFilter.has(mt) ? "✓ " : "  "}
+                              {METAL_LABEL[mt]}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </th>
                   <th {...thProps("amount")}>Amount{sortArrow("amount")}</th>
                   <th {...thProps("date_purchased")}>Date Purchased{sortArrow("date_purchased")}</th>
@@ -269,3 +355,16 @@ export default function CommodityContent({
     </>
   );
 }
+
+const dropdownBtnStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  textAlign: "left",
+  border: "none",
+  background: "transparent",
+  color: "inherit",
+  fontSize: 13,
+  cursor: "pointer",
+  padding: "4px 12px",
+  margin: 0,
+};
