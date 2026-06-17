@@ -153,3 +153,10 @@ details.work .work-body { margin-top: 8px; padding: 12px; background: var(--pane
 .detail-edit-form {
   margin-top: 0;
 }
+
+.kpi-total {
+  margin-top: 8px;
+  font-size: 20px;
+  font-weight: 700;
+  text-align: center;
+}

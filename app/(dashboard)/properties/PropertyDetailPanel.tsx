@@ -4,7 +4,11 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Property, Installment } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
+import { pricePerSqftFils, rentalYieldPct } from "@/lib/core/property-analytics";
+import { installmentStatus } from "@/lib/core/installments";
 import { numeralOnly } from "./numeralOnly";
+import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
+import { MarkPaidButton, DeleteButton } from "./InstallmentActions";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -45,6 +49,8 @@ function aedInputOrEmpty(fils: number | null): string {
 
 export default function PropertyDetailPanel({ property, installments }: { property: Property; installments: Installment[] }) {
   const router = useRouter();
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const hasPendingInsts = installments.some((i) => i.status !== "paid" && i.paid_date === null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -71,7 +77,6 @@ export default function PropertyDetailPanel({ property, installments }: { proper
   const [editIsRental, setEditIsRental] = useState(!!property.is_rental);
   const [editRentalType, setEditRentalType] = useState<string>(property.rental_type ?? "long_term");
   const [editCheques, setEditCheques] = useState<number>(property.rent_cheques_per_year ?? 1);
-  const today = new Date().toISOString().split("T")[0];
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -275,7 +280,10 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     setEditCheques(property.rent_cheques_per_year ?? 1);
   }
 
-  const renderReadOnly = () => (
+  const renderReadOnly = () => {
+    const sqftFils = pricePerSqftFils(property);
+    const ryPct = rentalYieldPct(property);
+    return (
     <>
       <div className="detail-row">
         <span className="detail-label">Name</span>
@@ -328,6 +336,14 @@ export default function PropertyDetailPanel({ property, installments }: { proper
       <div className="detail-row">
         <span className="detail-label">Valued on</span>
         <span>{formatIsoDisplay(property.valued_at)}</span>
+      </div>
+      <div className="detail-row">
+        <span className="detail-label">Price per Sqft</span>
+        <span>{sqftFils !== null ? formatAed(sqftFils) : "—"}</span>
+      </div>
+      <div className="detail-row">
+        <span className="detail-label">Rental Yield</span>
+        <span>{ryPct !== null ? `${ryPct.toFixed(1)}%` : "—"}</span>
       </div>
       {property.is_rental ? (
         <>
@@ -394,7 +410,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         </div>
       )}
     </>
-  );
+  ); }; 
 
   const renderEditForm = () => (
     <form onSubmit={handleSave} className="detail-edit-form">
@@ -471,7 +487,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Date of purchase</label>
-          <input name="purchased_at" type="date" max={today} defaultValue={property.purchased_at ?? ""} />
+          <input name="purchased_at" type="date" max={todayIso} defaultValue={property.purchased_at ?? ""} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Current value (AED)</label>
@@ -479,7 +495,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Valued on</label>
-          <input name="valued_at" type="date" max={today} defaultValue={property.valued_at ?? ""} />
+          <input name="valued_at" type="date" max={todayIso} defaultValue={property.valued_at ?? ""} />
         </div>
       </div>
       {editSubcategory === "existing" && (
@@ -708,6 +724,35 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         </button>
       </div>
       {editing ? renderEditForm() : renderReadOnly()}
+      {!editing && installments.length > 0 && (
+        <>
+          {hasPendingInsts && (
+            <div style={{ marginTop: 20, marginBottom: 8 }}>
+              <h4 style={{ margin: "0 0 8px" }}>Instalment Timeline</h4>
+              <InstallmentTimelineChart installments={installments} />
+            </div>
+          )}
+          <details className="work" style={{ marginTop: 12 }}>
+            <summary>{installments.length} installment(s) — show schedule</summary>
+            <div className="work-body">
+              {installments.map((i) => {
+                const live = installmentStatus(i, todayIso);
+                return (
+                  <div key={i.id} style={{ marginBottom: 8 }}>
+                    {formatIsoToUae(i.due_date)} — {formatAed(i.amount_fils)}{" "}
+                    <span className={`pill ${live}`}>{live}</span>
+                    {i.milestone_label ? ` · ${i.milestone_label}` : ""}
+                    {live !== "paid" && (
+                      <MarkPaidButton installmentId={i.id} />
+                    )}
+                    <DeleteButton installmentId={i.id} />
+                  </div>
+                );
+              })}
+            </div>
+          </details>
+        </>
+      )}
       {!editing && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
           <button
