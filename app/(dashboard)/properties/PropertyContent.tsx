@@ -4,9 +4,20 @@ import { useRouter } from "next/navigation";
 import type { Property, Installment } from "@/lib/types";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
 import { installmentStatus } from "@/lib/core/installments";
+import { netAnnualRentFils } from "@/lib/core/property-analytics";
 import PropertyForm from "./PropertyForm";
 import PropertyDetailPanel from "./PropertyDetailPanel";
 import { MarkPaidButton, DeleteButton } from "./InstallmentActions";
+import ValueByPropertyChart from "./charts/ValueByPropertyChart";
+import CapitalAppreciationChart from "./charts/CapitalAppreciationChart";
+import PortfolioCompositionChart from "./charts/PortfolioCompositionChart";
+import RentalIncomeChart from "./charts/RentalIncomeChart";
+import ValueVsPurchaseChart from "./charts/ValueVsPurchaseChart";
+import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
+import RentalYieldChart from "./charts/RentalYieldChart";
+import PricePerSqftChart from "./charts/PricePerSqftChart";
+import InstallmentStatusChart from "./charts/InstallmentStatusChart";
+import ServiceChargeBurdenChart from "./charts/ServiceChargeBurdenChart";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -42,6 +53,21 @@ export default function PropertyContent({
     <>
       <h2>Property</h2>
       <PropertyForm />
+
+      {properties.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Portfolio Value</h4><ValueByPropertyChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Capital Appreciation</h4><CapitalAppreciationChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><PortfolioCompositionChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Net Rental Income</h4><RentalIncomeChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Value vs Purchase Price</h4><ValueVsPurchaseChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><InstallmentTimelineChart installments={installments} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><RentalYieldChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Price per Sqft</h4><PricePerSqftChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Instalment Status</h4><InstallmentStatusChart installments={installments} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Service Charge Burden</h4><ServiceChargeBurdenChart properties={properties} /></div>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
         <div className="card" style={{ flex: selectedProperty ? 1 : undefined }}>
@@ -127,16 +153,9 @@ export default function PropertyContent({
                         {(() => {
                           if (p.subcategory === "off_plan") return <span className="muted">—</span>;
                           if (!p.is_rental) return <span className="muted">Vacant</span>;
-                          if ((p.rental_type ?? "long_term") === "short_term" && p.short_term_annual_rent_fils != null) {
-                            const grossRent = p.short_term_annual_rent_fils;
-                            const commissionPct = p.pm_commission_pct ?? 0;
-                            const netRent = Math.round(grossRent * (100 - commissionPct) / 100);
-                            const serviceCharge = p.annual_service_charge_fils ?? 0;
-                            const annualProfit = netRent - serviceCharge;
-                            return <span style={{ color: annualProfit >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(annualProfit)}</span>;
-                          }
-                          const annualProfit = (p.annual_rent_fils ?? 0) - (p.annual_service_charge_fils ?? 0);
-                          return <span style={{ color: annualProfit >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(annualProfit)}</span>;
+                          const net = netAnnualRentFils(p);
+                          if (net === null) return <span className="muted">—</span>;
+                          return <span style={{ color: net >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(net)}</span>;
                         })()}
                       </td>
                     </tr>
