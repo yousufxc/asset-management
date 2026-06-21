@@ -4,6 +4,7 @@ import { useState } from "react";
 import type {
   Recommendation,
   SellCommodityMove,
+  ComboMove,
   SimulatedImpact,
 } from "@/lib/core/recommendations";
 import { simulateImpact } from "@/lib/core/recommendations";
@@ -19,8 +20,23 @@ interface Props {
 const TYPE_LABELS: Record<string, string> = {
   sell_commodity: "Sell Asset",
   matured_deposit: "Matured Deposit",
-  rental_surplus: "Rental Surplus",
+  rental_surplus: "Rental Analysis",
   cash_gap: "Cash Shortfall",
+  combo: "Combo Move",
+};
+
+const TYPE_ICONS: Record<string, string> = {
+  sell_commodity: "💰",
+  matured_deposit: "🏦",
+  rental_surplus: "🏠",
+  cash_gap: "⚠",
+  combo: "🔀",
+};
+
+const OPTION_LABELS: Record<string, string> = {
+  minimal: "Minimal sell",
+  full_coverage: "Full coverage",
+  best_value: "Best value",
 };
 
 const PRIORITY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -49,11 +65,12 @@ export default function RecommendedMoves({ recommendations, runwayInput }: Props
         <h3 style={{ marginTop: 0 }}>Recommended Moves</h3>
         <p className="muted" style={{ fontSize: 13, margin: "0 0 16px" }}>
           Cross-category financial moves to help your assets sustain themselves.
+          Each move includes a rationale so you can choose the approach that fits.
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {recommendations.map((rec) => (
-            <RecCard key={recKey(rec)} rec={rec} runwayInput={runwayInput} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {recommendations.map((rec, idx) => (
+            <RecCard key={recKey(rec, idx)} rec={rec} runwayInput={runwayInput} />
           ))}
         </div>
       </div>
@@ -66,8 +83,7 @@ function RecCard({ rec, runwayInput }: { rec: Recommendation; runwayInput: Runwa
   const [preview, setPreview] = useState<SimulatedImpact | null>(null);
   const [loading, setLoading] = useState(false);
   const colors = PRIORITY_COLORS[rec.priority]!;
-
-  const isSimulatable = rec.type === "sell_commodity";
+  const isSimulatable = rec.type === "sell_commodity" || rec.type === "combo";
 
   const handlePreview = () => {
     if (preview) {
@@ -77,11 +93,11 @@ function RecCard({ rec, runwayInput }: { rec: Recommendation; runwayInput: Runwa
     }
     setLoading(true);
     setTimeout(() => {
-      const impact = simulateImpact(rec as SellCommodityMove, runwayInput);
+      const impact = simulateImpact(rec as SellCommodityMove | ComboMove, runwayInput);
       setPreview(impact);
       setLoading(false);
       setExpanded(true);
-    }, 50); // tiny delay so state flush is visible
+    }, 50);
   };
 
   return (
@@ -89,70 +105,70 @@ function RecCard({ rec, runwayInput }: { rec: Recommendation; runwayInput: Runwa
       style={{
         border: `1px solid ${colors.border}`,
         borderRadius: 8,
-        padding: "10px 14px",
+        padding: "12px 14px",
         background: colors.bg,
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-          gap: 10,
-        }}
-      >
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                textTransform: "uppercase",
-                color: colors.text,
-                background: "transparent",
-                border: `1px solid ${colors.border}`,
-                borderRadius: 4,
-                padding: "1px 6px",
-              }}
-            >
+          {/* Type + priority badges */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4, flexWrap: "wrap" }}>
+            <span style={{ fontSize: 14 }}>{TYPE_ICONS[rec.type] ?? ""}</span>
+            <span style={{ fontSize: 11, fontWeight: 600, textTransform: "uppercase", color: colors.text,
+              border: `1px solid ${colors.border}`, borderRadius: 4, padding: "1px 6px" }}>
               {rec.priority}
             </span>
+            {rec.type === "sell_commodity" && (
+              <span style={{ fontSize: 11, fontWeight: 600, color: "var(--muted)",
+                border: "1px solid var(--border)", borderRadius: 4, padding: "1px 6px" }}>
+                {OPTION_LABELS[(rec as SellCommodityMove).option] ?? ""}
+              </span>
+            )}
             <span style={{ fontSize: 12, color: "var(--muted)" }}>
               {TYPE_LABELS[rec.type] ?? rec.type}
             </span>
           </div>
-          <div style={{ fontWeight: 600, fontSize: 14 }}>{rec.title}</div>
-          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--muted)" }}>
+
+          {/* Title */}
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{rec.title}</div>
+
+          {/* Rationale — always visible */}
+          <div style={{
+            fontSize: 12,
+            color: "var(--muted)",
+            fontStyle: "italic",
+            borderLeft: "2px solid var(--border)",
+            paddingLeft: 8,
+            margin: "4px 0 6px",
+            lineHeight: 1.5,
+          }}>
+            {rec.rationale}
+          </div>
+
+          {/* Description */}
+          <p style={{ margin: 0, fontSize: 13, color: "var(--text)", lineHeight: 1.5 }}>
             {rec.description}
           </p>
         </div>
+
         {isSimulatable && (
           <button
             onClick={handlePreview}
             disabled={loading}
-            style={{
-              marginTop: 0,
-              fontSize: 12,
-              padding: "5px 10px",
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
+            style={{ marginTop: 0, fontSize: 12, padding: "5px 10px", whiteSpace: "nowrap", flexShrink: 0 }}
           >
             {loading ? "..." : preview ? "Close preview" : "Preview impact"}
           </button>
         )}
       </div>
 
+      {/* Preview panel */}
       {expanded && preview && (
-        <div
-          style={{
-            marginTop: 12,
-            padding: 12,
-            background: "var(--panel-2)",
-            borderRadius: 8,
-            fontSize: 13,
-          }}
-        >
+        <div style={{ marginTop: 12, padding: 12, background: "var(--panel-2)", borderRadius: 8, fontSize: 13 }}>
+          <div style={{ fontWeight: 600, marginBottom: 8, fontSize: 13, color: "var(--muted)" }}>
+            Simulated runway impact
+          </div>
           <table style={{ width: "100%" }}>
             <thead>
               <tr>
@@ -196,28 +212,26 @@ function RecCard({ rec, runwayInput }: { rec: Recommendation; runwayInput: Runwa
                 </td>
               </tr>
               <tr>
-                <td style={{ color: "var(--muted)" }}>Days until shortfall</td>
+                <td style={{ color: "var(--muted)" }}>Runway</td>
                 <td>
                   {preview.before.daysUntilShortfall != null
                     ? `${preview.before.daysUntilShortfall} days`
-                    : "N/A"}
+                    : "No shortfall"}
                 </td>
                 <td>
                   {preview.after.daysUntilShortfall != null
                     ? `${preview.after.daysUntilShortfall} days`
-                    : "N/A"}
+                    : "No shortfall"}
                 </td>
                 <td>
                   {preview.before.daysUntilShortfall != null &&
-                  preview.after.daysUntilShortfall != null ? (
+                    preview.after.daysUntilShortfall != null ? (
                     <span style={{ color: "var(--good)" }}>
                       +{preview.after.daysUntilShortfall - preview.before.daysUntilShortfall} days
                     </span>
                   ) : preview.after.daysUntilShortfall === null &&
                     preview.before.daysUntilShortfall !== null ? (
-                    <span style={{ color: "var(--good)" }}>
-                      Shortfall eliminated
-                    </span>
+                    <span style={{ color: "var(--good)" }}>Shortfall eliminated</span>
                   ) : (
                     <span style={{ color: "var(--muted)" }}>—</span>
                   )}
@@ -231,15 +245,19 @@ function RecCard({ rec, runwayInput }: { rec: Recommendation; runwayInput: Runwa
   );
 }
 
-function recKey(rec: Recommendation): string {
+function recKey(rec: Recommendation, idx: number): string {
   switch (rec.type) {
     case "sell_commodity":
-      return `sell-${rec.commodityId}`;
+      return `sell-${rec.commodityId}-${rec.option}`;
     case "matured_deposit":
       return `matured-${rec.accountId}`;
     case "rental_surplus":
       return `rental-${rec.propertyId}`;
     case "cash_gap":
       return "cash-gap";
+    case "combo":
+      return "combo";
+    default:
+      return `rec-${idx}`;
   }
 }
