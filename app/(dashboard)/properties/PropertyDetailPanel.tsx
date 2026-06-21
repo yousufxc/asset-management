@@ -10,6 +10,7 @@ import { numeralOnly } from "./numeralOnly";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
 import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -780,7 +781,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
           {hasPendingInsts && (
             <div style={{ marginTop: 20, marginBottom: 8 }}>
               <h4 style={{ margin: "0 0 8px" }}>Instalment Timeline</h4>
-              <InstallmentTimelineChart installments={installments} />
+              <AnimateChartOnScroll><InstallmentTimelineChart installments={installments} /></AnimateChartOnScroll>
             </div>
           )}
           <details className="work" style={{ marginTop: 12 }}>

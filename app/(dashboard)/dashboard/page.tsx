@@ -16,6 +16,7 @@ import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import AssetPieChart, { type Slice } from "./AssetPieChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 
 export const dynamic = "force-dynamic";
 
@@ -250,7 +251,7 @@ export default function DashboardPage() {
       </div></AnimateOnScroll>
 
       {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
-      <AssetPieChart data={chartData} />
+      <AnimateChartOnScroll><AssetPieChart data={chartData} /></AnimateChartOnScroll>
 
       {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
       <div className="row">

@@ -19,6 +19,7 @@ import EventsTimeline from "./charts/EventsTimeline";
 import EquityChart from "./charts/EquityChart";
 import PortfolioROIChart from "./charts/PortfolioROIChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -233,7 +234,7 @@ export default function PropertyContent({
         <>
           <AnimateOnScroll><div className="card" style={{ marginBottom: 24 }}>
             <h4 style={{ marginTop: 0 }}>Upcoming 30 Days</h4>
-            <EventsTimeline properties={properties} installments={installments} />
+            <AnimateChartOnScroll><EventsTimeline properties={properties} installments={installments} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
           <AnimateOnScroll><div className="card">
@@ -241,7 +242,7 @@ export default function PropertyContent({
             {totalPortfolioValue > 0 && (
               <div className="kpi-total">{formatAedShort(totalPortfolioValue)}</div>
             )}
-            <ValueByPropertyChart properties={properties} />
+            <AnimateChartOnScroll><ValueByPropertyChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Capital Appreciation</h4>
@@ -253,10 +254,10 @@ export default function PropertyContent({
                 )}
               </div>
             )}
-            <CapitalAppreciationChart properties={properties} />
+            <AnimateChartOnScroll><CapitalAppreciationChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><PortfolioROIChart properties={properties} /></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><PortfolioCompositionChart properties={properties} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><AnimateChartOnScroll><PortfolioROIChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><AnimateChartOnScroll><PortfolioCompositionChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>
             {totalNetRent !== 0 && (
@@ -264,13 +265,13 @@ export default function PropertyContent({
                 {formatAedShort(totalNetRent)}
               </div>
             )}
-            <RentalIncomeChart properties={properties} />
+            <AnimateChartOnScroll><RentalIncomeChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><InstallmentTimelineChart installments={installments} /></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><RentalYieldChart properties={properties} /></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total Equity</h4><EquityChart properties={properties} installments={installments} /></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Cash Flow (24m)</h4><CashFlowTimelineChart properties={properties} installments={installments} /></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card" style={{ gridColumn: "1 / -1" }}><h4 style={{ marginTop: 0 }}>Diversification</h4><DiversificationCharts properties={properties} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><AnimateChartOnScroll><InstallmentTimelineChart installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><AnimateChartOnScroll><RentalYieldChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total Equity</h4><AnimateChartOnScroll><EquityChart properties={properties} installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Cash Flow (24m)</h4><AnimateChartOnScroll><CashFlowTimelineChart properties={properties} installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card" style={{ gridColumn: "1 / -1" }}><h4 style={{ marginTop: 0 }}>Diversification</h4><AnimateChartOnScroll><DiversificationCharts properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
         </div>
       </>)}
 
