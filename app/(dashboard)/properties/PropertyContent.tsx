@@ -18,6 +18,7 @@ import DiversificationCharts from "./charts/DiversificationCharts";
 import EventsTimeline from "./charts/EventsTimeline";
 import EquityChart from "./charts/EquityChart";
 import PortfolioROIChart from "./charts/PortfolioROIChart";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -235,14 +236,14 @@ export default function PropertyContent({
             <EventsTimeline properties={properties} installments={installments} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
-          <div className="card">
+          <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Portfolio Value</h4>
             {totalPortfolioValue > 0 && (
               <div className="kpi-total">{formatAedShort(totalPortfolioValue)}</div>
             )}
             <ValueByPropertyChart properties={properties} />
-          </div>
-          <div className="card">
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Capital Appreciation</h4>
             {totalPortfolioValue > 0 && (
               <div className="kpi-total">
@@ -253,10 +254,10 @@ export default function PropertyContent({
               </div>
             )}
             <CapitalAppreciationChart properties={properties} />
-          </div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><PortfolioROIChart properties={properties} /></div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><PortfolioCompositionChart properties={properties} /></div>
-          <div className="card">
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><PortfolioROIChart properties={properties} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><PortfolioCompositionChart properties={properties} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>
             {totalNetRent !== 0 && (
               <div className="kpi-total">
@@ -264,12 +265,12 @@ export default function PropertyContent({
               </div>
             )}
             <RentalIncomeChart properties={properties} />
-          </div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><InstallmentTimelineChart installments={installments} /></div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><RentalYieldChart properties={properties} /></div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Total Equity</h4><EquityChart properties={properties} installments={installments} /></div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Cash Flow (24m)</h4><CashFlowTimelineChart properties={properties} installments={installments} /></div>
-          <div className="card" style={{ gridColumn: "1 / -1" }}><h4 style={{ marginTop: 0 }}>Diversification</h4><DiversificationCharts properties={properties} /></div>
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><InstallmentTimelineChart installments={installments} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><RentalYieldChart properties={properties} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total Equity</h4><EquityChart properties={properties} installments={installments} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Cash Flow (24m)</h4><CashFlowTimelineChart properties={properties} installments={installments} /></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card" style={{ gridColumn: "1 / -1" }}><h4 style={{ marginTop: 0 }}>Diversification</h4><DiversificationCharts properties={properties} /></div></AnimateOnScroll>
         </div>
       </>)}
 
