@@ -32,6 +32,7 @@ export default function CashForm() {
       interest_rate: numOrNull("interest_rate"),
       is_fixed_deposit: isFixedDeposit,
       fixed_deposit_period_months: isFixedDeposit ? numOrNull("fixed_deposit_period_months") : null,
+      fixed_deposit_start_date: isFixedDeposit ? strOrNull("fixed_deposit_start_date") : null,
       notes: strOrNull("notes"),
     };
 
@@ -129,6 +130,13 @@ export default function CashForm() {
           </div>
         )}
       </div>
+
+      {isFixedDeposit && (
+        <div style={{ marginTop: 10 }}>
+          <label>Fixed Deposit Start Date</label>
+          <input name="fixed_deposit_start_date" placeholder="DD/MM/YYYY" />
+        </div>
+      )}
 
       <label>Notes</label>
       <textarea name="notes" rows={2} placeholder="Optional notes about this account" />

@@ -91,6 +91,7 @@ CREATE TABLE IF NOT EXISTS cash_accounts (
   interest_rate               REAL,                            -- annual interest rate percentage (e.g. 4.5 for 4.5%)
   is_fixed_deposit            INTEGER NOT NULL DEFAULT 0 CHECK (is_fixed_deposit IN (0, 1)),
   fixed_deposit_period_months INTEGER,                         -- contract period in months (only relevant when is_fixed_deposit=1)
+  fixed_deposit_start_date    TEXT,                            -- ISO date the fixed deposit started (only relevant when is_fixed_deposit=1)
   notes                       TEXT,
   created_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
   updated_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -170,6 +171,7 @@ ALTER TABLE properties ADD COLUMN pm_commission_pct          REAL CHECK (pm_comm
 ALTER TABLE properties ADD COLUMN short_term_annual_rent_fils INTEGER CHECK (short_term_annual_rent_fils IS NULL OR short_term_annual_rent_fils >= 0);
 ALTER TABLE properties ADD COLUMN short_term_return_frequency TEXT CHECK (short_term_return_frequency IS NULL OR short_term_return_frequency IN ('monthly', 'quarterly'));
 ALTER TABLE properties ADD COLUMN short_term_rent_deposit_date TEXT;
+ALTER TABLE cash_accounts ADD COLUMN fixed_deposit_start_date TEXT;
 
 DROP VIEW IF EXISTS v_properties;
 CREATE VIEW IF NOT EXISTS v_properties AS
@@ -189,7 +191,7 @@ CREATE VIEW IF NOT EXISTS v_installments AS
 
 DROP VIEW IF EXISTS v_cash_accounts;
 CREATE VIEW IF NOT EXISTS v_cash_accounts AS
-  SELECT id, label, current_balance_fils, interest_rate, is_fixed_deposit, fixed_deposit_period_months
+  SELECT id, label, current_balance_fils, interest_rate, is_fixed_deposit, fixed_deposit_period_months, fixed_deposit_start_date
   FROM cash_accounts;
 
 DROP VIEW IF EXISTS v_commodities;

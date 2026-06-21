@@ -15,9 +15,11 @@ import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
 import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
 import { commodityTotalFils } from "@/lib/core/valuation";
+import { computeRecommendations } from "@/lib/core/recommendations";
 import AssetPieChart, { type Slice } from "./AssetPieChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
+import RecommendedMoves from "./RecommendedMoves";
 
 export const dynamic = "force-dynamic";
 
@@ -160,6 +162,28 @@ export default function DashboardPage() {
         </div></AnimateOnScroll>
       )}
 
+      {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
+      <AnimateChartOnScroll><AssetPieChart data={chartData} /></AnimateChartOnScroll>
+
+      {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
+      <div className="row" style={{ justifyContent: "center" }}>
+        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200, maxWidth: 280 }}>
+          <div className="muted">Properties</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{properties.length}</div>
+          <Link href="/properties">Manage →</Link>
+        </div></AnimateOnScroll>
+        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
+          <div className="muted">Saving Accounts</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{accounts.length}</div>
+          <Link href="/cash">Manage →</Link>
+        </div></AnimateOnScroll>
+        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
+          <div className="muted">Commodities</div>
+          <div style={{ fontSize: 24, fontWeight: 700 }}>{commodities.length}</div>
+          <Link href="/commodities">Manage →</Link>
+        </div></AnimateOnScroll>
+      </div>
+
       {/* ─── RUNWAY HEADLINE ──────────────────────────────────────────── */}
       <AnimateOnScroll><div className="card">
         <h3 style={{ marginTop: 0 }}>Cash runway</h3>
@@ -254,27 +278,31 @@ export default function DashboardPage() {
         </details>
       </div></AnimateOnScroll>
 
-      {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
-      <AnimateChartOnScroll><AssetPieChart data={chartData} /></AnimateChartOnScroll>
-
-      {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
-      <div className="row">
-        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
-          <div className="muted">Properties</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{properties.length}</div>
-          <Link href="/properties">Manage →</Link>
-        </div></AnimateOnScroll>
-        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
-          <div className="muted">Saving Accounts</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{accounts.length}</div>
-          <Link href="/cash">Manage →</Link>
-        </div></AnimateOnScroll>
-        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
-          <div className="muted">Commodities</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{commodities.length}</div>
-          <Link href="/commodities">Manage →</Link>
-        </div></AnimateOnScroll>
-      </div>
+      {/* ─── RECOMMENDED MOVES ───────────────────────────────────────── */}
+      <RecommendedMoves
+        recommendations={computeRecommendations({
+          asOf: todayIso,
+          properties,
+          cashAccounts: accounts,
+          commodities,
+          installments,
+          liquidCashFils: liquidFils,
+          runwayInput: {
+            asOf: todayIso,
+            liquidCashFils: liquidFils,
+            liabilities,
+            inflows,
+            horizonDays: runwayHorizonDays,
+          },
+        })}
+        runwayInput={{
+          asOf: todayIso,
+          liquidCashFils: liquidFils,
+          liabilities,
+          inflows,
+          horizonDays: runwayHorizonDays,
+        }}
+      />
     </>
   );
 }

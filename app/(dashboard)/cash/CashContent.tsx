@@ -41,6 +41,7 @@ export default function CashContent({
                     <th>Fixed Deposit</th>
                     <th>Interest Rate (%)</th>
                     <th>Contract Period</th>
+                    <th>Start Date</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -67,6 +68,7 @@ export default function CashContent({
                         <td>{a.is_fixed_deposit ? "Yes" : "—"}</td>
                         <td>{a.interest_rate != null ? `${a.interest_rate}%` : "—"}</td>
                         <td>{a.fixed_deposit_period_months != null ? `${a.fixed_deposit_period_months} mo` : "—"}</td>
+                        <td>{a.fixed_deposit_start_date ?? "—"}</td>
                       </tr>
                     );
                   })}

@@ -270,8 +270,8 @@ export function installmentExistsByKey(
 export function insertCashAccount(input: CashAccountInput): CashAccount {
   const db = getDb();
   const stmt = db.prepare(`
-    INSERT INTO cash_accounts (label, current_balance_fils, interest_rate, is_fixed_deposit, fixed_deposit_period_months, notes)
-    VALUES (@label, @current_balance_fils, @interest_rate, @is_fixed_deposit, @fixed_deposit_period_months, @notes)
+    INSERT INTO cash_accounts (label, current_balance_fils, interest_rate, is_fixed_deposit, fixed_deposit_period_months, fixed_deposit_start_date, notes)
+    VALUES (@label, @current_balance_fils, @interest_rate, @is_fixed_deposit, @fixed_deposit_period_months, @fixed_deposit_start_date, @notes)
   `);
   const info = stmt.run({
     label: input.label,
@@ -279,6 +279,7 @@ export function insertCashAccount(input: CashAccountInput): CashAccount {
     interest_rate: input.interest_rate ?? null,
     is_fixed_deposit: input.is_fixed_deposit ? 1 : 0,
     fixed_deposit_period_months: input.is_fixed_deposit ? (input.fixed_deposit_period_months ?? null) : null,
+    fixed_deposit_start_date: input.is_fixed_deposit ? dateOrNull(input.fixed_deposit_start_date) : null,
     notes: input.notes ?? null,
   });
   return getDb()
@@ -308,6 +309,7 @@ export function updateCashAccount(id: number, data: CashAccountUpdate): CashAcco
   if (data.interest_rate !== undefined) { sets.push("interest_rate = @interest_rate"); params.interest_rate = data.interest_rate; }
   if (data.is_fixed_deposit !== undefined) { sets.push("is_fixed_deposit = @is_fixed_deposit"); params.is_fixed_deposit = data.is_fixed_deposit ? 1 : 0; }
   if (data.fixed_deposit_period_months !== undefined) { sets.push("fixed_deposit_period_months = @fixed_deposit_period_months"); params.fixed_deposit_period_months = data.fixed_deposit_period_months; }
+  if (data.fixed_deposit_start_date !== undefined) { sets.push("fixed_deposit_start_date = @fixed_deposit_start_date"); params.fixed_deposit_start_date = dateOrNull(data.fixed_deposit_start_date); }
   if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
 
   if (sets.length === 0) return getCashAccount(id);

@@ -69,6 +69,7 @@ export interface CashAccount {
   interest_rate: number | null;
   is_fixed_deposit: 0 | 1;
   fixed_deposit_period_months: number | null;
+  fixed_deposit_start_date: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

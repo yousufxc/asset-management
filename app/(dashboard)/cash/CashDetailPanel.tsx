@@ -70,6 +70,9 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
 
     if (isFixedDeposit !== (account.is_fixed_deposit === 1)) payload.is_fixed_deposit = isFixedDeposit;
 
+    const startDate = isFixedDeposit ? strOrNull("fixed_deposit_start_date") : null;
+    if (startDate !== (account.fixed_deposit_start_date ?? null)) payload.fixed_deposit_start_date = startDate;
+
     const fixedDepositPeriod = isFixedDeposit ? numOrNull("fixed_deposit_period_months") : null;
     if (fixedDepositPeriod !== (account.fixed_deposit_period_months ?? null)) payload.fixed_deposit_period_months = fixedDepositPeriod;
 
@@ -122,10 +125,16 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
         <span>{account.interest_rate != null ? `${account.interest_rate}%` : "—"}</span>
       </div>
       {account.is_fixed_deposit ? (
-        <div className="detail-row">
-          <span className="detail-label">Contract Period</span>
-          <span>{account.fixed_deposit_period_months != null ? `${account.fixed_deposit_period_months} months` : "—"}</span>
-        </div>
+        <>
+          <div className="detail-row">
+            <span className="detail-label">Contract Period</span>
+            <span>{account.fixed_deposit_period_months != null ? `${account.fixed_deposit_period_months} months` : "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Start Date</span>
+            <span>{account.fixed_deposit_start_date ?? "—"}</span>
+          </div>
+        </>
       ) : null}
       <div className="detail-row">
         <span className="detail-label">Created</span>
@@ -194,6 +203,12 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
           </div>
         ) : null}
       </div>
+      {isFixedDeposit && (
+        <div style={{ marginTop: 10 }}>
+          <label>Fixed Deposit Start Date</label>
+          <input name="fixed_deposit_start_date" defaultValue={account.fixed_deposit_start_date ?? ""} placeholder="DD/MM/YYYY" />
+        </div>
+      )}
       <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <input
           name="is_fixed_deposit"

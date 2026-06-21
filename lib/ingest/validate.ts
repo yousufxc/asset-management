@@ -132,6 +132,7 @@ export const CashAccountInputSchema = z.object({
   interest_rate: z.number().nonnegative().finite().optional().nullable(),
   is_fixed_deposit: z.boolean().default(false),
   fixed_deposit_period_months: z.number().int().positive().optional().nullable(),
+  fixed_deposit_start_date: dateString.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type CashAccountInput = z.infer<typeof CashAccountInputSchema>;
@@ -142,6 +143,7 @@ export const CashAccountUpdateSchema = z.object({
   interest_rate: z.number().nonnegative().finite().optional().nullable(),
   is_fixed_deposit: z.boolean().optional(),
   fixed_deposit_period_months: z.number().int().positive().optional().nullable(),
+  fixed_deposit_start_date: dateString.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type CashAccountUpdate = z.infer<typeof CashAccountUpdateSchema>;
