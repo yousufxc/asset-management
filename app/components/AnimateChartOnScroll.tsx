@@ -7,23 +7,20 @@ interface Props {
 }
 
 export default function AnimateChartOnScroll({ children }: Props) {
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(true);
+  const ref = useRef<HTMLDivElement>(null);
+  const [key, setKey] = useState(0);
 
   const handleIntersect = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       if (entries[0]?.isIntersecting) {
-        setVisible(false);
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => setVisible(true));
-        });
+        setKey((k) => k + 1);
       }
     },
     [],
   );
 
   useEffect(() => {
-    const el = sentinelRef.current;
+    const el = ref.current;
     if (!el) return;
 
     const observer = new IntersectionObserver(handleIntersect, { threshold: 0.1 });
@@ -32,9 +29,8 @@ export default function AnimateChartOnScroll({ children }: Props) {
   }, [handleIntersect]);
 
   return (
-    <>
-      <div ref={sentinelRef} />
-      {visible && <div>{children}</div>}
-    </>
+    <div ref={ref} key={key}>
+      {children}
+    </div>
   );
 }
