@@ -13,7 +13,11 @@ import PortfolioCompositionChart from "./charts/PortfolioCompositionChart";
 import RentalIncomeChart from "./charts/RentalIncomeChart";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
 import RentalYieldChart from "./charts/RentalYieldChart";
-import PricePerSqftChart from "./charts/PricePerSqftChart";
+import CashFlowTimelineChart from "./charts/CashFlowTimelineChart";
+import DiversificationCharts from "./charts/DiversificationCharts";
+import EventsTimeline from "./charts/EventsTimeline";
+import EquityChart from "./charts/EquityChart";
+import PortfolioROIChart from "./charts/PortfolioROIChart";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -31,6 +35,17 @@ function daysSince(iso: string | null): string {
   const then = new Date(`${iso}T00:00:00Z`).getTime();
   const days = Math.floor((Date.now() - then) / 86_400_000);
   return `last valued ${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function formatAedShort(fils: number): string {
+  const aed = Math.round(fils / 100);
+  if (Math.abs(aed) >= 1_000_000) {
+    return `AED ${(aed / 1_000_000).toFixed(1)}M`;
+  }
+  if (Math.abs(aed) >= 1_000) {
+    return `AED ${(aed / 1_000).toFixed(1)}K`;
+  }
+  return formatAed(fils);
 }
 
 export default function PropertyContent({
@@ -214,41 +229,49 @@ export default function PropertyContent({
       <PropertyForm />
 
       {properties.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
+        <>
+          <div className="card" style={{ marginBottom: 24 }}>
+            <h4 style={{ marginTop: 0 }}>Upcoming 30 Days</h4>
+            <EventsTimeline properties={properties} installments={installments} />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
           <div className="card">
             <h4 style={{ marginTop: 0 }}>Portfolio Value</h4>
-            <ValueByPropertyChart properties={properties} />
             {totalPortfolioValue > 0 && (
-              <div className="kpi-total">{formatAed(totalPortfolioValue)}</div>
+              <div className="kpi-total">{formatAedShort(totalPortfolioValue)}</div>
             )}
+            <ValueByPropertyChart properties={properties} />
           </div>
           <div className="card">
             <h4 style={{ marginTop: 0 }}>Capital Appreciation</h4>
-            <CapitalAppreciationChart properties={properties} />
             {totalPortfolioValue > 0 && (
               <div className="kpi-total" style={{ color: totalAppreciationFils >= 0 ? "var(--good)" : "var(--bad)" }}>
-                {totalAppreciationFils >= 0 ? "+" : ""}{formatAed(totalAppreciationFils)}
+                {totalAppreciationFils >= 0 ? "+" : ""}{formatAedShort(totalAppreciationFils)}
                 {totalAppreciationPct !== null && (
                   <span style={{ fontSize: 14, marginLeft: 6 }}>({totalAppreciationPct >= 0 ? "+" : ""}{totalAppreciationPct.toFixed(1)}%)</span>
                 )}
               </div>
             )}
+            <CapitalAppreciationChart properties={properties} />
           </div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><PortfolioROIChart properties={properties} /></div>
           <div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><PortfolioCompositionChart properties={properties} /></div>
           <div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>
-            <RentalIncomeChart properties={properties} />
             {totalNetRent !== 0 && (
               <div className="kpi-total" style={{ color: totalNetRent >= 0 ? "var(--good)" : "var(--bad)" }}>
-                {formatAed(totalNetRent)}
+                {formatAedShort(totalNetRent)}
               </div>
             )}
+            <RentalIncomeChart properties={properties} />
           </div>
           <div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><InstallmentTimelineChart installments={installments} /></div>
           <div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><RentalYieldChart properties={properties} /></div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Price per Sqft</h4><PricePerSqftChart properties={properties} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Total Equity</h4><EquityChart properties={properties} installments={installments} /></div>
+          <div className="card"><h4 style={{ marginTop: 0 }}>Cash Flow (24m)</h4><CashFlowTimelineChart properties={properties} installments={installments} /></div>
+          <div className="card" style={{ gridColumn: "1 / -1" }}><h4 style={{ marginTop: 0 }}>Diversification</h4><DiversificationCharts properties={properties} /></div>
         </div>
-      )}
+      </>)}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Your properties ({sorted.length})</h3>
@@ -261,8 +284,7 @@ export default function PropertyContent({
             <table style={{ minWidth: 1000 }}>
               <thead>
                 <tr>
-                  <th {...thSortProps("rental_yield")} style={{ minWidth: 100, whiteSpace: "nowrap", cursor: "pointer", userSelect: "none" }}>Rental Yield{sortArrow("rental_yield")}</th>
-                  <th style={{ minWidth: 180 }}>Name</th>
+                  <th className="sticky-name" style={{ minWidth: 180 }}>Name</th>
                   <th style={{ minWidth: 140, position: "relative" }}>
                     <div ref={filterRef} style={{ position: "relative", display: "inline-block" }}>
                       <button
@@ -327,6 +349,7 @@ export default function PropertyContent({
                   <th style={{ minWidth: 140, whiteSpace: "nowrap" }}>Valuation freshness</th>
                   <th {...thSortProps("capital_appreciation")} style={{ minWidth: 150, whiteSpace: "nowrap", cursor: "pointer", userSelect: "none" }}>Capital Appreciation{sortArrow("capital_appreciation")}</th>
                   <th {...thSortProps("annual_profit")} style={{ minWidth: 120, whiteSpace: "nowrap", cursor: "pointer", userSelect: "none" }}>Annual Profit{sortArrow("annual_profit")}</th>
+                  <th {...thSortProps("rental_yield")} style={{ minWidth: 100, whiteSpace: "nowrap", cursor: "pointer", userSelect: "none" }}>Rental Yield{sortArrow("rental_yield")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -338,16 +361,7 @@ export default function PropertyContent({
                       key={p.id}
                       className={isSelected ? "selected-row" : undefined}
                     >
-                      <td>
-                        {yieldPct !== null ? (
-                          <span style={{ color: yieldPct >= 0 ? "var(--good)" : "var(--bad)" }}>
-                            {yieldPct >= 0 ? "+" : ""}{yieldPct.toFixed(1)}%
-                          </span>
-                        ) : (
-                          <span className="muted">—</span>
-                        )}
-                      </td>
-                      <td>
+                      <td className="sticky-name">
                         <a
                           href="#"
                           onClick={(e) => {
@@ -386,6 +400,15 @@ export default function PropertyContent({
                           if (net === null) return <span className="muted">—</span>;
                           return <span style={{ color: net >= 0 ? "var(--good)" : "var(--bad)" }}>{formatAed(net)}</span>;
                         })()}
+                      </td>
+                      <td>
+                        {yieldPct !== null ? (
+                          <span style={{ color: yieldPct >= 0 ? "var(--good)" : "var(--bad)" }}>
+                            {yieldPct >= 0 ? "+" : ""}{yieldPct.toFixed(1)}%
+                          </span>
+                        ) : (
+                          <span className="muted">—</span>
+                        )}
                       </td>
                     </tr>
                   );

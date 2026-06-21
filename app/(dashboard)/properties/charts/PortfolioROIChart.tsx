@@ -1,0 +1,96 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
+import type { Property } from "@/lib/types";
+import { totalROIPct, annualizedROIPct } from "@/lib/core/property-analytics";
+
+const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
+
+type ROIMode = "snapshot" | "annualized";
+
+interface Props { properties: Property[] }
+
+export default function PortfolioROIChart({ properties }: Props) {
+  const [mode, setMode] = useState<ROIMode>("snapshot");
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  const data = useMemo(() => {
+    return properties
+      .map((p) => {
+        const roi = mode === "snapshot" ? totalROIPct(p) : annualizedROIPct(p, todayIso);
+        return { name: p.name, roi };
+      })
+      .filter((d) => d.roi !== null)
+      .sort((a, b) => a.roi! - b.roi!);
+  }, [properties, mode, todayIso]);
+
+  const singleProperty = properties.length === 1;
+  const chartHeight = Math.max(120, data.length * 34);
+
+  const toggleBtn = (m: ROIMode, label: string) => (
+    <button
+      type="button"
+      onClick={() => setMode(m)}
+      style={{
+        fontSize: 11,
+        padding: "3px 10px",
+        borderRadius: 4,
+        border: "1px solid var(--border)",
+        background: mode === m ? "var(--accent)" : "transparent",
+        color: mode === m ? "#fff" : "var(--muted)",
+        cursor: "pointer",
+        marginLeft: 6,
+        marginTop: 0,
+      }}
+    >
+      {label}
+    </button>
+  );
+
+  const emptyMessage = data.length === 0
+    ? (singleProperty && mode === "annualized"
+        ? "Purchase date required for annualized ROI."
+        : "No ROI data available (purchase prices and current values needed).")
+    : null;
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        {toggleBtn("snapshot", "Snapshot")}
+        {toggleBtn("annualized", "Annualized")}
+      </div>
+      {emptyMessage ? (
+        <p className="muted">{emptyMessage}</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <BarChart data={data} layout="vertical" margin={{ left: 90, right: 20, top: 4, bottom: 4 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+            <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v: number) => `${v.toFixed(1)}%`} />
+            <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={85} />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.[0]) return null;
+                const d = payload[0].payload;
+                return (
+                  <div style={tooltipStyle}>
+                    <div style={{ color: "#9aa3b2", marginBottom: 2 }}>{d.name}</div>
+                    <div style={{ fontWeight: 600 }}>{d.roi!.toFixed(1)}%</div>
+                    <div style={{ color: "#9aa3b2", fontSize: 11, marginTop: 4 }}>
+                      {mode === "snapshot" ? "Appreciation + net rent ÷ purchase" : "Annualized appreciation + yield"}
+                    </div>
+                  </div>
+                );
+              }}
+            />
+            <Bar dataKey="roi" radius={[0, 4, 4, 0]}>
+              {data.map((d, i) => (
+                <Cell key={i} fill={d.roi! >= 0 ? "#38c172" : "#e74c3c"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}

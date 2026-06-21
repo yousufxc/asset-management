@@ -9,6 +9,8 @@ import {
   isInstallmentOverdue,
   liveInstallmentStatus,
   cumulativeInstallmentSchedule,
+  totalROIPct,
+  annualizedROIPct,
 } from "@/lib/core/property-analytics";
 import type { Property, Installment } from "@/lib/types";
 
@@ -270,5 +272,117 @@ describe("cumulativeInstallmentSchedule", () => {
       mkInstallment({ id: 1, status: "paid", paid_date: "2025-01-01" }),
     ];
     expect(cumulativeInstallmentSchedule(installments, "2026-01-01")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// totalROIPct
+// ---------------------------------------------------------------------------
+describe("totalROIPct", () => {
+  it("computes ROI with appreciation and net rent", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      is_rental: 1,
+      annual_rent_fils: 80_000,
+    });
+    // (200k + 80k) / 1M * 100 = 28%
+    expect(totalROIPct(p)).toBeCloseTo(28, 2);
+  });
+
+  it("computes ROI for non-rental (net rent defaults to 0)", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+    });
+    // (200k + 0) / 1M * 100 = 20%
+    expect(totalROIPct(p)).toBeCloseTo(20, 2);
+  });
+
+  it("computes negative ROI for a loss", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 900_000,
+    });
+    expect(totalROIPct(p)).toBeCloseTo(-10, 2);
+  });
+
+  it("returns null when purchase_price is null", () => {
+    expect(totalROIPct(mkProperty({ current_value_fils: 1_000_000 }))).toBeNull();
+  });
+
+  it("returns null when current_value is null", () => {
+    expect(totalROIPct(mkProperty({ purchase_price_fils: 1_000_000 }))).toBeNull();
+  });
+
+  it("returns null when purchase_price is zero", () => {
+    expect(totalROIPct(mkProperty({ purchase_price_fils: 0, current_value_fils: 1_000_000 }))).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// annualizedROIPct
+// ---------------------------------------------------------------------------
+describe("annualizedROIPct", () => {
+  const asOf = "2026-01-01";
+
+  it("computes annualized ROI: 20% appreciation over 2 years + 8% yield", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      purchased_at: "2024-01-01",
+      is_rental: 1,
+      annual_rent_fils: 80_000,
+    });
+    // yearsHeld = 2, annualized appreciation = (1.20^(1/2)-1)*100 ≈ 9.5445
+    // rental yield = 8%, total ≈ 17.5445
+    expect(annualizedROIPct(p, asOf)).toBeCloseTo(17.54, 1);
+  });
+
+  it("returns null when purchased_at is null", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      is_rental: 1,
+      annual_rent_fils: 80_000,
+    });
+    expect(annualizedROIPct(p, asOf)).toBeNull();
+  });
+
+  it("returns null when purchase_price is null", () => {
+    expect(annualizedROIPct(mkProperty({
+      current_value_fils: 1_000_000,
+      purchased_at: "2024-01-01",
+    }), asOf)).toBeNull();
+  });
+
+  it("floors holding period at 0.25 years", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_100_000,
+      purchased_at: "2025-12-01",
+    });
+    // yearsHeld floored to 0.25, not (1 month ≈ 0.083)
+    // annualized = (1.10^(1/0.25)-1)*100 ≈ (1.10^4-1)*100 ≈ 46.41%
+    expect(annualizedROIPct(p, asOf)).toBeCloseTo(46.41, 1);
+  });
+
+  it("uses net rent (not gross) for yield component, matching snapshot mode", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      purchased_at: "2024-01-01",
+      is_rental: 1,
+      rental_type: "short_term",
+      short_term_annual_rent_fils: 200_000,
+      pm_commission_pct: 20,
+    });
+    // Net rent = 200k - 40k commission = 160k
+    // Net yield = 160k / 1M * 100 = 16%
+    // Appreciation = 20% over 2 years → annualized ≈ 9.5445%
+    // Total ≈ 25.5445%
+    // Snapshot: (200k + 160k) / 1M * 100 = 36%
+    expect(annualizedROIPct(p, asOf)).toBeCloseTo(25.54, 1);
+    expect(totalROIPct(p)).toBeCloseTo(36, 2);
   });
 });

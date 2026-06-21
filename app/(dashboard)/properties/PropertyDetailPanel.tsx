@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Property, Installment } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
-import { pricePerSqftFils, rentalYieldPct } from "@/lib/core/property-analytics";
+import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry } from "@/lib/core/property-analytics";
 import { installmentStatus } from "@/lib/core/installments";
 import { numeralOnly } from "./numeralOnly";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
-import { MarkPaidButton, DeleteButton } from "./InstallmentActions";
+import PortfolioROIChart from "./charts/PortfolioROIChart";
+import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -283,6 +284,9 @@ export default function PropertyDetailPanel({ property, installments }: { proper
   const renderReadOnly = () => {
     const sqftFils = pricePerSqftFils(property);
     const ryPct = rentalYieldPct(property);
+    const equity = equityFils(property, installments);
+    const instProgress = instalmentProgressPct(installments);
+    const contractDays = daysUntilContractExpiry(property, todayIso);
     return (
     <>
       <div className="detail-row">
@@ -345,6 +349,45 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         <span className="detail-label">Rental Yield</span>
         <span>{ryPct !== null ? `${ryPct.toFixed(1)}%` : "—"}</span>
       </div>
+      {equity !== null && (
+        <div className="detail-row">
+          <span className="detail-label">Equity</span>
+          <span style={{ fontWeight: 600, color: equity >= 0 ? "var(--good)" : "var(--bad)" }}>
+            {formatAed(equity)}
+          </span>
+        </div>
+      )}
+      {property.purchase_price_fils != null && property.current_value_fils != null && property.purchase_price_fils > 0 && (
+        <div style={{ marginTop: 16 }}>
+          <h4 style={{ margin: "0 0 8px" }}>Total ROI</h4>
+          <PortfolioROIChart properties={[property]} />
+        </div>
+      )}
+      {instProgress !== null && (
+        <div className="detail-row">
+          <span className="detail-label">Instalment Progress</span>
+          <span style={{ flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, height: 10, background: "var(--panel-2)", borderRadius: 5, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(instProgress, 100)}%`, background: "var(--accent)", borderRadius: 5, transition: "width 0.3s" }} />
+              </div>
+              <span style={{ fontSize: 12, whiteSpace: "nowrap" }}>{instProgress.toFixed(1)}%</span>
+            </div>
+          </span>
+        </div>
+      )}
+      {contractDays !== null && (
+        <div className="detail-row">
+          <span className="detail-label">Contract</span>
+          <span style={{ color: contractDays <= 60 ? "var(--warn)" : "var(--text)" }}>
+            {contractDays <= 0
+              ? "Expired"
+              : contractDays <= 60
+                ? `Expires in ${contractDays} days`
+                : `${contractDays} days remaining`}
+          </span>
+        </div>
+      )}
       {property.is_rental ? (
         <>
           <div className="detail-row">
@@ -742,10 +785,11 @@ export default function PropertyDetailPanel({ property, installments }: { proper
                     {formatIsoToUae(i.due_date)} — {formatAed(i.amount_fils)}{" "}
                     <span className={`pill ${live}`}>{live}</span>
                     {i.milestone_label ? ` · ${i.milestone_label}` : ""}
-                    {live !== "paid" && (
+                    {live !== "paid" ? (
                       <MarkPaidButton installmentId={i.id} />
+                    ) : (
+                      <MarkUnpaidButton installmentId={i.id} />
                     )}
-                    <DeleteButton installmentId={i.id} />
                   </div>
                 );
               })}
