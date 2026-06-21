@@ -15,6 +15,7 @@ import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/l
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import AssetPieChart, { type Slice } from "./AssetPieChart";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 export const dynamic = "force-dynamic";
 
@@ -112,7 +113,7 @@ export default function DashboardPage() {
 
       {/* ─── LIQUIDITY WARNING BANNER ──────────────────────────────────── */}
       {warning.breached && (
-        <div
+        <AnimateOnScroll><div
           className="card"
           style={{
             borderLeft: "4px solid var(--bad)",
@@ -151,11 +152,11 @@ export default function DashboardPage() {
               )}
             </div>
           </details>
-        </div>
+        </div></AnimateOnScroll>
       )}
 
       {/* ─── RUNWAY HEADLINE ──────────────────────────────────────────── */}
-      <div className="card">
+      <AnimateOnScroll><div className="card">
         <h3 style={{ marginTop: 0 }}>Cash runway</h3>
 
         {runway.shortfallDate ? (
@@ -246,28 +247,28 @@ export default function DashboardPage() {
             </p>
           </div>
         </details>
-      </div>
+      </div></AnimateOnScroll>
 
       {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
       <AssetPieChart data={chartData} />
 
       {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
       <div className="row">
-        <div className="card" style={{ flex: 1, minWidth: 200 }}>
+        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
           <div className="muted">Properties</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{properties.length}</div>
           <Link href="/properties">Manage →</Link>
-        </div>
-        <div className="card" style={{ flex: 1, minWidth: 200 }}>
+        </div></AnimateOnScroll>
+        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
           <div className="muted">Saving Accounts</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{accounts.length}</div>
           <Link href="/cash">Manage →</Link>
-        </div>
-        <div className="card" style={{ flex: 1, minWidth: 200 }}>
+        </div></AnimateOnScroll>
+        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
           <div className="muted">Commodities</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>{commodities.length}</div>
           <Link href="/commodities">Manage →</Link>
-        </div>
+        </div></AnimateOnScroll>
       </div>
     </>
   );

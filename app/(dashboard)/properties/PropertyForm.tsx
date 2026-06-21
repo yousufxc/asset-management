@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { parseDateToIso } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 function RentalFields({ rentalType, setRentalType }: { rentalType: string; setRentalType: (v: string) => void }) {
   const [cheques, setCheques] = useState(1);
@@ -287,7 +288,7 @@ export default function PropertyForm() {
   }
 
   return (
-    <div className="card">
+    <AnimateOnScroll><div className="card">
       <form onSubmit={onSubmit}>
         <h3 style={{ marginTop: 0 }}>Add property</h3>
         <div className="row">
@@ -478,6 +479,6 @@ export default function PropertyForm() {
       >
         Close
       </button>
-    </div>
+    </div></AnimateOnScroll>
   );
 }

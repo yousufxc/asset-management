@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Commodity } from "@/lib/types";
 import { filsToAed, formatAed, formatIsoToUae } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 const METAL_LABEL: Record<string, string> = {
   gold: "Gold",
@@ -334,7 +335,7 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
   const displayUnit = UNIT_LABEL[commodity.weight_unit] ?? commodity.weight_unit;
 
   return (
-    <div className="card">
+    <AnimateOnScroll><div className="card">
       <div className="detail-header">
         <h3 style={{ margin: 0 }}>
           {METAL_LABEL[commodity.metal_type] ?? commodity.metal_type}{" "}
@@ -370,6 +371,6 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
           </button>
         </div>
       )}
-    </div>
+    </div></AnimateOnScroll>
   );
 }

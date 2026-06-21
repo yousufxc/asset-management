@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { numeralOnly } from "./numeralOnly";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 export default function CashForm() {
   const router = useRouter();
@@ -67,7 +68,7 @@ export default function CashForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card">
+    <AnimateOnScroll><form onSubmit={onSubmit} className="card">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
         <h3 style={{ margin: 0 }}>Add cash balance</h3>
         <span style={{ color: "var(--accent)", fontStyle: "italic", fontSize: 13 }}>*Do not add any current accounts</span>
@@ -106,12 +107,12 @@ export default function CashForm() {
 
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Interest Rate</label>
+          <label>Interest Rate (%)</label>
           <input
             name="interest_rate"
             type="number"
             step="0.01"
-            placeholder="Enter Interest Rate"
+            placeholder="Enter Interest Rate (%)"
             onKeyDown={numeralOnly}
           />
         </div>
@@ -142,6 +143,6 @@ export default function CashForm() {
           Close
         </button>
       </div>
-    </form>
+    </form></AnimateOnScroll>
   );
 }

@@ -3,6 +3,7 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import type { PieLabelRenderProps } from "recharts";
 import { formatAed } from "@/lib/core/units";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 export interface Slice {
   name: string;
@@ -80,15 +81,15 @@ export default function AssetPieChart({ data }: { data: Slice[] }) {
   const totalFils = data.reduce((sum, d) => sum + d.value, 0);
   if (totalFils === 0) {
     return (
-      <div className="card">
+      <AnimateOnScroll><div className="card">
         <h3 style={{ marginTop: 0, marginBottom: 12 }}>Portfolio allocation</h3>
         <p className="muted">No capital data available yet. Add assets to see the allocation breakdown.</p>
-      </div>
+      </div></AnimateOnScroll>
     );
   }
 
   return (
-    <div className="card">
+    <AnimateOnScroll><div className="card">
       <h3 style={{ marginTop: 0, marginBottom: 12 }}>Portfolio allocation</h3>
       <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
         <ResponsiveContainer width="100%" height={280}>
@@ -141,6 +142,6 @@ export default function AssetPieChart({ data }: { data: Slice[] }) {
           ))}
         </div>
       </div>
-    </div>
+    </div></AnimateOnScroll>
   );
 }

@@ -5,6 +5,7 @@ import type { CashAccount } from "@/lib/types";
 import { formatAed } from "@/lib/core/units";
 import CashForm from "./CashForm";
 import CashDetailPanel from "./CashDetailPanel";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 export default function CashContent({
   accounts,
@@ -26,7 +27,7 @@ export default function CashContent({
       <CashForm />
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
-        <div className="card" style={{ flex: selectedAccount ? 1 : undefined }}>
+        <AnimateOnScroll><div className="card" style={{ flex: selectedAccount ? 1 : undefined }}>
           <h3 style={{ marginTop: 0 }}>Accounts ({accounts.length})</h3>
           {accounts.length === 0 ? (
             <p className="muted">No accounts yet. Add one above.</p>
@@ -38,7 +39,7 @@ export default function CashContent({
                     <th>Bank account</th>
                     <th>Balance</th>
                     <th>Fixed Deposit</th>
-                    <th>Interest Rate</th>
+                    <th>Interest Rate (%)</th>
                     <th>Contract Period</th>
                   </tr>
                 </thead>
@@ -88,7 +89,7 @@ export default function CashContent({
               </details>
             </>
           )}
-        </div>
+        </div></AnimateOnScroll>
 
         {selectedAccount && (
           <div style={{ flex: 1, position: "sticky", top: 28 }}>

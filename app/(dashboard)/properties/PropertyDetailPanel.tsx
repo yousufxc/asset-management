@@ -9,6 +9,7 @@ import { installmentStatus } from "@/lib/core/installments";
 import { numeralOnly } from "./numeralOnly";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
 import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -761,7 +762,7 @@ export default function PropertyDetailPanel({ property, installments }: { proper
   );
 
   return (
-    <div className="card">
+    <AnimateOnScroll><div className="card">
       <div className="detail-header">
         <h3 style={{ margin: 0 }}>{property.name}</h3>
         <button
@@ -815,6 +816,6 @@ export default function PropertyDetailPanel({ property, installments }: { proper
           </button>
         </div>
       )}
-    </div>
+    </div></AnimateOnScroll>
   );
 }

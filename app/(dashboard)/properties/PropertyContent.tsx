@@ -231,10 +231,10 @@ export default function PropertyContent({
 
       {properties.length > 0 && (
         <>
-          <div className="card" style={{ marginBottom: 24 }}>
+          <AnimateOnScroll><div className="card" style={{ marginBottom: 24 }}>
             <h4 style={{ marginTop: 0 }}>Upcoming 30 Days</h4>
             <EventsTimeline properties={properties} installments={installments} />
-          </div>
+          </div></AnimateOnScroll>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
           <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Portfolio Value</h4>
@@ -274,7 +274,7 @@ export default function PropertyContent({
         </div>
       </>)}
 
-      <div className="card">
+      <AnimateOnScroll><div className="card">
         <h3 style={{ marginTop: 0 }}>Your properties ({sorted.length})</h3>
         {properties.length === 0 ? (
           <p className="muted">No properties yet. Add one above.</p>
@@ -418,7 +418,7 @@ export default function PropertyContent({
             </table>
           </div>
         )}
-      </div>
+      </div></AnimateOnScroll>
 
       {selectedProperty && (
         <div style={{ marginTop: 18 }}>

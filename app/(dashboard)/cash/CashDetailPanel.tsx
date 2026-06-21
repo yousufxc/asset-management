@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { CashAccount } from "@/lib/types";
 import { filsToAed, formatAed } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 function aedInputOrEmpty(fils: number): string {
   return filsToAed(fils).toString();
@@ -230,7 +231,7 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
   );
 
   return (
-    <div className="card">
+    <AnimateOnScroll><div className="card">
       <div className="detail-header">
         <h3 style={{ margin: 0 }}>{account.label}</h3>
         <button
@@ -262,6 +263,6 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
           </button>
         </div>
       )}
-    </div>
+    </div></AnimateOnScroll>
   );
 }

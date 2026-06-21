@@ -7,6 +7,7 @@ import { formatAed, formatIsoToUae, toGrams } from "@/lib/core/units";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import CommodityForm from "./CommodityForm";
 import CommodityDetailPanel from "./CommodityDetailPanel";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 const METAL_LABEL: Record<string, string> = {
   gold: "Gold",
@@ -187,7 +188,7 @@ export default function CommodityContent({
       <CommodityForm />
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
-        <div className="card" style={{ flex: selectedCommodity ? 1 : undefined }}>
+        <AnimateOnScroll><div className="card" style={{ flex: selectedCommodity ? 1 : undefined }}>
           <h3 style={{ marginTop: 0 }}>Holdings ({commodities.length})</h3>
           {sorted.length === 0 ? (
             <p className="muted">
@@ -341,7 +342,7 @@ export default function CommodityContent({
               </tbody>
             </table>
           )}
-        </div>
+        </div></AnimateOnScroll>
 
         {selectedCommodity && (
           <div style={{ flex: 1, position: "sticky", top: 28 }}>

@@ -8,6 +8,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 interface PropertyOption {
   id: number;
@@ -22,10 +23,10 @@ export default function InstallmentForm({ properties }: { properties: PropertyOp
 
   if (properties.length === 0) {
     return (
-      <div className="card">
+      <AnimateOnScroll><div className="card">
         <h3 style={{ marginTop: 0 }}>Add payment schedule</h3>
         <p className="muted">Add a property first, then you can attach its installment schedule here.</p>
-      </div>
+      </div></AnimateOnScroll>
     );
   }
 
@@ -69,7 +70,7 @@ export default function InstallmentForm({ properties }: { properties: PropertyOp
   }
 
   return (
-    <form onSubmit={onSubmit} className="card">
+    <AnimateOnScroll><form onSubmit={onSubmit} className="card">
       <h3 style={{ marginTop: 0 }}>Add payment schedule (off-plan installment)</h3>
       <div className="row">
         <div style={{ flex: 2, minWidth: 220 }}>
@@ -109,6 +110,6 @@ export default function InstallmentForm({ properties }: { properties: PropertyOp
       </div>
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
       <button type="submit" disabled={saving}>{saving ? "Saving…" : "Add installment"}</button>
-    </form>
+    </form></AnimateOnScroll>
   );
 }

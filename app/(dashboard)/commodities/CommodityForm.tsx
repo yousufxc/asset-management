@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { numeralOnly } from "./numeralOnly";
+import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
 const UNIT_LABEL: Record<string, string> = {
   gram: "gram",
@@ -82,7 +83,7 @@ export default function CommodityForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card">
+    <AnimateOnScroll><form onSubmit={onSubmit} className="card">
       <h3 style={{ marginTop: 0 }}>Add commodity</h3>
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
@@ -165,6 +166,6 @@ export default function CommodityForm() {
       <button type="submit" disabled={saving}>
         {saving ? "Saving…" : "Add commodity"}
       </button>
-    </form>
+    </form></AnimateOnScroll>
   );
 }
