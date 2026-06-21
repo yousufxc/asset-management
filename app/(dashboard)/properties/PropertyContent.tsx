@@ -4,7 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Property, Installment } from "@/lib/types";
 import { formatAed } from "@/lib/core/units";
-import { netAnnualRentFils, appreciationPct, rentalYieldPct } from "@/lib/core/property-analytics";
+import { netAnnualRentFils, appreciationPct, rentalYieldPct, totalROIPct } from "@/lib/core/property-analytics";
 import PropertyForm from "./PropertyForm";
 import PropertyDetailPanel from "./PropertyDetailPanel";
 import ValueByPropertyChart from "./charts/ValueByPropertyChart";
@@ -210,6 +210,13 @@ export default function PropertyContent({
     .filter((n): n is number => n !== null)
     .reduce((a, b) => a + b, 0);
 
+  const roiProps = properties.filter((p) => totalROIPct(p) !== null);
+  const totalROIGainFils = roiProps.reduce((sum, p) => {
+    return sum + (p.current_value_fils! - p.purchase_price_fils!) + (netAnnualRentFils(p) ?? 0);
+  }, 0);
+  const totalROIPurchaseFils = roiProps.reduce((sum, p) => sum + p.purchase_price_fils!, 0);
+  const totalROIPctValue = totalROIPurchaseFils > 0 ? (totalROIGainFils / totalROIPurchaseFils) * 100 : null;
+
   const dropdownBtnStyle: React.CSSProperties = {
     display: "block",
     width: "100%",
@@ -254,7 +261,15 @@ export default function PropertyContent({
             )}
             <CapitalAppreciationChart properties={properties} />
           </div>
-          <div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><PortfolioROIChart properties={properties} /></div>
+          <div className="card">
+            <h4 style={{ marginTop: 0 }}>Total ROI</h4>
+            {totalROIPctValue !== null && (
+              <div className="kpi-total">
+                {totalROIPctValue >= 0 ? "+" : ""}{totalROIPctValue.toFixed(1)}%
+              </div>
+            )}
+            <PortfolioROIChart properties={properties} />
+          </div>
           <div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><PortfolioCompositionChart properties={properties} /></div>
           <div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>
