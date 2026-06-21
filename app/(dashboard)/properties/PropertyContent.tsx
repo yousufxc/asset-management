@@ -245,7 +245,7 @@ export default function PropertyContent({
           <div className="card">
             <h4 style={{ marginTop: 0 }}>Capital Appreciation</h4>
             {totalPortfolioValue > 0 && (
-              <div className="kpi-total" style={{ color: totalAppreciationFils >= 0 ? "var(--good)" : "var(--bad)" }}>
+              <div className="kpi-total">
                 {totalAppreciationFils >= 0 ? "+" : ""}{formatAedShort(totalAppreciationFils)}
                 {totalAppreciationPct !== null && (
                   <span style={{ fontSize: 14, marginLeft: 6 }}>({totalAppreciationPct >= 0 ? "+" : ""}{totalAppreciationPct.toFixed(1)}%)</span>
@@ -259,7 +259,7 @@ export default function PropertyContent({
           <div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>
             {totalNetRent !== 0 && (
-              <div className="kpi-total" style={{ color: totalNetRent >= 0 ? "var(--good)" : "var(--bad)" }}>
+              <div className="kpi-total">
                 {formatAedShort(totalNetRent)}
               </div>
             )}

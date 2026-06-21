@@ -32,6 +32,7 @@ export default function PortfolioROIChart({ properties }: Props) {
     <button
       type="button"
       onClick={() => setMode(m)}
+      title={m === "snapshot" ? "Total gain (appreciation + net rent) as % of purchase price" : "Time-weighted annualized return (CAGR + rental yield)"}
       style={{
         fontSize: 11,
         padding: "3px 10px",

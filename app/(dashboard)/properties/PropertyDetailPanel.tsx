@@ -4,11 +4,10 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Property, Installment } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
-import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry } from "@/lib/core/property-analytics";
+import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry, totalROIPct, annualizedROIPct } from "@/lib/core/property-analytics";
 import { installmentStatus } from "@/lib/core/installments";
 import { numeralOnly } from "./numeralOnly";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
-import PortfolioROIChart from "./charts/PortfolioROIChart";
 import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -287,6 +286,8 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     const equity = equityFils(property, installments);
     const instProgress = instalmentProgressPct(installments);
     const contractDays = daysUntilContractExpiry(property, todayIso);
+    const snapshotROI = totalROIPct(property);
+    const annualizedROI = annualizedROIPct(property, todayIso);
     return (
     <>
       <div className="detail-row">
@@ -358,10 +359,16 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         </div>
       )}
       {property.purchase_price_fils != null && property.current_value_fils != null && property.purchase_price_fils > 0 && (
-        <div style={{ marginTop: 16 }}>
-          <h4 style={{ margin: "0 0 8px" }}>Total ROI</h4>
-          <PortfolioROIChart properties={[property]} />
-        </div>
+        <>
+          <div className="detail-row">
+            <span className="detail-label">Total ROI (snapshot)</span>
+            <span>{snapshotROI !== null ? `${snapshotROI >= 0 ? "+" : ""}${snapshotROI.toFixed(1)}%` : "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Total ROI (annualized)</span>
+            <span>{annualizedROI !== null ? `${annualizedROI >= 0 ? "+" : ""}${annualizedROI.toFixed(1)}%` : "—"}</span>
+          </div>
+        </>
       )}
       {instProgress !== null && (
         <div className="detail-row">
