@@ -19,7 +19,7 @@ export default function PortfolioROIChart({ properties }: Props) {
     return properties
       .map((p) => {
         const roi = mode === "snapshot" ? totalROIPct(p) : annualizedROIPct(p, todayIso);
-        return { name: p.name, roi };
+        return { name: p.name, roi, purchaseFils: p.purchase_price_fils ?? 0 };
       })
       .filter((d) => d.roi !== null)
       .sort((a, b) => a.roi! - b.roi!);
@@ -30,8 +30,15 @@ export default function PortfolioROIChart({ properties }: Props) {
 
   const aggregateROI = useMemo(() => {
     if (data.length === 0) return null;
-    const total = data.reduce((sum, d) => sum + d.roi!, 0);
-    return total / data.length;
+    let weightedSum = 0;
+    let totalPurchase = 0;
+    for (const d of data) {
+      if (d.purchaseFils > 0) {
+        weightedSum += d.roi! * d.purchaseFils;
+        totalPurchase += d.purchaseFils;
+      }
+    }
+    return totalPurchase > 0 ? weightedSum / totalPurchase : null;
   }, [data]);
 
   const toggleBtn = (m: ROIMode, label: string) => (
@@ -70,6 +77,7 @@ export default function PortfolioROIChart({ properties }: Props) {
       {aggregateROI !== null && (
         <div className="kpi-total" style={{ marginBottom: 4 }}>
           {aggregateROI >= 0 ? "+" : ""}{aggregateROI.toFixed(1)}%
+          <div className="muted" style={{ fontSize: 11, fontWeight: 400 }}>capital-weighted avg</div>
         </div>
       )}
       {emptyMessage ? (
