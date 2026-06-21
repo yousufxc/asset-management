@@ -149,6 +149,14 @@ CREATE INDEX IF NOT EXISTS idx_transactions_account ON transactions(account_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(txn_date);
 
 -- ----------------------------------------------------------------------------
+-- SETTINGS — key/value store for user preferences (single-user, local).
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
+-- ----------------------------------------------------------------------------
 -- READ-ONLY VIEWS for the Phase-3 chatbot (rule 2.5).
 --   The chatbot uses a separate read-only DB handle AND only sees these
 --   sanitized views — never base tables, never anything holding secrets.

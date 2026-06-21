@@ -74,6 +74,10 @@ export interface CashAccount {
   updated_at: string;
 }
 
+export interface AppSettings {
+  runwayHorizonDays: number;
+}
+
 export interface Commodity {
   id: number;
   metal_type: MetalType;

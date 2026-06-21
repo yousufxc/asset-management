@@ -10,6 +10,7 @@ import {
   listCommodities,
   listAllInstallments,
 } from "@/lib/db/queries";
+import { getSettingInt } from "@/lib/db/settings";
 import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
 import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
@@ -92,20 +93,23 @@ export default function DashboardPage() {
     latestDate,
   );
 
+  // ── Read runway horizon from settings ──────────────────────────────────
+  const runwayHorizonDays = getSettingInt("runwayHorizonDays");
+
   // ── Compute runway ──────────────────────────────────────────────────────
   const runway = computeRunway({
     asOf: todayIso,
     liquidCashFils: liquidFils,
     liabilities,
     inflows,
-    horizonDays: 90,
+    horizonDays: runwayHorizonDays,
   });
   const warning = checkLiquidityWarning({
     asOf: todayIso,
     liquidCashFils: liquidFils,
     liabilities,
     inflows,
-    horizonDays: 90,
+    horizonDays: runwayHorizonDays,
   });
 
   return (
@@ -122,7 +126,7 @@ export default function DashboardPage() {
           }}
         >
           <h3 style={{ marginTop: 0, color: "var(--bad)" }}>
-            90-day liquidity warning
+            {runwayHorizonDays}-day liquidity warning
           </h3>
           <p>
             You will run out of liquid cash in{" "}
@@ -171,7 +175,7 @@ export default function DashboardPage() {
               {!runway.withinHorizon && (
                 <span className="muted" style={{ fontSize: 14 }}>
                   {" "}
-                  (beyond 90-day window)
+                  (beyond {runwayHorizonDays}-day window)
                 </span>
               )}
             </p>
@@ -186,7 +190,7 @@ export default function DashboardPage() {
           </>
         ) : (
           <p style={{ fontSize: 20, fontWeight: 700, color: "var(--good)" }}>
-            No shortfall within 90 days
+            No shortfall within {runwayHorizonDays} days
           </p>
         )}
 
