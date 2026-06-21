@@ -28,6 +28,12 @@ export default function PortfolioROIChart({ properties }: Props) {
   const singleProperty = properties.length === 1;
   const chartHeight = Math.max(120, data.length * 34);
 
+  const aggregateROI = useMemo(() => {
+    if (data.length === 0) return null;
+    const total = data.reduce((sum, d) => sum + d.roi!, 0);
+    return total / data.length;
+  }, [data]);
+
   const toggleBtn = (m: ROIMode, label: string) => (
     <button
       type="button"
@@ -61,6 +67,11 @@ export default function PortfolioROIChart({ properties }: Props) {
         {toggleBtn("snapshot", "Snapshot")}
         {toggleBtn("annualized", "Annualized")}
       </div>
+      {aggregateROI !== null && (
+        <div className="kpi-total" style={{ marginBottom: 4 }}>
+          {aggregateROI >= 0 ? "+" : ""}{aggregateROI.toFixed(1)}%
+        </div>
+      )}
       {emptyMessage ? (
         <p className="muted">{emptyMessage}</p>
       ) : (
