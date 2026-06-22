@@ -16,7 +16,7 @@ export default function AboutPage() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0, color: "var(--accent)" }}>The Story of KYNZi</h3>
+        <h3 style={{ marginTop: 0 }}>The Story of KYNZi</h3>
         <p style={{ lineHeight: 1.8, fontSize: 15 }}>
           In classical Arabic, the word{" "}
           <strong>
@@ -41,7 +41,7 @@ export default function AboutPage() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0, color: "var(--accent)" }}>Our Philosophy</h3>
+        <h3 style={{ marginTop: 0 }}>Our Philosophy</h3>
         <p style={{ lineHeight: 1.8, fontSize: 15 }}>
           KYNZi was born out of a simple realization: the tools available to independent
           investors were either overly complex institutional platforms or overly simplistic
@@ -55,7 +55,7 @@ export default function AboutPage() {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0, color: "var(--accent)" }}>The Digital Vault</h3>
+        <h3 style={{ marginTop: 0 }}>The Digital Vault</h3>
         <p style={{ lineHeight: 1.8, fontSize: 15 }}>
           Designed for those who appreciate both form and functionality, KYNZi bridges the
           gap between fast-moving commodities and localized real estate. It acts as your
@@ -70,7 +70,6 @@ export default function AboutPage() {
             fontStyle: "italic",
             textAlign: "center",
             marginTop: 24,
-            color: "var(--accent)",
           }}
         >
           Your wealth is personal. The way you manage it should be exceptional. Welcome to
