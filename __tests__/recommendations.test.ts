@@ -20,7 +20,7 @@ function makeProperty(overrides: Partial<Property> = {}): Property {
     rent_date_1: null, rent_date_2: null, rent_date_3: null, rent_date_4: null,
     pm_company_name: null, pm_commission_pct: null,
     short_term_annual_rent_fils: null, short_term_return_frequency: null,
-    short_term_rent_deposit_date: null, notes: null,
+    short_term_rent_deposit_date: null, contract_start_date: null, notes: null,
     created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
     ...overrides,
   };

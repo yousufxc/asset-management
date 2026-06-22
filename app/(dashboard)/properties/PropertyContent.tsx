@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Property, Installment } from "@/lib/types";
+import type { Property, Installment, RentalDeposit, RentalHistory } from "@/lib/types";
 import { formatAed } from "@/lib/core/units";
 import { netAnnualRentFils, appreciationPct, rentalYieldPct } from "@/lib/core/property-analytics";
 import PropertyForm from "./PropertyForm";
@@ -53,10 +53,14 @@ function formatAedShort(fils: number): string {
 export default function PropertyContent({
   properties,
   installments,
+  deposits,
+  history,
   selectedProperty,
 }: {
   properties: Property[];
   installments: Installment[];
+  deposits: RentalDeposit[];
+  history: RentalHistory[];
   selectedProperty: Property | null;
 }) {
   const router = useRouter();
@@ -423,7 +427,7 @@ export default function PropertyContent({
 
       {selectedProperty && (
         <div style={{ marginTop: 18 }}>
-          <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} installments={installments.filter((i) => i.property_id === selectedProperty.id).sort((a, b) => a.due_date.localeCompare(b.due_date))} />
+          <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} installments={installments.filter((i) => i.property_id === selectedProperty.id).sort((a, b) => a.due_date.localeCompare(b.due_date))} deposits={deposits.filter((d) => d.property_id === selectedProperty.id)} history={history.filter((h) => h.property_id === selectedProperty.id)} />
         </div>
       )}
     </>

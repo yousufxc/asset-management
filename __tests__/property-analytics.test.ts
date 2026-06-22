@@ -43,6 +43,7 @@ function mkProperty(overrides: Partial<Property> = {}): Property {
     short_term_annual_rent_fils: null,
     short_term_return_frequency: null,
     short_term_rent_deposit_date: null,
+    contract_start_date: null,
     notes: null,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",

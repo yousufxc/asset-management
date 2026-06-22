@@ -13,6 +13,9 @@ export type InstallmentSource = "manual" | "pdf";
 export type MetalType = "gold" | "silver" | "platinum" | "palladium" | "other";
 export type WeightUnit = "gram" | "kg" | "troy_oz" | "tola";
 
+export type RentalDepositStatus = "pending" | "deposited";
+export type EndReason = "cancelled" | "vacant" | "renewed";
+
 export interface Property {
   id: number;
   name: string;
@@ -41,6 +44,7 @@ export interface Property {
   short_term_annual_rent_fils: number | null;
   short_term_return_frequency: ShortTermReturnFrequency | null;
   short_term_rent_deposit_date: string | null; // ISO
+  contract_start_date: string | null; // ISO
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -88,6 +92,41 @@ export interface Commodity {
   bought_price_per_unit_fils: number; // price per weight_unit, when bought
   purchase_date: string; // ISO
   current_price_date: string | null; // ISO
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RentalHistory {
+  id: number;
+  property_id: number;
+  rental_type: RentalType;
+  annual_rent_fils: number | null;
+  rent_cheques_per_year: number | null;
+  rent_date_1: string | null;
+  rent_date_2: string | null;
+  rent_date_3: string | null;
+  rent_date_4: string | null;
+  pm_company_name: string | null;
+  pm_commission_pct: number | null;
+  short_term_annual_rent_fils: number | null;
+  short_term_return_frequency: ShortTermReturnFrequency | null;
+  short_term_rent_deposit_date: string | null;
+  contract_start_date: string;
+  contract_end_date: string | null;
+  end_reason: EndReason | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface RentalDeposit {
+  id: number;
+  property_id: number;
+  cheque_number: number;
+  deposit_date: string; // ISO
+  amount_fils: number;
+  status: RentalDepositStatus;
+  deposited_date: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

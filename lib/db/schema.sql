@@ -172,6 +172,7 @@ ALTER TABLE properties ADD COLUMN short_term_annual_rent_fils INTEGER CHECK (sho
 ALTER TABLE properties ADD COLUMN short_term_return_frequency TEXT CHECK (short_term_return_frequency IS NULL OR short_term_return_frequency IN ('monthly', 'quarterly'));
 ALTER TABLE properties ADD COLUMN short_term_rent_deposit_date TEXT;
 ALTER TABLE cash_accounts ADD COLUMN fixed_deposit_start_date TEXT;
+ALTER TABLE properties ADD COLUMN contract_start_date TEXT;
 
 DROP VIEW IF EXISTS v_properties;
 CREATE VIEW IF NOT EXISTS v_properties AS
@@ -180,7 +181,7 @@ CREATE VIEW IF NOT EXISTS v_properties AS
          is_rental, rental_type, annual_rent_fils, rent_cheques_per_year,
          rent_date_1, rent_date_2, rent_date_3, rent_date_4,
          pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
-         short_term_return_frequency, short_term_rent_deposit_date
+         short_term_return_frequency, short_term_rent_deposit_date, contract_start_date
   FROM properties;
 
 DROP VIEW IF EXISTS v_installments;
@@ -200,3 +201,53 @@ CREATE VIEW IF NOT EXISTS v_commodities AS
          current_price_per_unit_fils, bought_price_per_unit_fils,
          purchase_date, current_price_date, notes
   FROM commodities;
+
+-- ----------------------------------------------------------------------------
+-- RENTAL HISTORY — immutable snapshots of each contract period.
+-- Created automatically when a contract is cancelled, renewed, or marked vacant.
+-- ----------------------------------------------------------------------------
+DROP VIEW IF EXISTS v_rental_history;
+CREATE TABLE IF NOT EXISTS rental_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  rental_type TEXT NOT NULL,
+  annual_rent_fils INTEGER,
+  rent_cheques_per_year INTEGER,
+  rent_date_1 TEXT, rent_date_2 TEXT, rent_date_3 TEXT, rent_date_4 TEXT,
+  pm_company_name TEXT, pm_commission_pct REAL,
+  short_term_annual_rent_fils INTEGER,
+  short_term_return_frequency TEXT, short_term_rent_deposit_date TEXT,
+  contract_start_date TEXT NOT NULL,
+  contract_end_date TEXT,
+  end_reason TEXT CHECK (end_reason IN ('cancelled','vacant','renewed')),
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE VIEW IF NOT EXISTS v_rental_history AS
+  SELECT id, property_id, rental_type, annual_rent_fils, rent_cheques_per_year,
+         rent_date_1, rent_date_2, rent_date_3, rent_date_4,
+         pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
+         short_term_return_frequency, short_term_rent_deposit_date,
+         contract_start_date, contract_end_date, end_reason
+  FROM rental_history;
+
+-- ----------------------------------------------------------------------------
+-- RENTAL DEPOSITS — individual deposit cheques with status tracking.
+-- Auto-generated from property rental config; user marks each as deposited.
+-- ----------------------------------------------------------------------------
+DROP VIEW IF EXISTS v_rental_deposits;
+CREATE TABLE IF NOT EXISTS rental_deposits (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  cheque_number INTEGER NOT NULL,
+  deposit_date TEXT NOT NULL,
+  amount_fils INTEGER NOT NULL CHECK (amount_fils >= 0),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','deposited')),
+  deposited_date TEXT,
+  notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE VIEW IF NOT EXISTS v_rental_deposits AS
+  SELECT id, property_id, cheque_number, deposit_date, amount_fils, status, deposited_date
+  FROM rental_deposits;

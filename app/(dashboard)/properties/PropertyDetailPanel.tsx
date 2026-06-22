@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Property, Installment } from "@/lib/types";
+import type { Property, Installment, RentalDeposit, RentalHistory } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
 import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry, totalROIPct, annualizedROIPct } from "@/lib/core/property-analytics";
 import { installmentStatus } from "@/lib/core/installments";
+import { depositStatus } from "@/lib/core/rental-deposits";
 import { numeralOnly } from "./numeralOnly";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
 import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
+import { MarkDepositedButton, MarkPendingButton } from "./DepositActions";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 
@@ -49,11 +51,13 @@ function aedInputOrEmpty(fils: number | null): string {
 }
 
 
-export default function PropertyDetailPanel({ property, installments }: { property: Property; installments: Installment[] }) {
+export default function PropertyDetailPanel({ property, installments, deposits, history }: { property: Property; installments: Installment[]; deposits: RentalDeposit[]; history: RentalHistory[] }) {
   const router = useRouter();
   const todayIso = new Date().toISOString().slice(0, 10);
   const hasPendingInsts = installments.some((i) => i.status !== "paid" && i.paid_date === null);
   const [editing, setEditing] = useState(false);
+  const [renewMode, setRenewMode] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -98,6 +102,55 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     const selectedSubcategory = String(fd.get("subcategory") ?? property.subcategory);
     const isRental = selectedSubcategory === "existing" && fd.get("is_rental") === "on";
     const formRentalType = isRental ? (String(fd.get("rental_type") ?? "long_term")) : null;
+
+    if (renewMode) {
+      const payload: Record<string, unknown> = { action: "renew" };
+      if (formRentalType) payload.rental_type = formRentalType;
+
+      const annualRent = isRental ? numOrNull("annual_rent_aed") : null;
+      if (annualRent !== null) payload.annual_rent_aed = annualRent;
+
+      const cheques = isRental ? numOrNull("rent_cheques_per_year") : null;
+      if (cheques !== null) payload.rent_cheques_per_year = cheques;
+
+      for (const n of [1, 2, 3, 4] as const) {
+        const key = `rent_date_${n}`;
+        const dateVal = isRental ? strOrNull(key) : null;
+        if (dateVal !== null) payload[key] = dateVal;
+      }
+
+      if (formRentalType === "short_term") {
+        const pmCompany = strOrNull("pm_company_name");
+        if (pmCompany !== null) payload.pm_company_name = pmCompany;
+        const pmCommission = numOrNull("pm_commission_pct");
+        if (pmCommission !== null) payload.pm_commission_pct = pmCommission;
+        const shortTermRent = numOrNull("short_term_annual_rent_aed");
+        if (shortTermRent !== null) payload.short_term_annual_rent_aed = shortTermRent;
+        const freq = strOrNull("short_term_return_frequency");
+        if (freq !== null) payload.short_term_return_frequency = freq;
+        const depositDate = strOrNull("short_term_rent_deposit_date");
+        if (depositDate !== null) payload.short_term_rent_deposit_date = depositDate;
+      }
+
+      const contractStart = strOrNull("contract_start_date");
+      if (contractStart !== null) payload.contract_start_date = contractStart;
+
+      const res = await fetch(`/api/properties/${property.id}/rental-lifecycle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setSaving(false);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ? JSON.stringify(data.error) + (data.issues ? " " + JSON.stringify(data.issues.fieldErrors) : "") : "Renew failed");
+        return;
+      }
+      setEditing(false);
+      setRenewMode(false);
+      router.refresh();
+      return;
+    }
 
     const payload: Record<string, unknown> = {};
 
@@ -176,6 +229,9 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     const depositDate = isRental && formRentalType === "short_term" ? strOrNull("short_term_rent_deposit_date") : null;
     if (depositDate !== (property.short_term_rent_deposit_date ?? null)) payload.short_term_rent_deposit_date = depositDate;
 
+    const contractStart = isRental ? strOrNull("contract_start_date") : null;
+    if (contractStart !== (property.contract_start_date ?? null)) payload.contract_start_date = contractStart;
+
     const notes = strOrNull("notes");
     if (notes !== (property.notes ?? null)) payload.notes = notes;
 
@@ -211,6 +267,43 @@ export default function PropertyDetailPanel({ property, installments }: { proper
     }
     router.push("/properties");
     router.refresh();
+  }
+
+  async function handleCancelContract() {
+    if (!confirm("Cancel this tenancy contract? The property will be marked as Vacant. All rental history will be preserved.")) return;
+    const res = await fetch(`/api/properties/${property.id}/rental-lifecycle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "cancel" }),
+    });
+    if (res.ok) router.refresh();
+    else setError("Failed to cancel contract");
+  }
+
+  async function handleMarkVacant() {
+    if (!confirm("Mark property as Vacant? Current contract data will be preserved in rental history.")) return;
+    const res = await fetch(`/api/properties/${property.id}/rental-lifecycle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "vacant" }),
+    });
+    if (res.ok) router.refresh();
+    else setError("Failed to mark as vacant");
+  }
+
+  function handleRenewContract() {
+    setRenewMode(true);
+    setEditing(true);
+  }
+
+  function handleCancel() {
+    setEditing(false);
+    setRenewMode(false);
+    setError(null);
+    setEditSubcategory(property.subcategory);
+    setEditIsRental(!!property.is_rental);
+    setEditRentalType(property.rental_type ?? "long_term");
+    setEditCheques(property.rent_cheques_per_year ?? 1);
   }
 
   async function handleSaveInstalment(instId: number) {
@@ -271,15 +364,6 @@ export default function PropertyDetailPanel({ property, installments }: { proper
       return;
     }
     router.refresh();
-  }
-
-  function handleCancel() {
-    setEditing(false);
-    setError(null);
-    setEditSubcategory(property.subcategory);
-    setEditIsRental(!!property.is_rental);
-    setEditRentalType(property.rental_type ?? "long_term");
-    setEditCheques(property.rent_cheques_per_year ?? 1);
   }
 
   const renderReadOnly = () => {
@@ -397,11 +481,15 @@ export default function PropertyDetailPanel({ property, installments }: { proper
           </span>
         </div>
       )}
-      {property.is_rental ? (
+       {property.is_rental ? (
         <>
           <div className="detail-row">
             <span className="detail-label">Rental type</span>
             <span>{property.rental_type === "short_term" ? "Short-term" : "Long-term"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Contract start</span>
+            <span>{formatIsoDisplay(property.contract_start_date)}</span>
           </div>
           {((property.rental_type ?? "long_term") === "long_term") ? (
             <>
@@ -459,6 +547,80 @@ export default function PropertyDetailPanel({ property, installments }: { proper
         <div className="detail-row">
           <span className="detail-label">Notes</span>
           <span style={{ whiteSpace: "pre-wrap" }}>{property.notes}</span>
+        </div>
+      )}
+      {property.is_rental && deposits.length > 0 && (
+        <details className="work" style={{ marginTop: 12 }}>
+          <summary>{deposits.length} rental deposit(s) — show schedule</summary>
+          <div className="work-body">
+            {deposits.map((d) => {
+              const liveStatus = depositStatus(d, todayIso);
+              return (
+                <div key={d.id} style={{ marginBottom: 8 }}>
+                  Cheque {d.cheque_number} — {formatIsoToUae(d.deposit_date)} — {formatAed(d.amount_fils)}{" "}
+                  <span className={`pill ${liveStatus}`}>{liveStatus}</span>
+                  {liveStatus === "overdue" && (
+                    <span style={{ color: "var(--warn)", marginLeft: 8, fontSize: 12 }}>
+                      Overdue — deposit not yet received
+                    </span>
+                  )}
+                  {liveStatus !== "deposited" ? (
+                    <MarkDepositedButton depositId={d.id} />
+                  ) : (
+                    <MarkPendingButton depositId={d.id} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </details>
+      )}
+      {property.is_rental && (
+        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" onClick={handleRenewContract} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px" }}>
+            Renew Contract
+          </button>
+          <button type="button" onClick={handleCancelContract} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px", background: "var(--warn)", color: "#fff" }}>
+            Cancel Contract
+          </button>
+          <button type="button" onClick={handleMarkVacant} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px", background: "var(--panel-2)", color: "var(--text)" }}>
+            Mark as Vacant
+          </button>
+        </div>
+      )}
+      <button type="button" onClick={() => setShowHistory(!showHistory)} style={{ marginTop: 8, fontSize: 12, background: "var(--panel-2)", color: "var(--text)", padding: "6px 12px" }}>
+        {showHistory ? "Hide Rental History" : "View Rental History"}
+      </button>
+      {showHistory && (
+        <div style={{ marginTop: 12 }}>
+          {history.length === 0 ? (
+            <p className="muted">No rental history.</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Rental Value</th>
+                    <th>Contract Period</th>
+                    <th>Cheques</th>
+                    <th>Type</th>
+                    <th>End Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((h) => (
+                    <tr key={h.id}>
+                      <td style={{ whiteSpace: "nowrap" }}>{formatAed(h.annual_rent_fils ?? h.short_term_annual_rent_fils ?? 0)}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>{formatIsoToUae(h.contract_start_date)} — {h.contract_end_date ? formatIsoToUae(h.contract_end_date) : "Active"}</td>
+                      <td>{h.rent_cheques_per_year ?? "—"}</td>
+                      <td>{h.rental_type === "short_term" ? "Short-term" : "Long-term"}</td>
+                      <td>{h.end_reason ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </>
@@ -658,6 +820,12 @@ export default function PropertyDetailPanel({ property, installments }: { proper
                   </div>
                 </>
               )}
+              <div className="row" style={{ marginTop: 8 }}>
+                <div style={{ maxWidth: 220 }}>
+                  <label>Contract start date</label>
+                  <input name="contract_start_date" type="date" defaultValue={property.contract_start_date ?? ""} />
+                </div>
+              </div>
             </>
           )}
         </>

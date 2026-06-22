@@ -5,8 +5,8 @@
  */
 
 import PropertyContent from "./PropertyContent";
-import { listProperties, listAllInstallments } from "@/lib/db/queries";
-import type { Property } from "@/lib/types";
+import { listProperties, listAllInstallments, listAllRentalDeposits, listAllRentalHistory } from "@/lib/db/queries";
+import type { Property, RentalDeposit, RentalHistory } from "@/lib/types";
 
 // Always read fresh from SQLite (no static caching of financial data).
 export const dynamic = "force-dynamic";
@@ -19,8 +19,12 @@ export default async function PropertiesPage({
   const params = await searchParams;
   const propertiesRaw = listProperties();
   const installmentsRaw = listAllInstallments();
+  const depositsRaw = listAllRentalDeposits();
+  const historyRaw = listAllRentalHistory();
   const properties = JSON.parse(JSON.stringify(propertiesRaw));
   const installments = JSON.parse(JSON.stringify(installmentsRaw));
+  const deposits = JSON.parse(JSON.stringify(depositsRaw));
+  const history = JSON.parse(JSON.stringify(historyRaw));
   const selectedId = params.selected ? Number(params.selected) : null;
   const selectedProperty = selectedId
     ? (properties.find((p: Property) => p.id === selectedId) ?? null)
@@ -30,6 +34,8 @@ export default async function PropertiesPage({
     <PropertyContent
       properties={properties}
       installments={installments}
+      deposits={deposits}
+      history={history}
       selectedProperty={selectedProperty}
     />
   );

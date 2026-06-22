@@ -19,8 +19,11 @@ import type {
   CashAccountUpdate,
   CommodityInput,
   CommodityUpdate,
+  RentalDepositUpdate,
 } from "@/lib/ingest/validate";
-import type { Property, Installment, CashAccount, Commodity } from "@/lib/types";
+import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit } from "@/lib/types";
+import type { EndReason } from "@/lib/types";
+import type { DepositScheduleEntry } from "@/lib/core/rental-deposits";
 
 // Helpers --------------------------------------------------------------------
 const aedOrNull = (v: number | null | undefined): number | null =>
@@ -38,14 +41,14 @@ export function insertProperty(input: PropertyInput): Property {
        current_value_fils, valued_at, is_rental, rental_type, annual_rent_fils, rent_cheques_per_year,
        rent_date_1, rent_date_2, rent_date_3, rent_date_4,
        pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
-       short_term_return_frequency, short_term_rent_deposit_date, notes)
+       short_term_return_frequency, short_term_rent_deposit_date, contract_start_date, notes)
     VALUES
       (@name, @subcategory, @property_type, @bedrooms, @city, @area, @developer, @size_sqft,
        @annual_service_charge_fils, @purchase_price_fils, @purchased_at,
        @current_value_fils, @valued_at, @is_rental, @rental_type, @annual_rent_fils, @rent_cheques_per_year,
        @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4,
        @pm_company_name, @pm_commission_pct, @short_term_annual_rent_fils,
-       @short_term_return_frequency, @short_term_rent_deposit_date, @notes)
+       @short_term_return_frequency, @short_term_rent_deposit_date, @contract_start_date, @notes)
   `);
   const info = stmt.run({
     name: input.name,
@@ -74,6 +77,7 @@ export function insertProperty(input: PropertyInput): Property {
     short_term_annual_rent_fils: input.is_rental && input.rental_type === "short_term" ? aedOrNull(input.short_term_annual_rent_aed) : null,
     short_term_return_frequency: input.is_rental && input.rental_type === "short_term" ? (input.short_term_return_frequency ?? null) : null,
     short_term_rent_deposit_date: input.is_rental && input.rental_type === "short_term" ? dateOrNull(input.short_term_rent_deposit_date) : null,
+    contract_start_date: input.is_rental ? dateOrNull(input.contract_start_date) : null,
     notes: input.notes ?? null,
   });
   return getProperty(Number(info.lastInsertRowid))!;
@@ -123,6 +127,7 @@ export function updateProperty(id: number, data: PropertyUpdate): Property | und
   if (data.short_term_annual_rent_aed !== undefined) { sets.push("short_term_annual_rent_fils = @short_term_annual_rent_fils"); params.short_term_annual_rent_fils = aedOrNull(data.short_term_annual_rent_aed); }
   if (data.short_term_return_frequency !== undefined) { sets.push("short_term_return_frequency = @short_term_return_frequency"); params.short_term_return_frequency = data.short_term_return_frequency; }
   if (data.short_term_rent_deposit_date !== undefined) { sets.push("short_term_rent_deposit_date = @short_term_rent_deposit_date"); params.short_term_rent_deposit_date = dateOrNull(data.short_term_rent_deposit_date); }
+  if (data.contract_start_date !== undefined) { sets.push("contract_start_date = @contract_start_date"); params.contract_start_date = dateOrNull(data.contract_start_date); }
   if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
 
   if (sets.length === 0) return getProperty(id);
@@ -426,4 +431,174 @@ export function insertTransactionDeduped(txn: RawTransaction): boolean {
     source: txn.source ?? "pdf",
   });
   return info.changes > 0;
+}
+
+// RENTAL HISTORY --------------------------------------------------------------
+
+export function insertRentalHistory(
+  property: Property,
+  contractStartDate: string,
+  endDate: string | null,
+  endReason: EndReason | null,
+  notes?: string | null,
+): RentalHistory {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO rental_history
+      (property_id, rental_type, annual_rent_fils, rent_cheques_per_year,
+       rent_date_1, rent_date_2, rent_date_3, rent_date_4,
+       pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
+       short_term_return_frequency, short_term_rent_deposit_date,
+       contract_start_date, contract_end_date, end_reason, notes)
+    VALUES
+      (@property_id, @rental_type, @annual_rent_fils, @rent_cheques_per_year,
+       @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4,
+       @pm_company_name, @pm_commission_pct, @short_term_annual_rent_fils,
+       @short_term_return_frequency, @short_term_rent_deposit_date,
+       @contract_start_date, @contract_end_date, @end_reason, @notes)
+  `);
+  const info = stmt.run({
+    property_id: property.id,
+    rental_type: property.rental_type ?? "long_term",
+    annual_rent_fils: property.annual_rent_fils ?? null,
+    rent_cheques_per_year: property.rent_cheques_per_year ?? null,
+    rent_date_1: property.rent_date_1 ?? null,
+    rent_date_2: property.rent_date_2 ?? null,
+    rent_date_3: property.rent_date_3 ?? null,
+    rent_date_4: property.rent_date_4 ?? null,
+    pm_company_name: property.pm_company_name ?? null,
+    pm_commission_pct: property.pm_commission_pct ?? null,
+    short_term_annual_rent_fils: property.short_term_annual_rent_fils ?? null,
+    short_term_return_frequency: property.short_term_return_frequency ?? null,
+    short_term_rent_deposit_date: property.short_term_rent_deposit_date ?? null,
+    contract_start_date: contractStartDate,
+    contract_end_date: endDate,
+    end_reason: endReason,
+    notes: notes ?? null,
+  });
+  return getDb()
+    .prepare(`SELECT * FROM rental_history WHERE id = ?`)
+    .get(Number(info.lastInsertRowid)) as unknown as RentalHistory;
+}
+
+export function listRentalHistory(propertyId: number): RentalHistory[] {
+  return getDb()
+    .prepare(`SELECT * FROM rental_history WHERE property_id = ? ORDER BY contract_start_date DESC`)
+    .all(propertyId) as unknown as RentalHistory[];
+}
+
+export function listAllRentalHistory(): RentalHistory[] {
+  return getDb()
+    .prepare(`SELECT * FROM rental_history ORDER BY contract_start_date DESC`)
+    .all() as unknown as RentalHistory[];
+}
+
+// RENTAL DEPOSITS -------------------------------------------------------------
+
+export function listRentalDeposits(propertyId: number): RentalDeposit[] {
+  return getDb()
+    .prepare(`SELECT * FROM rental_deposits WHERE property_id = ? ORDER BY cheque_number ASC`)
+    .all(propertyId) as unknown as RentalDeposit[];
+}
+
+export function listAllRentalDeposits(): RentalDeposit[] {
+  return getDb()
+    .prepare(`SELECT * FROM rental_deposits ORDER BY property_id, cheque_number ASC`)
+    .all() as unknown as RentalDeposit[];
+}
+
+export function getRentalDeposit(id: number): RentalDeposit | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM rental_deposits WHERE id = ?`)
+    .get(id) as unknown as RentalDeposit | undefined;
+}
+
+export function markRentalDepositDeposited(id: number, depositedDateIso?: string): RentalDeposit | undefined {
+  const db = getDb();
+  const depositDate = depositedDateIso ?? new Date().toISOString().slice(0, 10);
+  db.prepare(`
+    UPDATE rental_deposits
+    SET status = 'deposited',
+        deposited_date = @deposited_date,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = @id
+  `).run({ id, deposited_date: depositDate });
+  return getRentalDeposit(id);
+}
+
+export function markRentalDepositPending(id: number): RentalDeposit | undefined {
+  const db = getDb();
+  db.prepare(`
+    UPDATE rental_deposits
+    SET status = 'pending',
+        deposited_date = NULL,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = @id
+  `).run({ id });
+  return getRentalDeposit(id);
+}
+
+export function deleteRentalDepositsForProperty(propertyId: number): void {
+  getDb().prepare(`DELETE FROM rental_deposits WHERE property_id = ?`).run(propertyId);
+}
+
+/**
+ * UPSERT deposit schedule into rental_deposits.
+ * For each entry that matches an existing row on (property_id, cheque_number),
+ * update date & amount but PRESERVE status+deposited_date.
+ * Insert new entries for cheque numbers not yet in the table.
+ * Delete rows whose cheque_number is no longer in the schedule.
+ */
+export function upsertRentalDepositSchedule(
+  propertyId: number,
+  schedule: DepositScheduleEntry[],
+): void {
+  const db = getDb();
+
+  const existingRows = db.prepare(
+    `SELECT id, cheque_number, status, deposited_date FROM rental_deposits WHERE property_id = ?`,
+  ).all(propertyId) as { id: number; cheque_number: number; status: string; deposited_date: string | null }[];
+
+  const existingByCheque = new Map<number, { id: number; status: string; depositedDate: string | null }>();
+  for (const r of existingRows) {
+    existingByCheque.set(r.cheque_number, { id: r.id, status: r.status, depositedDate: r.deposited_date });
+  }
+
+  const scheduleNumbers = new Set(schedule.map((e) => e.chequeNumber));
+
+  const updateStmt = db.prepare(`
+    UPDATE rental_deposits
+    SET deposit_date = @deposit_date, amount_fils = @amount_fils,
+        updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+    WHERE id = @id
+  `);
+
+  const insertStmt = db.prepare(`
+    INSERT INTO rental_deposits (property_id, cheque_number, deposit_date, amount_fils, status, deposited_date)
+    VALUES (@property_id, @cheque_number, @deposit_date, @amount_fils, @status, @deposited_date)
+  `);
+
+  // Delete cheques no longer in schedule (only if not yet deposited — fixes #1)
+  for (const [chequeNum, existing] of existingByCheque) {
+    if (!scheduleNumbers.has(chequeNum) && existing.status !== "deposited" && existing.depositedDate === null) {
+      db.prepare(`DELETE FROM rental_deposits WHERE id = ?`).run(existing.id);
+    }
+  }
+
+  // Upsert each schedule entry
+  for (const entry of schedule) {
+    const existing = existingByCheque.get(entry.chequeNumber);
+    if (existing) {
+      updateStmt.run({ deposit_date: entry.depositDate, amount_fils: entry.amountFils, id: existing.id });
+    } else {
+      insertStmt.run({
+        property_id: propertyId,
+        cheque_number: entry.chequeNumber,
+        deposit_date: entry.depositDate,
+        amount_fils: entry.amountFils,
+        status: "pending",
+        deposited_date: null,
+      });
+    }
+  }
 }

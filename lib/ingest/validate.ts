@@ -67,6 +67,7 @@ export const PropertyInputSchema = z.object({
   short_term_annual_rent_aed: aedAmount.optional().nullable(),
   short_term_return_frequency: z.enum(["monthly", "quarterly"]).optional().nullable(),
   short_term_rent_deposit_date: dateString.optional().nullable(),
+  contract_start_date: dateString.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type PropertyInput = z.infer<typeof PropertyInputSchema>;
@@ -101,6 +102,7 @@ export const PropertyUpdateSchema = z.object({
   short_term_annual_rent_aed: aedAmount.optional().nullable(),
   short_term_return_frequency: z.enum(["monthly", "quarterly"]).optional().nullable(),
   short_term_rent_deposit_date: dateString.optional().nullable(),
+  contract_start_date: dateString.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type PropertyUpdate = z.infer<typeof PropertyUpdateSchema>;
@@ -189,3 +191,34 @@ export const InstallmentUpdateSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 export type InstallmentUpdate = z.infer<typeof InstallmentUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// RENTAL DEPOSIT UPDATE — used by PATCH /api/rental-deposits/[id]
+// ---------------------------------------------------------------------------
+export const RentalDepositUpdateSchema = z.object({
+  status: z.enum(["pending", "deposited"]),
+  deposited_date: dateString.optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type RentalDepositUpdate = z.infer<typeof RentalDepositUpdateSchema>;
+
+// ---------------------------------------------------------------------------
+// RENTAL LIFECYCLE — actions that change the contract state
+// ---------------------------------------------------------------------------
+export const RentalLifecycleSchema = z.object({
+  action: z.enum(["cancel", "vacant", "renew"]),
+  rental_type: z.enum(["long_term", "short_term"]).optional(),
+  annual_rent_aed: aedAmount.optional().nullable(),
+  rent_cheques_per_year: z.number().int().refine((v) => [1, 2, 4, 12].includes(v), "must be 1, 2, 4, or 12").optional().nullable(),
+  rent_date_1: dateString.optional().nullable(),
+  rent_date_2: dateString.optional().nullable(),
+  rent_date_3: dateString.optional().nullable(),
+  rent_date_4: dateString.optional().nullable(),
+  pm_company_name: z.string().optional().nullable(),
+  pm_commission_pct: z.number().min(0).max(100).optional().nullable(),
+  short_term_annual_rent_aed: aedAmount.optional().nullable(),
+  short_term_return_frequency: z.enum(["monthly", "quarterly"]).optional().nullable(),
+  short_term_rent_deposit_date: dateString.optional().nullable(),
+  contract_start_date: dateString.optional().nullable(),
+});
+export type RentalLifecycleAction = z.infer<typeof RentalLifecycleSchema>;

@@ -9,7 +9,8 @@
 
 import { NextResponse } from "next/server";
 import { PropertyInputSchema } from "@/lib/ingest/validate";
-import { insertProperty, listProperties } from "@/lib/db/queries";
+import { insertProperty, listProperties, upsertRentalDepositSchedule } from "@/lib/db/queries";
+import { generateDepositSchedule } from "@/lib/core/rental-deposits";
 
 export async function GET() {
   return NextResponse.json({ properties: listProperties() });
@@ -32,5 +33,9 @@ export async function POST(request: Request) {
   }
 
   const property = insertProperty(parsed.data);
+  if (property.is_rental) {
+    const schedule = generateDepositSchedule(property);
+    upsertRentalDepositSchedule(property.id, schedule);
+  }
   return NextResponse.json({ property }, { status: 201 });
 }
