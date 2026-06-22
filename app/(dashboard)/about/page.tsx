@@ -8,7 +8,7 @@ export default function AboutPage() {
       <h2>About Us</h2>
 
       <AnimateOnScroll>
-        <div className="card" style={{ textAlign: "center", maxWidth: 400, margin: "0 auto 18px" }}>
+        <div style={{ textAlign: "center", margin: "0 auto 48px" }}>
           <h1 style={{ margin: 0, fontSize: 28, letterSpacing: 1 }}>
             Welcome to KYNZi
           </h1>
@@ -16,7 +16,7 @@ export default function AboutPage() {
       </AnimateOnScroll>
 
       <AnimateOnScroll>
-        <div className="card">
+        <div style={{ marginBottom: 32 }}>
           <h3 style={{ marginTop: 0 }}>The Story of KYNZi</h3>
           <p style={{ lineHeight: 1.8, fontSize: 15 }}>
             In classical Arabic, the word{" "}
@@ -43,7 +43,7 @@ export default function AboutPage() {
       </AnimateOnScroll>
 
       <AnimateOnScroll>
-        <div className="card">
+        <div style={{ marginBottom: 32 }}>
           <h3 style={{ marginTop: 0 }}>Our Philosophy</h3>
           <p style={{ lineHeight: 1.8, fontSize: 15 }}>
             KYNZi was born out of a simple realization: the tools available to independent
@@ -59,7 +59,7 @@ export default function AboutPage() {
       </AnimateOnScroll>
 
       <AnimateOnScroll>
-        <div className="card">
+        <div style={{ marginBottom: 32 }}>
           <h3 style={{ marginTop: 0 }}>The Digital Vault</h3>
           <p style={{ lineHeight: 1.8, fontSize: 15 }}>
             Designed for those who appreciate both form and functionality, KYNZi bridges the
