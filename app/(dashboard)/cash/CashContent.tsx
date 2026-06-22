@@ -5,7 +5,9 @@ import type { CashAccount } from "@/lib/types";
 import { formatAed } from "@/lib/core/units";
 import CashForm from "./CashForm";
 import CashDetailPanel from "./CashDetailPanel";
+import CashCompositionChart from "./charts/CashCompositionChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 
 export default function CashContent({
   accounts,
@@ -25,6 +27,19 @@ export default function CashContent({
     <>
       <h2>Saving Accounts</h2>
       <CashForm />
+
+      {accounts.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
+          <AnimateOnScroll>
+            <div className="card">
+              <h4 style={{ marginTop: 0 }}>Fixed vs Regular</h4>
+              <AnimateChartOnScroll>
+                <CashCompositionChart accounts={accounts} />
+              </AnimateChartOnScroll>
+            </div>
+          </AnimateOnScroll>
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
         <AnimateOnScroll><div className="card" style={{ flex: selectedAccount ? 1 : undefined }}>

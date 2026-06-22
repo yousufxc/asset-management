@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CashAccount } from "@/lib/types";
 import { filsToAed, formatAed } from "@/lib/core/units";
+import { fixedDepositMaturityValueFils } from "@/lib/core/cash-analytics";
 import { numeralOnly } from "./numeralOnly";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
@@ -134,6 +135,18 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
             <span className="detail-label">Start Date</span>
             <span>{account.fixed_deposit_start_date ?? "—"}</span>
           </div>
+          {(() => {
+            const maturity = fixedDepositMaturityValueFils(account);
+            if (maturity === null) return null;
+            return (
+              <div className="detail-row">
+                <span className="detail-label">Balance at Maturity</span>
+                <span style={{ fontWeight: 600, color: "var(--good)" }}>
+                  {formatAed(maturity)}
+                </span>
+              </div>
+            );
+          })()}
         </>
       ) : null}
       <div className="detail-row">
