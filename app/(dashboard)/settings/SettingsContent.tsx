@@ -4,6 +4,7 @@ import { useState } from "react";
 
 interface Props {
   runwayHorizonDays: number;
+  theme: string;
   version: string;
   dbPath: string;
   tableCounts: Record<string, number>;
@@ -11,6 +12,7 @@ interface Props {
 
 export default function SettingsContent({
   runwayHorizonDays: initialHorizon,
+  theme: initialTheme,
   version,
   dbPath,
   tableCounts,
@@ -18,6 +20,8 @@ export default function SettingsContent({
   const [horizonDays, setHorizonDays] = useState(initialHorizon);
   const [horizonSaving, setHorizonSaving] = useState(false);
   const [horizonSaved, setHorizonSaved] = useState(false);
+  const [theme, setTheme] = useState(initialTheme);
+  const [themeSaving, setThemeSaving] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [resetConfirm, setResetConfirm] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -42,6 +46,22 @@ export default function SettingsContent({
       setTimeout(() => setHorizonSaved(false), 2000);
     } finally {
       setHorizonSaving(false);
+    }
+  };
+
+  const toggleTheme = async () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    setThemeSaving(true);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "theme", value: next }),
+      });
+    } finally {
+      setThemeSaving(false);
     }
   };
 
@@ -125,6 +145,38 @@ export default function SettingsContent({
             Must be between 7 and 365 days.
           </p>
         )}
+
+        <div style={{ borderTop: "1px solid var(--border)", marginTop: 20, paddingTop: 16 }}>
+          <label>Theme</label>
+          <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>
+            Switch between dark and light mode.
+          </p>
+          <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", margin: 0 }}>
+              <input
+                type="radio"
+                name="theme"
+                value="dark"
+                checked={theme === "dark"}
+                onChange={toggleTheme}
+                style={{ width: "auto", margin: 0, cursor: "pointer" }}
+              />
+              Dark
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer", margin: 0 }}>
+              <input
+                type="radio"
+                name="theme"
+                value="light"
+                checked={theme === "light"}
+                onChange={toggleTheme}
+                style={{ width: "auto", margin: 0, cursor: "pointer" }}
+              />
+              Light
+            </label>
+            {themeSaving && <span className="muted" style={{ fontSize: 12 }}>Saving...</span>}
+          </div>
+        </div>
       </div>
 
       {/* ─── DATA ───────────────────────────────────────────────────────── */}

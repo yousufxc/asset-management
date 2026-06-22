@@ -5,6 +5,7 @@ import type { Property, CashAccount, Commodity, Installment } from "@/lib/types"
 
 const DEFAULTS: Record<string, string> = {
   runwayHorizonDays: "90",
+  theme: "dark",
 };
 
 export function getSetting(key: string): string {
