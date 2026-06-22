@@ -51,3 +51,26 @@ export function DeleteButton({ installmentId }: InstallmentActionsProps) {
     </button>
   );
 }
+
+export function MarkUnpaidButton({ installmentId }: InstallmentActionsProps) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function handleMarkUnpaid() {
+    setBusy(true);
+    const res = await fetch(`/api/installments/${installmentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "upcoming" }),
+    });
+    setBusy(false);
+    if (!res.ok) return;
+    router.refresh();
+  }
+
+  return (
+    <button onClick={handleMarkUnpaid} disabled={busy} className="link" style={{ marginLeft: 8 }}>
+      {busy ? "…" : "Mark unpaid"}
+    </button>
+  );
+}
