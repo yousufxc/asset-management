@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
         <div className="sidebar-divider" />
         <nav>
+          <Link href="/about">About Us</Link>
           <Link href="/settings">Settings</Link>
         </nav>
       </aside>
