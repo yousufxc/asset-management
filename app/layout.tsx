@@ -3,7 +3,7 @@ import { getSetting } from "@/lib/db/settings";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Liquidity & Asset Platform",
+  title: "KYNZi",
   description: "Local-first, single-user, AED. Liquidity-first.",
 };
 
