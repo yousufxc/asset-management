@@ -3,11 +3,18 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Commodity } from "@/lib/types";
-import { formatAed, formatIsoToUae, toGrams } from "@/lib/core/units";
-import { commodityTotalFils } from "@/lib/core/valuation";
+import { formatAed, formatIsoToUae } from "@/lib/core/units";
+import { enrichCommodities } from "@/lib/core/commodity-analytics";
+import type { EnrichedCommodity } from "@/lib/core/commodity-analytics";
 import CommodityForm from "./CommodityForm";
 import CommodityDetailPanel from "./CommodityDetailPanel";
+import CommodityMetalCompositionChart from "./charts/CommodityMetalCompositionChart";
+import CommodityPLByHoldingChart from "./charts/CommodityPLByHoldingChart";
+import CommodityCostVsValueChart from "./charts/CommodityCostVsValueChart";
+import CommodityROIChart from "./charts/CommodityROIChart";
+import CommodityWeightByMetalChart from "./charts/CommodityWeightByMetalChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 
 const METAL_LABEL: Record<string, string> = {
   gold: "Gold",
@@ -20,16 +27,6 @@ const METAL_LABEL: Record<string, string> = {
 const ALL_METAL_TYPES = ["gold", "silver", "platinum", "palladium", "other"] as const;
 
 type SortCol = "amount" | "date_purchased" | "bought_price" | "value_bought" | "current_price" | "current_value" | "profit_loss" | "profit_loss_pct";
-
-interface EnrichedCommodity {
-  commodity: Commodity;
-  costFils: number;
-  valueFils: number;
-  grams: number;
-  hasCurrent: boolean;
-  pl: number;
-  plPct: number | null;
-}
 
 export default function CommodityContent({
   commodities,
@@ -56,17 +53,7 @@ export default function CommodityContent({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [filterOpen]);
 
-  const enriched = useMemo(() => {
-    return commodities.map((c) => {
-      const cost = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.bought_price_per_unit_fils });
-      const value = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.current_price_per_unit_fils });
-      const hasCurrent = c.current_price_per_unit_fils > 0;
-      const pl = value.totalFils - cost.totalFils;
-      const plPct = hasCurrent && cost.totalFils > 0 ? (pl / cost.totalFils) * 100 : null;
-      const grams = toGrams(c.weight, c.weight_unit);
-      return { commodity: c, costFils: cost.totalFils, valueFils: value.totalFils, grams, hasCurrent, pl, plPct };
-    });
-  }, [commodities]);
+  const enriched = useMemo(() => enrichCommodities(commodities), [commodities]);
 
   const isAllSelected = metalTypeFilter.size === ALL_METAL_TYPES.length;
 
@@ -187,8 +174,33 @@ export default function CommodityContent({
       <h2>Commodities</h2>
       <CommodityForm />
 
-      <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
-        <AnimateOnScroll><div className="card" style={{ flex: selectedCommodity ? 1 : undefined }}>
+      {commodities.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
+          <AnimateOnScroll><div className="card">
+            <h4 style={{ marginTop: 0 }}>Portfolio by Metal</h4>
+            <AnimateChartOnScroll><CommodityMetalCompositionChart enriched={enriched} /></AnimateChartOnScroll>
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">
+            <h4 style={{ marginTop: 0 }}>Weight by Metal</h4>
+            <AnimateChartOnScroll><CommodityWeightByMetalChart enriched={enriched} /></AnimateChartOnScroll>
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">
+            <h4 style={{ marginTop: 0 }}>P&L by Holding</h4>
+            <AnimateChartOnScroll><CommodityPLByHoldingChart enriched={enriched} /></AnimateChartOnScroll>
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">
+            <h4 style={{ marginTop: 0 }}>Cost vs Current Value</h4>
+            <AnimateChartOnScroll><CommodityCostVsValueChart enriched={enriched} /></AnimateChartOnScroll>
+          </div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card" style={{ gridColumn: "1 / -1" }}>
+            <h4 style={{ marginTop: 0 }}>ROI % by Holding</h4>
+            <AnimateChartOnScroll><CommodityROIChart enriched={enriched} /></AnimateChartOnScroll>
+          </div></AnimateOnScroll>
+        </div>
+      )}
+
+      <div>
+        <AnimateOnScroll><div className="card">
           <h3 style={{ marginTop: 0 }}>Holdings ({commodities.length})</h3>
           {sorted.length === 0 ? (
             <p className="muted">
@@ -345,7 +357,7 @@ export default function CommodityContent({
         </div></AnimateOnScroll>
 
         {selectedCommodity && (
-          <div style={{ flex: 1, position: "sticky", top: 28 }}>
+          <div style={{ marginTop: 18 }}>
             <CommodityDetailPanel
               key={selectedCommodity.id}
               commodity={selectedCommodity}
