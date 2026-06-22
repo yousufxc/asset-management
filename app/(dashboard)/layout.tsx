@@ -5,7 +5,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="app-shell">
       <aside className="sidebar">
         <h1>KYNZi</h1>
-        <div className="tag">Local · single-user · AED</div>
         <nav>
           <Link href="/dashboard">Dashboard</Link>
           <Link href="/properties">Property</Link>
