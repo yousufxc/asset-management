@@ -42,6 +42,7 @@ export default function CommodityForm() {
       weight_unit: String(fd.get("weight_unit") ?? ""),
       current_price_per_unit_aed: numOrNull("current_price_per_unit_aed") ?? 0,
       bought_price_per_unit_aed: numOrNull("bought_price_per_unit_aed"),
+      target_sell_price_per_unit_aed: numOrNull("target_sell_price_per_unit_aed"),
       purchase_date: strOrNull("purchase_date"),
       current_price_date: strOrNull("current_price_date"),
       notes: strOrNull("notes"),
@@ -145,6 +146,16 @@ export default function CommodityForm() {
             placeholder="Enter current price here"
             onKeyDown={numeralOnly}
             onChange={(e) => setHasCurrentPrice(e.target.value !== "")}
+          />
+        </div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <label>Target sell price (AED per {perUnit})</label>
+          <input
+            name="target_sell_price_per_unit_aed"
+            type="number"
+            step="0.01"
+            placeholder="Price at which to sell"
+            onKeyDown={numeralOnly}
           />
         </div>
       </div>

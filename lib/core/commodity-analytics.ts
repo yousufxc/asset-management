@@ -57,3 +57,13 @@ export function groupByMetal(enriched: EnrichedCommodity[]): MetalAggregate[] {
     }))
     .sort((a, b) => b.totalValueFils - a.totalValueFils);
 }
+
+/**
+ * Returns true when the commodity's current price has reached or exceeded
+ * the user's target sell price — indicating it's time to sell.
+ */
+export function shouldSellAlert(c: Commodity): boolean {
+  if (c.target_sell_price_per_unit_fils === null || c.target_sell_price_per_unit_fils <= 0) return false;
+  if (c.current_price_per_unit_fils <= 0) return false;
+  return c.current_price_per_unit_fils >= c.target_sell_price_per_unit_fils;
+}

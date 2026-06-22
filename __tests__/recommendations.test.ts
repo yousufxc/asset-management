@@ -40,6 +40,7 @@ function makeCommodity(overrides: Partial<Commodity> = {}): Commodity {
   return {
     id: 1, metal_type: "gold", weight: 50, weight_unit: "gram",
     current_price_per_unit_fils: 5000, bought_price_per_unit_fils: 4000,
+    target_sell_price_per_unit_fils: null,
     purchase_date: "2025-01-01", current_price_date: "2026-06-01",
     notes: null, created_at: "2026-01-01T00:00:00Z", updated_at: "2026-01-01T00:00:00Z",
     ...overrides,

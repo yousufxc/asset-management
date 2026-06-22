@@ -90,6 +90,7 @@ export interface Commodity {
   weight_unit: WeightUnit;
   current_price_per_unit_fils: number; // price per weight_unit, now
   bought_price_per_unit_fils: number; // price per weight_unit, when bought
+  target_sell_price_per_unit_fils: number | null; // user's sell target price per unit
   purchase_date: string; // ISO
   current_price_date: string | null; // ISO
   notes: string | null;

@@ -110,6 +110,7 @@ CREATE TABLE IF NOT EXISTS commodities (
   weight_unit                 TEXT    NOT NULL CHECK (weight_unit IN ('gram', 'kg', 'troy_oz', 'tola')),
   current_price_per_unit_fils INTEGER NOT NULL DEFAULT 0 CHECK (current_price_per_unit_fils >= 0),  -- price per weight_unit, now
   bought_price_per_unit_fils  INTEGER NOT NULL CHECK (bought_price_per_unit_fils >= 0), -- per weight_unit, when bought
+  target_sell_price_per_unit_fils INTEGER CHECK (target_sell_price_per_unit_fils IS NULL OR target_sell_price_per_unit_fils >= 0),  -- user's sell target
   purchase_date               TEXT    NOT NULL,               -- ISO date of purchase
   current_price_date          TEXT,                            -- ISO date the current price is as-of
   notes                       TEXT,
@@ -173,6 +174,7 @@ ALTER TABLE properties ADD COLUMN short_term_return_frequency TEXT CHECK (short_
 ALTER TABLE properties ADD COLUMN short_term_rent_deposit_date TEXT;
 ALTER TABLE cash_accounts ADD COLUMN fixed_deposit_start_date TEXT;
 ALTER TABLE properties ADD COLUMN contract_start_date TEXT;
+ALTER TABLE commodities ADD COLUMN target_sell_price_per_unit_fils INTEGER CHECK (target_sell_price_per_unit_fils IS NULL OR target_sell_price_per_unit_fils >= 0);
 
 DROP VIEW IF EXISTS v_properties;
 CREATE VIEW IF NOT EXISTS v_properties AS
@@ -198,7 +200,7 @@ CREATE VIEW IF NOT EXISTS v_cash_accounts AS
 DROP VIEW IF EXISTS v_commodities;
 CREATE VIEW IF NOT EXISTS v_commodities AS
   SELECT id, metal_type, weight, weight_unit,
-         current_price_per_unit_fils, bought_price_per_unit_fils,
+         current_price_per_unit_fils, bought_price_per_unit_fils, target_sell_price_per_unit_fils,
          purchase_date, current_price_date, notes
   FROM commodities;
 

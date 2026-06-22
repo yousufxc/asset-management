@@ -100,6 +100,10 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
     const notesVal = strOrNull("notes");
     if (notesVal !== (commodity.notes ?? null)) payload.notes = notesVal;
 
+    const targetSellPriceVal = numOrNull("target_sell_price_per_unit_aed");
+    const existingTargetSell = commodity.target_sell_price_per_unit_fils != null ? filsToAed(commodity.target_sell_price_per_unit_fils) : null;
+    if (targetSellPriceVal !== existingTargetSell) payload.target_sell_price_per_unit_aed = targetSellPriceVal;
+
     if (Object.keys(payload).length === 0) {
       setSaving(false);
       setEditing(false);
@@ -178,6 +182,20 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
         <div className="detail-row">
           <span className="detail-label">Current price</span>
           <span className="muted">Not set</span>
+        </div>
+      )}
+      {commodity.target_sell_price_per_unit_fils !== null && commodity.target_sell_price_per_unit_fils > 0 && (
+        <div className="detail-row">
+          <span className="detail-label">Target sell price</span>
+          <span style={{
+            fontWeight: 600,
+            color: commodity.current_price_per_unit_fils >= commodity.target_sell_price_per_unit_fils ? "var(--good)" : "var(--text)",
+          }}>
+            {formatAed(commodity.target_sell_price_per_unit_fils)}/{perUnit}
+            {commodity.current_price_per_unit_fils >= commodity.target_sell_price_per_unit_fils && (
+              <span style={{ marginLeft: 8, fontSize: 12, color: "var(--good)" }}> Target reached</span>
+            )}
+          </span>
         </div>
       )}
       <div className="detail-row">
@@ -268,6 +286,23 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
             placeholder="Enter current price here"
             onKeyDown={numeralOnly}
             onChange={(e) => setHasCurrentPrice(e.target.value !== "")}
+          />
+        </div>
+      </div>
+      <div className="row">
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <label>Target sell price (AED per {UNIT_LABEL[unit] ?? unit})</label>
+          <input
+            name="target_sell_price_per_unit_aed"
+            type="number"
+            step="0.01"
+            defaultValue={
+              commodity.target_sell_price_per_unit_fils != null && commodity.target_sell_price_per_unit_fils > 0
+                ? aedInputOrEmpty(commodity.target_sell_price_per_unit_fils)
+                : ""
+            }
+            placeholder="Price at which to sell"
+            onKeyDown={numeralOnly}
           />
         </div>
       </div>

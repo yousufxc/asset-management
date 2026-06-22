@@ -14,6 +14,7 @@ import { getSettingInt } from "@/lib/db/settings";
 import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
 import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
+import { shouldSellAlert } from "@/lib/core/commodity-analytics";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import { computeRecommendations } from "@/lib/core/recommendations";
 import AssetPieChart, { type Slice } from "./AssetPieChart";
@@ -183,6 +184,42 @@ export default function DashboardPage() {
           <Link href="/commodities">Manage →</Link>
         </div></AnimateOnScroll>
       </div>
+
+      {/* ─── SELL ALERTS — commodities at or above target price ─────────── */}
+      {(() => {
+        const sellAlerts = commodities.filter(shouldSellAlert);
+        if (sellAlerts.length === 0) return null;
+        return (
+          <AnimateOnScroll><div
+            className="card"
+            style={{ borderLeft: "4px solid var(--good)", backgroundColor: "rgba(56,193,114,0.06)" }}
+          >
+            <h3 style={{ marginTop: 0, color: "var(--good)" }}>Time to sell</h3>
+            <p className="muted">{sellAlerts.length} holding{sellAlerts.length !== 1 ? "s" : ""} hit target price.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {sellAlerts.map((c) => {
+                const currentVal = Math.round(c.weight * c.current_price_per_unit_fils);
+                const boughtVal = Math.round(c.weight * c.bought_price_per_unit_fils);
+                const gain = currentVal - boughtVal;
+                return (
+                  <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
+                    <div>
+                      <strong>{c.metal_type.charAt(0).toUpperCase()}{c.metal_type.slice(1)}</strong>
+                      <span className="muted" style={{ marginLeft: 8 }}>{c.weight} {c.weight_unit}</span>
+                    </div>
+                    <div>
+                      <span className="muted" style={{ marginRight: 8 }}>Target: {formatAed(c.target_sell_price_per_unit_fils!)}/{c.weight_unit}</span>
+                      <span style={{ color: "var(--good)", fontWeight: 600 }}>Now: {formatAed(c.current_price_per_unit_fils)}/{c.weight_unit}</span>
+                      <span style={{ color: "var(--good)", fontWeight: 600, marginLeft: 12 }}>{gain >= 0 ? "+" : ""}{formatAed(gain)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <Link href="/commodities" style={{ marginTop: 8, display: "inline-block" }}>View all →</Link>
+          </div></AnimateOnScroll>
+        );
+      })()}
 
       {/* ─── RUNWAY HEADLINE ──────────────────────────────────────────── */}
       <AnimateOnScroll><div className="card">
