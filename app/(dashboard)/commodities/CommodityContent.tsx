@@ -213,7 +213,7 @@ export default function CommodityContent({
               <table style={{ minWidth: 1100 }}>
                 <thead>
                   <tr>
-                    <th className="sticky-name" style={{ position: "relative", minWidth: 120, whiteSpace: "nowrap" }}>
+                    <th className="sticky-name" style={{ minWidth: 120, whiteSpace: "nowrap" }}>
                       <div ref={filterRef} style={{ position: "relative", display: "inline-block" }}>
                         <button
                           type="button"
