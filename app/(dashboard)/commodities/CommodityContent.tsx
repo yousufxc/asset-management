@@ -208,151 +208,170 @@ export default function CommodityContent({
                 ? "No commodities yet. Add one above."
                 : "No holdings match this filter."}
             </p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ position: "relative" }}>
-                    <div ref={filterRef} style={{ position: "relative", display: "inline-block" }}>
-                      <button
-                        type="button"
-                        onClick={() => setFilterOpen((p) => !p)}
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          color: "inherit",
-                          fontSize: "inherit",
-                          fontWeight: "inherit",
-                          cursor: "pointer",
-                          padding: 0,
-                          margin: 0,
-                        }}
-                      >
-                        Type ▾
-                      </button>
-                      {filterOpen && (
-                        <div
+            ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ minWidth: 1100 }}>
+                <thead>
+                  <tr>
+                    <th style={{ position: "relative" }}>
+                      <div ref={filterRef} style={{ position: "relative", display: "inline-block" }}>
+                        <button
+                          type="button"
+                          onClick={() => setFilterOpen((p) => !p)}
                           style={{
-                            position: "absolute",
-                            top: "100%",
-                            left: 0,
-                            zIndex: 20,
-                            background: "var(--panel)",
-                            border: "1px solid var(--border)",
-                            borderRadius: 6,
-                            padding: "6px 0",
-                            minWidth: 150,
-                            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            border: "none",
+                            background: "transparent",
+                            color: "inherit",
+                            fontSize: "inherit",
+                            fontWeight: "inherit",
+                            cursor: "pointer",
+                            padding: 0,
+                            margin: 0,
                           }}
                         >
-                          <button
-                            type="button"
-                            onClick={selectAll}
-                            style={dropdownBtnStyle}
+                          Type ▾
+                        </button>
+                        {filterOpen && (
+                          <div
+                            style={{
+                              position: "absolute",
+                              top: "100%",
+                              left: 0,
+                              zIndex: 20,
+                              background: "var(--panel)",
+                              border: "1px solid var(--border)",
+                              borderRadius: 6,
+                              padding: "6px 0",
+                              minWidth: 150,
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                            }}
                           >
-                            ✓ Select All
-                          </button>
-                          <button
-                            type="button"
-                            onClick={clearAll}
-                            style={dropdownBtnStyle}
-                          >
-                            ✗ Clear All
-                          </button>
-                          <hr style={{ margin: "4px 8px", borderColor: "var(--border)" }} />
-                          {ALL_METAL_TYPES.map((mt) => (
                             <button
-                              key={mt}
                               type="button"
-                              onClick={() => toggleMetalType(mt)}
-                              style={{
-                                ...dropdownBtnStyle,
-                                fontWeight: metalTypeFilter.has(mt) ? 600 : 400,
-                              }}
+                              onClick={selectAll}
+                              style={dropdownBtnStyle}
                             >
-                              {metalTypeFilter.has(mt) ? "✓ " : "  "}
-                              {METAL_LABEL[mt]}
+                              ✓ Select All
                             </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </th>
-                  <th {...thProps("amount")}>Amount{sortArrow("amount")}</th>
-                  <th {...thProps("date_purchased")}>Date Purchased{sortArrow("date_purchased")}</th>
-                  <th {...thProps("bought_price")}>Bought price{sortArrow("bought_price")}</th>
-                  <th {...thProps("value_bought")}>Value when bought{sortArrow("value_bought")}</th>
-                  <th {...thProps("current_price")}>Current price{sortArrow("current_price")}</th>
-                  <th {...thProps("current_value")}>Current value{sortArrow("current_value")}</th>
-                  <th {...thProps("profit_loss")}>Profit / loss{sortArrow("profit_loss")}</th>
-                  <th {...thProps("profit_loss_pct")}>% Profit / loss{sortArrow("profit_loss_pct")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((e) => {
-                  const c = e.commodity;
-                  const isSelected = selectedCommodity?.id === c.id;
+                            <button
+                              type="button"
+                              onClick={clearAll}
+                              style={dropdownBtnStyle}
+                            >
+                              ✗ Clear All
+                            </button>
+                            <hr style={{ margin: "4px 8px", borderColor: "var(--border)" }} />
+                            {ALL_METAL_TYPES.map((mt) => (
+                              <button
+                                key={mt}
+                                type="button"
+                                onClick={() => toggleMetalType(mt)}
+                                style={{
+                                  ...dropdownBtnStyle,
+                                  fontWeight: metalTypeFilter.has(mt) ? 600 : 400,
+                                }}
+                              >
+                                {metalTypeFilter.has(mt) ? "✓ " : "  "}
+                                {METAL_LABEL[mt]}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </th>
+                    <th {...thProps("amount")} style={{ minWidth: 110, whiteSpace: "nowrap" }}>Amount{sortArrow("amount")}</th>
+                    <th {...thProps("date_purchased")} style={{ minWidth: 130, whiteSpace: "nowrap" }}>Date{sortArrow("date_purchased")}</th>
+                    <th {...thProps("bought_price")} style={{ minWidth: 120, whiteSpace: "nowrap" }}>Bought{sortArrow("bought_price")}</th>
+                    <th {...thProps("value_bought")} style={{ minWidth: 120, whiteSpace: "nowrap" }}>Cost{sortArrow("value_bought")}</th>
+                    <th style={{ minWidth: 120, whiteSpace: "nowrap" }}>Target /unit</th>
+                    <th style={{ minWidth: 110, whiteSpace: "nowrap" }}>Target %</th>
+                    <th {...thProps("current_price")} style={{ minWidth: 120, whiteSpace: "nowrap" }}>Current{sortArrow("current_price")}</th>
+                    <th {...thProps("current_value")} style={{ minWidth: 120, whiteSpace: "nowrap" }}>Value{sortArrow("current_value")}</th>
+                    <th {...thProps("profit_loss")} style={{ minWidth: 110, whiteSpace: "nowrap" }}>P/L{sortArrow("profit_loss")}</th>
+                    <th {...thProps("profit_loss_pct")} style={{ minWidth: 90, whiteSpace: "nowrap" }}>P/L %{sortArrow("profit_loss_pct")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((e) => {
+                    const c = e.commodity;
+                    const isSelected = selectedCommodity?.id === c.id;
+                    const targetPct = c.target_sell_price_per_unit_fils != null && c.target_sell_price_per_unit_fils > 0 && c.bought_price_per_unit_fils > 0
+                      ? ((c.target_sell_price_per_unit_fils - c.bought_price_per_unit_fils) / c.bought_price_per_unit_fils) * 100
+                      : null;
 
-                  return (
-                    <tr
-                      key={c.id}
-                      className={isSelected ? "selected-row" : undefined}
-                    >
-                      <td>
-                        <a
-                          href="#"
-                          onClick={(ev) => {
-                            ev.preventDefault();
-                            handleSelect(c.id);
-                          }}
-                          className="property-link"
-                        >
-                          {METAL_LABEL[c.metal_type] ?? c.metal_type}
-                        </a>
-                      </td>
-                      <td>
-                        {c.weight} {c.weight_unit}
-                      </td>
-                      <td>{formatIsoToUae(c.purchase_date)}</td>
-                      <td>
-                        {formatAed(c.bought_price_per_unit_fils)}/{c.weight_unit}
-                      </td>
-                      <td>{formatAed(e.costFils)}</td>
-                      <td>
-                        {c.current_price_per_unit_fils > 0
-                          ? `${formatAed(c.current_price_per_unit_fils)}/${c.weight_unit}`
-                          : "—"}
-                      </td>
-                      <td>
-                        {c.current_price_per_unit_fils > 0
-                          ? formatAed(e.valueFils)
-                          : "—"}
-                      </td>
-                      <td>
-                        {e.hasCurrent ? (
-                          <span style={{ color: e.pl >= 0 ? "var(--good)" : "var(--bad)" }}>
-                            {e.pl >= 0 ? "+" : "−"}
-                            {formatAed(Math.abs(e.pl))}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td>
-                        {e.plPct !== null ? (
-                          <span style={{ color: e.plPct >= 0 ? "var(--good)" : "var(--bad)" }}>
-                            {e.plPct >= 0 ? "+" : ""}
-                            {e.plPct.toFixed(1)}%
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                    return (
+                      <tr
+                        key={c.id}
+                        className={isSelected ? "selected-row" : undefined}
+                      >
+                        <td className="sticky-name">
+                          <a
+                            href="#"
+                            onClick={(ev) => {
+                              ev.preventDefault();
+                              handleSelect(c.id);
+                            }}
+                            className="property-link"
+                          >
+                            {METAL_LABEL[c.metal_type] ?? c.metal_type}
+                          </a>
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {c.weight} {c.weight_unit}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>{formatIsoToUae(c.purchase_date)}</td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {formatAed(c.bought_price_per_unit_fils)}/{c.weight_unit}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>{formatAed(e.costFils)}</td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {c.target_sell_price_per_unit_fils != null && c.target_sell_price_per_unit_fils > 0
+                            ? `${formatAed(c.target_sell_price_per_unit_fils)}/${c.weight_unit}`
+                            : "—"}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {targetPct !== null ? (
+                            <span style={{ color: "var(--good)" }}>+{targetPct.toFixed(1)}%</span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {c.current_price_per_unit_fils > 0
+                            ? `${formatAed(c.current_price_per_unit_fils)}/${c.weight_unit}`
+                            : "—"}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {c.current_price_per_unit_fils > 0
+                            ? formatAed(e.valueFils)
+                            : "—"}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {e.hasCurrent ? (
+                            <span style={{ color: e.pl >= 0 ? "var(--good)" : "var(--bad)" }}>
+                              {e.pl >= 0 ? "+" : "−"}
+                              {formatAed(Math.abs(e.pl))}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          {e.plPct !== null ? (
+                            <span style={{ color: e.plPct >= 0 ? "var(--good)" : "var(--bad)" }}>
+                              {e.plPct >= 0 ? "+" : ""}
+                              {e.plPct.toFixed(1)}%
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div></AnimateOnScroll>
 
