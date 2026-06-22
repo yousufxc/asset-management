@@ -10,7 +10,7 @@ export default function AboutPage() {
       <h2>About Us</h2>
 
       <div className="card">
-        <h1 style={{ marginTop: 0, textAlign: "center", fontSize: 28, letterSpacing: 1 }}>
+        <h1 style={{ margin: 0, textAlign: "center", fontSize: 28, letterSpacing: 1 }}>
           Welcome to KYNZi
         </h1>
       </div>
