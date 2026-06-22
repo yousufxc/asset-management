@@ -32,6 +32,32 @@ function generateLongTermSchedule(p: Property): DepositScheduleEntry[] {
   if (annual === null || annual <= 0 || cheques === null || cheques <= 0) return [];
 
   const dateKeys = ["rent_date_1", "rent_date_2", "rent_date_3", "rent_date_4"] as const;
+
+  // 12-cheque (monthly): auto-generate 12 monthly dates from rent_date_1
+  if (cheques === 12) {
+    const firstDate = p.rent_date_1 as string | null;
+    if (!firstDate) return [];
+    const n = 12;
+    const perCheque = Math.floor(annual / n);
+    const remainder = annual - perCheque * n;
+    const start = new Date(firstDate + "T00:00:00Z");
+    const entries: { slot: number; date: string }[] = [];
+    for (let i = 0; i < n; i++) {
+      const d = new Date(start);
+      d.setUTCMonth(start.getUTCMonth() + i, 1);
+      const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+      const day = Math.min(start.getUTCDate(), lastDay);
+      d.setUTCDate(day);
+      entries.push({ slot: i + 1, date: d.toISOString().slice(0, 10) });
+    }
+    return entries.map((e, i) => ({
+      chequeNumber: e.slot,
+      depositDate: e.date,
+      amountFils: perCheque + (i === n - 1 ? remainder : 0),
+    }));
+  }
+
+  // 1-4 cheques: use explicit rent_date_1..4 slots
   const entries: { slot: number; date: string }[] = [];
   for (let i = 0; i < cheques; i++) {
     const date = p[dateKeys[i] as keyof Property] as string | null;

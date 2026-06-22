@@ -4,7 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import type { EnrichedCommodity } from "@/lib/core/commodity-analytics";
 import { formatAed } from "@/lib/core/units";
 
-const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
+const tooltipStyle = { backgroundColor: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
 
 export default function CommodityROIChart({ enriched }: { enriched: EnrichedCommodity[] }) {
   const withROI = enriched.filter((e) => e.hasCurrent && e.plPct !== null).sort((a, b) => (b.plPct ?? 0) - (a.plPct ?? 0));
@@ -26,7 +26,7 @@ export default function CommodityROIChart({ enriched }: { enriched: EnrichedComm
         <Tooltip content={({ active, payload }) => {
           if (!active || !payload?.[0]) return null;
           const d = payload[0].payload;
-          return <div style={tooltipStyle}><div style={{ color: "#9aa3b2", marginBottom: 2 }}>{d.name}</div><div style={{ fontWeight: 600, color: d.plPct >= 0 ? "var(--good)" : "var(--bad)" }}>{d.plPct >= 0 ? "+" : ""}{d.plPct.toFixed(1)}%</div><div style={{ fontSize: 11, color: "#9aa3b2" }}>{d.pl >= 0 ? "+" : ""}{formatAed(d.pl)}</div></div>;
+          return <div style={tooltipStyle}><div style={{ color: "var(--muted)", marginBottom: 2 }}>{d.name}</div><div style={{ fontWeight: 600, color: d.plPct >= 0 ? "var(--good)" : "var(--bad)" }}>{d.plPct >= 0 ? "+" : ""}{d.plPct.toFixed(1)}%</div><div style={{ fontSize: 11, color: "var(--muted)" }}>{d.pl >= 0 ? "+" : ""}{formatAed(d.pl)}</div></div>;
         }} />
         <Bar dataKey="plPct" radius={[0, 4, 4, 0]}>
           {data.map((entry, i) => <Cell key={i} fill={entry.color} />)}

@@ -56,62 +56,61 @@ export async function POST(
   db.exec("BEGIN");
   try {
 
-  if (property.is_rental) {
-    const reason: EndReason =
-      action === "cancel" ? "cancelled"
-      : action === "vacant" ? "vacant"
-      : "renewed";
+    if (property.is_rental) {
+      const reason: EndReason =
+        action === "cancel" ? "cancelled"
+        : action === "vacant" ? "vacant"
+        : "renewed";
 
-    insertRentalHistory(
-      property,
-      property.contract_start_date ?? today,
-      today,
-      reason,
-    );
-  }
+      insertRentalHistory(
+        property,
+        property.contract_start_date ?? today,
+        today,
+        reason,
+      );
+    }
 
-  deleteRentalDepositsForProperty(id);
+    if (action === "renew") {
+      updateProperty(id, {
+        is_rental: true,
+        rental_type: renewFields.rental_type ?? property.rental_type,
+        annual_rent_aed: renewFields.annual_rent_aed,
+        rent_cheques_per_year: renewFields.rent_cheques_per_year,
+        rent_date_1: renewFields.rent_date_1,
+        rent_date_2: renewFields.rent_date_2,
+        rent_date_3: renewFields.rent_date_3,
+        rent_date_4: renewFields.rent_date_4,
+        pm_company_name: renewFields.pm_company_name,
+        pm_commission_pct: renewFields.pm_commission_pct,
+        short_term_annual_rent_aed: renewFields.short_term_annual_rent_aed,
+        short_term_return_frequency: renewFields.short_term_return_frequency,
+        short_term_rent_deposit_date: renewFields.short_term_rent_deposit_date,
+        contract_start_date: renewFields.contract_start_date ?? today,
+      });
 
-  if (action === "renew") {
-    updateProperty(id, {
-      is_rental: true,
-      rental_type: renewFields.rental_type ?? property.rental_type,
-      annual_rent_aed: renewFields.annual_rent_aed,
-      rent_cheques_per_year: renewFields.rent_cheques_per_year,
-      rent_date_1: renewFields.rent_date_1,
-      rent_date_2: renewFields.rent_date_2,
-      rent_date_3: renewFields.rent_date_3,
-      rent_date_4: renewFields.rent_date_4,
-      pm_company_name: renewFields.pm_company_name,
-      pm_commission_pct: renewFields.pm_commission_pct,
-      short_term_annual_rent_aed: renewFields.short_term_annual_rent_aed,
-      short_term_return_frequency: renewFields.short_term_return_frequency,
-      short_term_rent_deposit_date: renewFields.short_term_rent_deposit_date,
-      contract_start_date: renewFields.contract_start_date ?? today,
-    });
-
-    const updated = getProperty(id)!;
-    const schedule = generateDepositSchedule(updated);
-    upsertRentalDepositSchedule(id, schedule);
-  } else {
-    // cancel / vacant: clear all rental fields
-    updateProperty(id, {
-      is_rental: false,
-      rental_type: null,
-      annual_rent_aed: null,
-      rent_cheques_per_year: null,
-      rent_date_1: null,
-      rent_date_2: null,
-      rent_date_3: null,
-      rent_date_4: null,
-      pm_company_name: null,
-      pm_commission_pct: null,
-      short_term_annual_rent_aed: null,
-      short_term_return_frequency: null,
-      short_term_rent_deposit_date: null,
-      contract_start_date: null,
-    });
-  }
+      const updated = getProperty(id)!;
+      const schedule = generateDepositSchedule(updated);
+      upsertRentalDepositSchedule(id, schedule);
+    } else {
+      // cancel / vacant: delete all deposits and clear rental fields
+      deleteRentalDepositsForProperty(id);
+      updateProperty(id, {
+        is_rental: false,
+        rental_type: null,
+        annual_rent_aed: null,
+        rent_cheques_per_year: null,
+        rent_date_1: null,
+        rent_date_2: null,
+        rent_date_3: null,
+        rent_date_4: null,
+        pm_company_name: null,
+        pm_commission_pct: null,
+        short_term_annual_rent_aed: null,
+        short_term_return_frequency: null,
+        short_term_rent_deposit_date: null,
+        contract_start_date: null,
+      });
+    }
 
     db.exec("COMMIT");
   } catch (e) {

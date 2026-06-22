@@ -41,8 +41,8 @@ export default function CashContent({
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 18, alignItems: "flex-start" }}>
-        <AnimateOnScroll><div className="card" style={{ flex: selectedAccount ? 1 : undefined }}>
+      <div>
+        <AnimateOnScroll><div className="card">
           <h3 style={{ marginTop: 0 }}>Accounts ({accounts.length})</h3>
           {accounts.length === 0 ? (
             <p className="muted">No accounts yet. Add one above.</p>
@@ -109,7 +109,7 @@ export default function CashContent({
         </div></AnimateOnScroll>
 
         {selectedAccount && (
-          <div style={{ flex: 1, position: "sticky", top: 28 }}>
+          <div style={{ marginTop: 18 }}>
             <CashDetailPanel key={selectedAccount.id} account={selectedAccount} />
           </div>
         )}

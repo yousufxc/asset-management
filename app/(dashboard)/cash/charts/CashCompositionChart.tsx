@@ -12,7 +12,7 @@ interface Slice {
 }
 
 const COLORS = ["#1f77b4", "#aec7e8"];
-const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
+const tooltipStyle = { backgroundColor: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
 
 export default function CashCompositionChart({ accounts }: { accounts: CashAccount[] }) {
   const { fixedFils, regularFils } = splitFixedVsRegular(accounts);
@@ -50,9 +50,9 @@ export default function CashCompositionChart({ accounts }: { accounts: CashAccou
               const d = payload[0].payload as Slice;
               return (
                 <div style={tooltipStyle}>
-                  <div style={{ color: "#9aa3b2", marginBottom: 2 }}>{d.name}</div>
+                  <div style={{ color: "var(--muted)", marginBottom: 2 }}>{d.name}</div>
                   <div style={{ fontWeight: 600 }}>{formatAed(d.fils)}</div>
-                  <div style={{ fontSize: 11, color: "#9aa3b2" }}>{d.pct.toFixed(1)}%</div>
+                  <div style={{ fontSize: 11, color: "var(--muted)" }}>{d.pct.toFixed(1)}%</div>
                 </div>
               );
             }}

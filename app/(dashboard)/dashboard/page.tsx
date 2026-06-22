@@ -198,8 +198,8 @@ export default function DashboardPage() {
             <p className="muted">{sellAlerts.length} holding{sellAlerts.length !== 1 ? "s" : ""} hit target price.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {sellAlerts.map((c) => {
-                const currentVal = Math.round(c.weight * c.current_price_per_unit_fils);
-                const boughtVal = Math.round(c.weight * c.bought_price_per_unit_fils);
+                const currentVal = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.current_price_per_unit_fils }).totalFils;
+                const boughtVal = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.bought_price_per_unit_fils }).totalFils;
                 const gain = currentVal - boughtVal;
                 return (
                   <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>

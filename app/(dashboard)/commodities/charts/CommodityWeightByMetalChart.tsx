@@ -6,7 +6,7 @@ import { groupByMetal } from "@/lib/core/commodity-analytics";
 
 const COLORS: Record<string, string> = { gold: "#f0a020", silver: "#aeb0b5", platinum: "#4f9cf9", palladium: "#a855f7", other: "#38c172" };
 const METAL_LABEL: Record<string, string> = { gold: "Gold", silver: "Silver", platinum: "Platinum", palladium: "Palladium", other: "Other" };
-const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
+const tooltipStyle = { backgroundColor: "var(--panel)", border: "1px solid var(--border)", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
 
 export default function CommodityWeightByMetalChart({ enriched }: { enriched: EnrichedCommodity[] }) {
   const aggregates = groupByMetal(enriched);
@@ -30,7 +30,7 @@ export default function CommodityWeightByMetalChart({ enriched }: { enriched: En
         <Tooltip content={({ active, payload }) => {
           if (!active || !payload?.[0]) return null;
           const d = payload[0].payload;
-          return <div style={tooltipStyle}><div style={{ color: "#9aa3b2", marginBottom: 2 }}>{d.name}</div><div style={{ fontWeight: 600 }}>{d.grams.toLocaleString()} g</div><div style={{ fontSize: 11, color: "#9aa3b2" }}>{d.count} holding{d.count !== 1 ? "s" : ""}</div></div>;
+          return <div style={tooltipStyle}><div style={{ color: "var(--muted)", marginBottom: 2 }}>{d.name}</div><div style={{ fontWeight: 600 }}>{d.grams.toLocaleString()} g</div><div style={{ fontSize: 11, color: "var(--muted)" }}>{d.count} holding{d.count !== 1 ? "s" : ""}</div></div>;
         }} />
         <Bar dataKey="grams" radius={[0, 4, 4, 0]} maxBarSize={40}>
           {data.map((entry) => <Cell key={entry.metalType} fill={COLORS[entry.metalType] ?? "#888"} />)}

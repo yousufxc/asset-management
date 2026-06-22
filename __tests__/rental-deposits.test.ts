@@ -48,6 +48,20 @@ describe("generateDepositSchedule — long-term", () => {
     expect(s[2]!.amountFils).toBe(33334);
   });
 
+  it("12 cheques (monthly): auto-generates 12 dates from rent_date_1", () => {
+    const p = makeProp({
+      annual_rent_fils: 120_000, rent_cheques_per_year: 12,
+      rent_date_1: "2026-01-15",
+    });
+    const s = generateDepositSchedule(p);
+    expect(s).toHaveLength(12);
+    const sum = s.reduce((a, e) => a + e.amountFils, 0);
+    expect(sum).toBe(120_000);
+    expect(s[0]!.depositDate).toBe("2026-01-15");
+    expect(s[11]!.depositDate).toBe("2026-12-15");
+    expect(s[0]!.amountFils).toBe(10000);
+  });
+
   it("4 cheques: sum = 100000", () => {
     const p = makeProp({
       annual_rent_fils: 100_000, rent_cheques_per_year: 4,
