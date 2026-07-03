@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface Message {
   role: "user" | "assistant";
@@ -8,9 +9,11 @@ interface Message {
 }
 
 export default function ChatContent() {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorPopup, setErrorPopup] = useState<string | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,9 +31,6 @@ export default function ChatContent() {
     setInput("");
     setLoading(true);
 
-    const assistantMsg: Message = { role: "assistant", content: "" };
-    setMessages([...updatedMessages, assistantMsg]);
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -45,12 +45,17 @@ export default function ChatContent() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => null);
-        throw new Error(
+        setErrorPopup(
           err?.error ||
             err?.detail ||
-            `Request failed (${res.status}). Check your Anthropic API key in Settings.`,
+            "Unable to reach the AI. Please check your Anthropic API key in Settings.",
         );
+        setLoading(false);
+        return;
       }
+
+      const assistantMsg: Message = { role: "assistant", content: "" };
+      setMessages([...updatedMessages, assistantMsg]);
 
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No response stream");
@@ -83,22 +88,74 @@ export default function ChatContent() {
           }
         }
       }
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : "An error occurred";
-      setMessages((prev) => {
-        const next = [...prev];
-        next[next.length - 1] = {
-          role: "assistant",
-          content: `Error: ${errMsg}`,
-        };
-        return next;
-      });
+    } catch {
+      setErrorPopup("Unable to reach the AI. Please check your Anthropic API key in Settings.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
+    <>
+      {errorPopup && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+          }}
+          onClick={() => setErrorPopup(null)}
+        >
+          <div
+            className="card"
+            style={{
+              maxWidth: 420,
+              width: "90%",
+              padding: "28px 24px",
+              position: "relative",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setErrorPopup(null)}
+              style={{
+                position: "absolute",
+                top: 8,
+                right: 12,
+                margin: 0,
+                padding: "2px 8px",
+                background: "transparent",
+                color: "var(--muted)",
+                fontSize: 20,
+                fontWeight: 400,
+                lineHeight: 1,
+              }}
+            >
+              ×
+            </button>
+            <h3 style={{ margin: "0 0 12px", color: "var(--warn)" }}>
+              Unable to connect
+            </h3>
+            <p style={{ margin: "0 0 20px", fontSize: 14, lineHeight: 1.6 }}>
+              {errorPopup}
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/settings")}
+              style={{ marginTop: 0 }}
+            >
+              Go to Settings
+            </button>
+          </div>
+        </div>
+      )}
+
     <div className="card" style={{ display: "flex", flexDirection: "column", minHeight: "60vh" }}>
       <div style={{ flex: 1, overflowY: "auto", maxHeight: "55vh", paddingBottom: 12 }}>
         {messages.length === 0 ? (
@@ -157,5 +214,6 @@ export default function ChatContent() {
         </button>
       </form>
     </div>
+    </>
   );
 }
