@@ -70,12 +70,13 @@ a:hover { text-decoration: underline; }
   font-weight: 700;
   color: var(--text);
   white-space: nowrap;
-  transition: transform 0.35s ease;
+  transition: transform 0.35s ease, margin-top 0.35s ease;
   transform-origin: center center;
 }
 .sidebar-collapsed .sidebar-logo {
   order: 0;
   transform: rotate(-90deg);
+  margin-top: 24px;
 }
 .sidebar h1 { font-size: 15px; margin: 0; }
 .sidebar-toggle {
