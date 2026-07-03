@@ -4,16 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 
 const NAV_ITEMS = [
-  { href: "/dashboard", label: "My Dashboard", short: "D" },
-  { href: "/properties", label: "Property", short: "P" },
-  { href: "/cash", label: "Saving Accounts", short: "SA" },
-  { href: "/commodities", label: "Commodities", short: "Co" },
-  { href: "/chat", label: "Chat", short: "Ch" },
+  { href: "/dashboard", label: "My Dashboard" },
+  { href: "/properties", label: "Property" },
+  { href: "/cash", label: "Saving Accounts" },
+  { href: "/commodities", label: "Commodities" },
+  { href: "/chat", label: "Chat" },
 ];
 
 const BOTTOM_ITEMS = [
-  { href: "/about", label: "About Us", short: "Ab" },
-  { href: "/settings", label: "Settings", short: "Se" },
+  { href: "/about", label: "About Us" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export default function Sidebar() {
@@ -22,7 +22,7 @@ export default function Sidebar() {
   return (
     <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
       <div className="sidebar-header">
-        <h1>KYNZi</h1>
+        {!collapsed && <h1>KYNZi</h1>}
         <button
           type="button"
           className="sidebar-toggle"
@@ -34,21 +34,25 @@ export default function Sidebar() {
           <span />
         </button>
       </div>
-      <nav>
-        {NAV_ITEMS.map((item) => (
-          <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}>
-            {collapsed ? item.short : item.label}
-          </Link>
-        ))}
-      </nav>
-      <div className="sidebar-divider" />
-      <nav>
-        {BOTTOM_ITEMS.map((item) => (
-          <Link key={item.href} href={item.href} title={collapsed ? item.label : undefined}>
-            {collapsed ? item.short : item.label}
-          </Link>
-        ))}
-      </nav>
+      {!collapsed && (
+        <>
+          <nav>
+            {NAV_ITEMS.map((item) => (
+              <Link key={item.href} href={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="sidebar-divider" />
+          <nav>
+            {BOTTOM_ITEMS.map((item) => (
+              <Link key={item.href} href={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </>
+      )}
     </aside>
   );
 }
