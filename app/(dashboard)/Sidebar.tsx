@@ -22,17 +22,39 @@ export default function Sidebar() {
   return (
     <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`}>
       <div className="sidebar-header">
-        {!collapsed && <h1>KYNZi</h1>}
-        <button
-          type="button"
-          className="sidebar-toggle"
-          onClick={() => setCollapsed((c) => !c)}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <span />
-          <span />
-          <span />
-        </button>
+        {collapsed ? (
+          <>
+            <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={() => setCollapsed((c) => !c)}
+              title="Expand sidebar"
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+            <div className="sidebar-vertical-logo">
+              {["K", "Y", "N", "Z", "i"].map((letter, i) => (
+                <span key={i}>{letter}</span>
+              ))}
+            </div>
+          </>
+        ) : (
+          <>
+            <h1>KYNZi</h1>
+            <button
+              type="button"
+              className="sidebar-toggle"
+              onClick={() => setCollapsed((c) => !c)}
+              title="Collapse sidebar"
+            >
+              <span />
+              <span />
+              <span />
+            </button>
+          </>
+        )}
       </div>
       {!collapsed && (
         <>
