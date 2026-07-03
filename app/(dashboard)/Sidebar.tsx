@@ -34,11 +34,7 @@ export default function Sidebar() {
               <span />
               <span />
             </button>
-            <div className="sidebar-vertical-logo">
-              {["K", "Y", "N", "Z", "i"].map((letter, i) => (
-                <span key={i}>{letter}</span>
-              ))}
-            </div>
+            <div className="sidebar-vertical-logo">KYNZi</div>
           </>
         ) : (
           <>
