@@ -273,15 +273,7 @@ export default function CashDetailPanel({ account }: { account: CashAccount }) {
       </div>
       {editing ? renderEditForm() : renderReadOnly()}
       {!editing && (
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 16 }}>
-          <button
-            type="button"
-            onClick={handleRemove}
-            disabled={removing}
-            style={{ marginTop: 0, background: "var(--bad)", color: "#fff", fontSize: 12, padding: "6px 12px" }}
-          >
-            {removing ? "Removing…" : "Remove Account"}
-          </button>
+        <div style={{ marginTop: 16 }}>
           <button
             type="button"
             onClick={() => setEditing(true)}
