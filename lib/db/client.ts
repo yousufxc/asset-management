@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 
 // Load the `node:sqlite` builtin via runtime require so bundlers (Vitest/Vite,
@@ -31,6 +31,7 @@ let _db: DatabaseSyncT | null = null;
 export function getDb(): DatabaseSyncT {
   if (_db) return _db;
 
+  mkdirSync(dirname(DB_PATH), { recursive: true });
   const db = new DatabaseSync(DB_PATH);
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");
