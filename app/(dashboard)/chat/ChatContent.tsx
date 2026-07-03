@@ -14,11 +14,32 @@ export default function ChatContent() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorPopup, setErrorPopup] = useState<string | null>(null);
+  const [imageRejected, setImageRejected] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (imageRejected) {
+      const t = setTimeout(() => setImageRejected(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [imageRejected]);
+
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item?.type?.startsWith("image/")) {
+        e.preventDefault();
+        setImageRejected(true);
+        return;
+      }
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -157,6 +178,37 @@ export default function ChatContent() {
       )}
 
     <div className="card" style={{ display: "flex", flexDirection: "column", minHeight: "60vh" }}>
+      {imageRejected && (
+        <div
+          style={{
+            padding: "8px 14px",
+            marginBottom: 12,
+            borderRadius: 8,
+            background: "var(--warn-bg, rgba(255,193,7,0.12))",
+            color: "var(--warn)",
+            fontSize: 13,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span>Images are not supported — please describe what you see in text instead.</span>
+          <button
+            type="button"
+            onClick={() => setImageRejected(false)}
+            style={{
+              margin: "0 0 0 auto",
+              padding: "2px 6px",
+              background: "transparent",
+              color: "var(--warn)",
+              fontSize: 16,
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: "auto", maxHeight: "55vh", paddingBottom: 12 }}>
         {messages.length === 0 ? (
           <p className="muted" style={{ textAlign: "center", padding: "40px 0" }}>
@@ -205,6 +257,7 @@ export default function ChatContent() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onPaste={handlePaste}
           placeholder={loading ? "Waiting for response..." : "Ask about your portfolio..."}
           disabled={loading}
           style={{ flex: 1, marginBottom: 0 }}
