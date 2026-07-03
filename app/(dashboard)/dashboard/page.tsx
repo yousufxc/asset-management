@@ -117,7 +117,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <h2>Dashboard</h2>
+      <h2>My Dashboard</h2>
 
       {/* ─── LIQUIDITY WARNING BANNER ──────────────────────────────────── */}
       {warning.breached && (

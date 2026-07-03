@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Props {
   runwayHorizonDays: number;
@@ -24,6 +24,10 @@ export default function SettingsContent({
   const [horizonSaved, setHorizonSaved] = useState(false);
   const [theme, setTheme] = useState(initialTheme);
   const [themeSaving, setThemeSaving] = useState(false);
+
+  useEffect(() => {
+    setTheme(initialTheme);
+  }, [initialTheme]);
   const [apiKey, setApiKey] = useState(initialApiKey);
   const [apiKeySaving, setApiKeySaving] = useState(false);
   const [apiKeySaved, setApiKeySaved] = useState(false);
