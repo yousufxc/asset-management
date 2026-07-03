@@ -30,7 +30,7 @@ const BOTTOM_ITEMS = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="10.5" y="7" width="3" height="8" rx="1.5" fill="var(--panel)"/><circle cx="12" cy="17" r="1.2" fill="var(--panel)"/></svg>,
   },
   { href: "/settings", label: "Settings",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><path fillRule="evenodd" d="M21.6 5.6l-4.3 4.3c-.4.4-1 .4-1.4 0l-1.8-1.8a1 1 0 0 1 0-1.4l4.3-4.3a6 6 0 0 0-7.7 8.8l-7.4 7.4a1 1 0 0 0 0 1.4l1.4 1.4a1 1 0 0 0 1.4 0l7.4-7.4a6 6 0 0 0 8.1-8.4zM5.7 20.3l-2-2 6.8-6.8c.4.8 1 1.5 1.7 2l-6.5 6.8z" fill="currentColor"/></svg>,
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="4" rx="1" fill="currentColor"/><circle cx="4" cy="10" r="6" fill="currentColor"/></svg>,
   },
 ];
 
