@@ -27,7 +27,7 @@ const BOTTOM_ITEMS = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="10.5" y="7" width="3" height="8" rx="1.5" fill="var(--panel)"/><circle cx="12" cy="17" r="1.2" fill="var(--panel)"/></svg>,
   },
   { href: "/settings", label: "Settings",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="4" rx="1" fill="currentColor"/><circle cx="4" cy="10" r="6" fill="currentColor"/></svg>,
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(0 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(60 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(120 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(180 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(240 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(300 12 12)"/><circle cx="12" cy="12" r="3" fill="var(--panel)"/></svg>,
   },
 ];
 
