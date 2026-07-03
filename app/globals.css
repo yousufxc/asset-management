@@ -119,6 +119,9 @@ a:hover { text-decoration: underline; }
 .sidebar nav a.active {
   background: var(--panel-2);
 }
+.sidebar nav a.active .sidebar-icon {
+  color: var(--accent);
+}
 .sidebar-icon {
   display: flex;
   align-items: center;
@@ -126,6 +129,7 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
   width: 18px;
   height: 18px;
+  color: var(--text);
 }
 .sidebar nav a:hover { background: var(--panel-2); text-decoration: none; }
 .sidebar-collapsed nav a {
