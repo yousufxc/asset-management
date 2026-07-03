@@ -44,8 +44,12 @@ export default function ChatContent() {
       });
 
       if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || err.detail || "Request failed");
+        const err = await res.json().catch(() => null);
+        throw new Error(
+          err?.error ||
+            err?.detail ||
+            `Request failed (${res.status}). Check your Anthropic API key in Settings.`,
+        );
       }
 
       const reader = res.body?.getReader();

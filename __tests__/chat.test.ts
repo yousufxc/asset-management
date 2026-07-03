@@ -152,4 +152,18 @@ describe("buildSystemPrompt", () => {
     expect(result).toContain("500,000");
     expect(result).toContain("1 installment(s)");
   });
+
+  it("does not throw when annual rent is not evenly divisible by cheque count", () => {
+    // 10,000,000 fils / 12 = 833,333.33 (non-integer) — filsToAed throws on
+    // non-integer input, so per-cheque must be rounded first. Regression guard.
+    const base = populatedSnapshot.properties[0]!;
+    const snapshot: PortfolioSnapshot = {
+      properties: [{ ...base, is_rental: 1, annual_rent_fils: 10_000_000, rent_cheques_per_year: 12 }],
+      cashAccounts: [],
+      commodities: [],
+      installments: [],
+    };
+    expect(() => buildSystemPrompt(snapshot, "2026-07-04")).not.toThrow();
+    expect(buildSystemPrompt(snapshot, "2026-07-04")).toContain("cheque");
+  });
 });

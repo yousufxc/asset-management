@@ -8,6 +8,10 @@ const DEFAULTS: Record<string, string> = {
   theme: "dark",
 };
 
+// Settings that hold secrets/credentials — never included in a data export
+// (exports get backed up and shared; a bundled live API key is a leak vector).
+const SECRET_SETTING_KEYS = new Set(["anthropicApiKey"]);
+
 export function getSetting(key: string): string {
   const db = getDb();
   const row = db
@@ -75,7 +79,9 @@ export function getAllData(): AllDataExport {
     installments: db
       .prepare("SELECT * FROM installments ORDER BY id")
       .all() as unknown as Installment[],
-    settings: getAllSettings(),
+    settings: Object.fromEntries(
+      Object.entries(getAllSettings()).filter(([k]) => !SECRET_SETTING_KEYS.has(k)),
+    ),
   };
 }
 

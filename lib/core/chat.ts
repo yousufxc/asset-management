@@ -114,7 +114,9 @@ export function buildSystemPrompt(snapshot: PortfolioSnapshot, asOfIso: string):
     for (const p of rentalProperties) {
       const annualRentAed = filsToAed(p.annual_rent_fils ?? 0);
       const cheques = p.rent_cheques_per_year ?? "?";
-      const perCheque = cheques !== "?" ? filsToAed((p.annual_rent_fils ?? 0) / (cheques as number)) : "?";
+      // Round to whole fils before filsToAed — it throws on non-integer input,
+      // and annual_rent/cheques is often fractional (e.g. 10,000,000 fils / 12).
+      const perCheque = cheques !== "?" ? filsToAed(Math.round((p.annual_rent_fils ?? 0) / (cheques as number))) : "?";
       lines.push(`- ${p.name}: AED ${annualRentAed.toLocaleString("en-AE")}/year (${cheques} cheque(s), ~AED ${perCheque.toLocaleString("en-AE")}/cheque)`);
     }
   }
