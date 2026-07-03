@@ -78,7 +78,6 @@ a:hover { text-decoration: underline; }
   transform: rotate(-90deg);
   margin-top: 24px;
 }
-.sidebar h1 { font-size: 15px; margin: 0; }
 .sidebar-toggle {
   display: flex;
   flex-direction: column;

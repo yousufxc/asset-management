@@ -14,6 +14,9 @@ const NAV_ITEMS = [
   { href: "/cash", label: "Saving Accounts",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" fill="currentColor"/><rect x="1" y="9" width="22" height="2" fill="var(--panel)"/></svg>,
   },
+  { href: "/cash", label: "Saving Accounts",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" fill="currentColor"/><rect x="1" y="9" width="22" height="2" fill="var(--panel)"/></svg>,
+  },
   { href: "/commodities", label: "Commodities",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="8" y="4" width="8" height="5" rx="1" fill="currentColor"/><rect x="4" y="11" width="7" height="5" rx="1" fill="currentColor"/><rect x="13" y="11" width="7" height="5" rx="1" fill="currentColor"/></svg>,
   },
@@ -27,7 +30,7 @@ const BOTTOM_ITEMS = [
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="10.5" y="7" width="3" height="8" rx="1.5" fill="var(--panel)"/><circle cx="12" cy="17" r="1.2" fill="var(--panel)"/></svg>,
   },
   { href: "/settings", label: "Settings",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><path fillRule="evenodd" d="M12 2a1 1 0 0 0-1 1v.4c-.6.2-1.1.4-1.7.7l-.3-.3a1 1 0 0 0-1.4 0l-1.4 1.4a1 1 0 0 0 0 1.4l.3.3c-.3.6-.5 1.1-.7 1.7H5a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h.4c.2.6.4 1.1.7 1.7l-.3.3a1 1 0 0 0 0 1.4l1.4 1.4a1 1 0 0 0 1.4 0l.3-.3c.6.3 1.1.5 1.7.7v.4a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-.4c.6-.2 1.1-.4 1.7-.7l.3.3a1 1 0 0 0 1.4 0l1.4-1.4a1 1 0 0 0 0-1.4l-.3-.3c.3-.6.5-1.1.7-1.7H19a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1h-.4c-.2-.6-.4-1.1-.7-1.7l.3-.3a1 1 0 0 0 0-1.4l-1.4-1.4a1 1 0 0 0-1.4 0l-.3.3c-.6-.3-1.1-.5-1.7-.7V3a1 1 0 0 0-1-1h-2zm1 2h-2a1 1 0 0 0-.9.7l-.4 1.4a1 1 0 0 1-.7.7c-.7.2-1.3.5-1.9 1a1 1 0 0 1-1 .1l-1.2-.6-.7.7.6 1.2a1 1 0 0 1-.1 1c-.5.6-.8 1.2-1 1.9a1 1 0 0 1-.7.7l-1.4.4v1l1.4.4a1 1 0 0 1 .7.7c.2.7.5 1.3 1 1.9a1 1 0 0 1 .1 1l-.6 1.2.7.7 1.2-.6a1 1 0 0 1 1 .1c.6.5 1.2.8 1.9 1a1 1 0 0 1 .7.7l.4 1.4a1 1 0 0 0 .9.7h2a1 1 0 0 0 .9-.7l.4-1.4a1 1 0 0 1 .7-.7c.7-.2 1.3-.5 1.9-1a1 1 0 0 1 1-.1l1.2.6.7-.7-.6-1.2a1 1 0 0 1 .1-1c.5-.6.8-1.2 1-1.9a1 1 0 0 1 .7-.7l1.4-.4v-1l-1.4-.4a1 1 0 0 1-.7-.7c-.2-.7-.5-1.3-1-1.9a1 1 0 0 1-.1-1l.6-1.2-.7-.7-1.2.6a1 1 0 0 1-1-.1c-.6-.5-1.2-.8-1.9-1a1 1 0 0 1-.7-.7L13 4a1 1 0 0 0-.9-.7H13zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" fill="currentColor"/></svg>,
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5" fill="var(--panel)"/><path fillRule="evenodd" d="M12.5 1.2l.3 1.4c.8.2 1.5.5 2.2 1l1-.7.7.7-.7 1c.4.7.8 1.4 1 2.2l1.3.3v1l-1.3.3c-.2.8-.5 1.5-1 2.2l.7 1-.7.7-1-.7c-.7.4-1.4.8-2.2 1l-.3 1.3h-1l-.3-1.3c-.8-.2-1.5-.5-2.2-1l-1 .7-.7-.7.7-1c-.4-.7-.8-1.4-1-2.2L3.4 13v-1l1.3-.3c.2-.8.5-1.5 1-2.2l-.7-1 .7-.7 1 .7c.7-.4 1.4-.8 2.2-1l.3-1.4h1zm-1.2 2.1l-.6 1.7c-.4.2-.9.4-1.3.7l-1.6-.7-.4.4.7 1.7c-.3.4-.6.9-.7 1.3l-1.7.6v.6l1.7.6c.1.4.3.9.6 1.3l-.7 1.7.4.4 1.7-.7c.4.3.9.5 1.3.7l.6 1.7h.6l.6-1.7c.4-.2.9-.4 1.3-.7l1.7.7.4-.4-.7-1.7c.3-.4.6-.9.7-1.3l1.7-.6v-.6l-1.7-.6c-.1-.4-.4-.9-.7-1.3l.7-1.7-.4-.4-1.7.7c-.4-.3-.9-.5-1.3-.7l-.6-1.7h-.6z" fill="currentColor"/></svg>,
   },
 ];
 
