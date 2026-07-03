@@ -5,6 +5,7 @@ import { useState } from "react";
 interface Props {
   runwayHorizonDays: number;
   theme: string;
+  anthropicApiKey: string;
   version: string;
   dbPath: string;
   tableCounts: Record<string, number>;
@@ -13,6 +14,7 @@ interface Props {
 export default function SettingsContent({
   runwayHorizonDays: initialHorizon,
   theme: initialTheme,
+  anthropicApiKey: initialApiKey,
   version,
   dbPath,
   tableCounts,
@@ -22,6 +24,9 @@ export default function SettingsContent({
   const [horizonSaved, setHorizonSaved] = useState(false);
   const [theme, setTheme] = useState(initialTheme);
   const [themeSaving, setThemeSaving] = useState(false);
+  const [apiKey, setApiKey] = useState(initialApiKey);
+  const [apiKeySaving, setApiKeySaving] = useState(false);
+  const [apiKeySaved, setApiKeySaved] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [resetConfirm, setResetConfirm] = useState("");
   const [resetting, setResetting] = useState(false);
@@ -62,6 +67,27 @@ export default function SettingsContent({
       });
     } finally {
       setThemeSaving(false);
+    }
+  };
+
+  const saveApiKey = async () => {
+    setApiKeySaving(true);
+    setApiKeySaved(false);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: "anthropicApiKey", value: apiKey }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Failed to save");
+        return;
+      }
+      setApiKeySaved(true);
+      setTimeout(() => setApiKeySaved(false), 2000);
+    } finally {
+      setApiKeySaving(false);
     }
   };
 
@@ -175,6 +201,33 @@ export default function SettingsContent({
               Light
             </label>
             {themeSaving && <span className="muted" style={{ fontSize: 12 }}>Saving...</span>}
+          </div>
+        </div>
+
+        <div style={{ borderTop: "1px solid var(--border)", marginTop: 20, paddingTop: 16 }}>
+          <label htmlFor="anthropicApiKey">Anthropic API Key</label>
+          <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>
+            Required for the Chat feature. Create a key at{" "}
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener noreferrer">
+              console.anthropic.com
+            </a>.
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              id="anthropicApiKey"
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-ant-..."
+              style={{ maxWidth: 420 }}
+            />
+            <button
+              onClick={saveApiKey}
+              disabled={apiKeySaving}
+              style={{ marginTop: 0 }}
+            >
+              {apiKeySaving ? "Saving..." : apiKeySaved ? "Saved" : "Save"}
+            </button>
           </div>
         </div>
       </div>

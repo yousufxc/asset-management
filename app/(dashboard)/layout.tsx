@@ -10,6 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link href="/properties">Property</Link>
           <Link href="/cash">Saving Accounts</Link>
           <Link href="/commodities">Commodities</Link>
+          <Link href="/chat">Chat</Link>
         </nav>
         <div className="sidebar-divider" />
         <nav>

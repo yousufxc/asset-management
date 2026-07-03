@@ -14,6 +14,7 @@ const VALID_KEYS: Record<string, z.ZodType<string>> = {
       const n = parseInt(v, 10);
       return !isNaN(n) && Number.isInteger(n) && n >= 7 && n <= 365;
     }, "must be an integer between 7 and 365"),
+  anthropicApiKey: z.string().min(1, "API key cannot be empty"),
 };
 
 export async function GET() {

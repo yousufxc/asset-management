@@ -25,6 +25,7 @@ export default function SettingsPage() {
       <SettingsContent
         runwayHorizonDays={Number(settings.runwayHorizonDays) || 90}
         theme={settings.theme ?? "dark"}
+        anthropicApiKey={settings.anthropicApiKey ?? ""}
         version={version}
         dbPath={dbPath}
         tableCounts={counts}
