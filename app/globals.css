@@ -108,13 +108,32 @@ a:hover { text-decoration: underline; }
   pointer-events: none;
 }
 .sidebar nav a {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 9px 12px;
   border-radius: 8px;
   color: var(--text);
   margin-bottom: 4px;
 }
+.sidebar nav a.active {
+  background: var(--panel-2);
+}
+.sidebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
 .sidebar nav a:hover { background: var(--panel-2); text-decoration: none; }
+.sidebar-collapsed nav a {
+  justify-content: center;
+  padding: 9px 4px;
+}
+.sidebar-collapsed .sidebar-label { display: none; }
+.sidebar-collapsed .sidebar-icon { width: 18px; height: 18px; }
 .sidebar-divider { border-top: 1px solid var(--border); margin: 16px 8px 12px; }
 
 .content { flex: 1; padding: 28px 32px; max-width: 1100px; }
