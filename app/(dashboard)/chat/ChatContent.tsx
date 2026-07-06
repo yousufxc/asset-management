@@ -8,7 +8,7 @@ interface Message {
   content: string;
 }
 
-export default function ChatContent() {
+export default function ChatContent({ hasApiKey }: { hasApiKey: boolean }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -210,7 +210,23 @@ export default function ChatContent() {
         </div>
       )}
       <div style={{ flex: 1, overflowY: "auto", maxHeight: "55vh", paddingBottom: 12 }}>
-        {messages.length === 0 ? (
+        {!hasApiKey ? (
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <p style={{ fontSize: 15, margin: "0 0 8px", color: "var(--warn)" }}>
+              Anthropic API key not configured
+            </p>
+            <p className="muted" style={{ fontSize: 13, margin: "0 0 16px" }}>
+              You need to set your Anthropic API key before using the Chat feature.
+            </p>
+            <button
+              type="button"
+              onClick={() => router.push("/settings")}
+              style={{ marginTop: 0 }}
+            >
+              Go to Settings
+            </button>
+          </div>
+        ) : messages.length === 0 ? (
           <p className="muted" style={{ textAlign: "center", padding: "40px 0" }}>
             Ask something about your portfolio. For example:<br />
             <em>&ldquo;How many days of runway do I have?&rdquo;</em> or{" "}
@@ -258,11 +274,11 @@ export default function ChatContent() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onPaste={handlePaste}
-          placeholder={loading ? "Waiting for response..." : "Ask about your portfolio..."}
-          disabled={loading}
+          placeholder={!hasApiKey ? "Configure API key in Settings first..." : loading ? "Waiting for response..." : "Ask about your portfolio..."}
+          disabled={loading || !hasApiKey}
           style={{ flex: 1, marginBottom: 0 }}
         />
-        <button type="submit" disabled={loading || !input.trim()} style={{ marginTop: 0, flexShrink: 0 }}>
+        <button type="submit" disabled={loading || !input.trim() || !hasApiKey} style={{ marginTop: 0, flexShrink: 0 }}>
           {loading ? "..." : "Send"}
         </button>
       </form>
