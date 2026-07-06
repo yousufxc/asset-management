@@ -66,7 +66,7 @@ export default function CashContent({
       <div>
         <AnimateOnScroll><div className="card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
-            <h3 style={{ margin: 0 }}>Accounts ({accounts.length})</h3>
+            <h3 style={{ margin: 0 }}>My Accounts ({accounts.length})</h3>
             <button
               onClick={handleExport}
               disabled={exporting}

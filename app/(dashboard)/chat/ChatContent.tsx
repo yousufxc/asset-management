@@ -213,8 +213,8 @@ export default function ChatContent() {
         {messages.length === 0 ? (
           <p className="muted" style={{ textAlign: "center", padding: "40px 0" }}>
             Ask something about your portfolio. For example:<br />
-            <em>"How many days of runway do I have?"</em> or{" "}
-            <em>"Which commodity has the best return?"</em>
+            <em>&ldquo;How many days of runway do I have?&rdquo;</em> or{" "}
+            <em>&ldquo;Which commodity has the best return?&rdquo;</em>
           </p>
         ) : (
           messages.map((m, i) => (
