@@ -40,6 +40,7 @@ export default function CommodityContent({
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [exporting, setExporting] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -161,6 +162,26 @@ export default function CommodityContent({
     });
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/commodities/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      a.download = `commodities-export-${dateStr}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export error:", e);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function selectAll() {
     setMetalTypeFilter(new Set(ALL_METAL_TYPES));
   }
@@ -201,7 +222,16 @@ export default function CommodityContent({
 
       <div>
         <AnimateOnScroll><div className="card">
-          <h3 style={{ marginTop: 0 }}>Holdings ({commodities.length})</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
+            <h3 style={{ margin: 0 }}>Holdings ({commodities.length})</h3>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
+            >
+              {exporting ? "Exporting..." : "Export"}
+            </button>
+          </div>
           {sorted.length === 0 ? (
             <p className="muted">
               {commodities.length === 0

@@ -69,6 +69,7 @@ export default function PropertyContent({
   const [filterOpen, setFilterOpen] = useState(false);
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [exporting, setExporting] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -183,6 +184,26 @@ export default function PropertyContent({
     });
   }
 
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/properties/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      a.download = `properties-export-${dateStr}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export error:", e);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   function selectAll() {
     setTypeFilter(new Set(ALL_PROPERTY_TYPES));
   }
@@ -280,7 +301,16 @@ export default function PropertyContent({
       </>)}
 
       <AnimateOnScroll><div className="card">
-        <h3 style={{ marginTop: 0 }}>Your properties ({sorted.length})</h3>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
+          <h3 style={{ margin: 0 }}>Your properties ({sorted.length})</h3>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
+          >
+            {exporting ? "Exporting..." : "Export"}
+          </button>
+        </div>
         {properties.length === 0 ? (
           <p className="muted">No properties yet. Add one above.</p>
         ) : sorted.length === 0 ? (

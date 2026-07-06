@@ -36,6 +36,8 @@ export default function SettingsContent({
   const [resetting, setResetting] = useState(false);
   const [resetResult, setResetResult] = useState<string | null>(null);
   const [resetError, setResetError] = useState<string | null>(null);
+  const [excelCategory, setExcelCategory] = useState("all");
+  const [exportingExcel, setExportingExcel] = useState(false);
 
   const saveHorizon = async () => {
     setHorizonSaving(true);
@@ -113,6 +115,32 @@ export default function SettingsContent({
       setExporting(false);
     }
   };
+
+  async function handleExportExcel() {
+    setExportingExcel(true);
+    try {
+      const apiPath =
+        excelCategory === "properties" ? "/api/properties/export" :
+        excelCategory === "commodities" ? "/api/commodities/export" :
+        excelCategory === "cash" ? "/api/cash/export" :
+        "/api/settings/export?format=xlsx";
+      const res = await fetch(apiPath);
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const catLabel = excelCategory === "all" ? "all" : excelCategory;
+      a.download = `${catLabel}-export-${dateStr}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + String(e));
+    } finally {
+      setExportingExcel(false);
+    }
+  }
 
   const handleReset = async () => {
     if (resetConfirm !== "DELETE") return;
@@ -252,6 +280,36 @@ export default function SettingsContent({
           >
             {exporting ? "Exporting..." : "Export all data"}
           </button>
+        </div>
+
+        <div
+          style={{
+            borderTop: "1px solid var(--border)",
+            paddingTop: 16,
+          }}
+        >
+          <p className="muted" style={{ fontSize: 13, margin: "0 0 8px" }}>
+            Export to Excel by category.
+          </p>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <select
+              value={excelCategory}
+              onChange={(e) => setExcelCategory(e.target.value)}
+              style={{ maxWidth: 200 }}
+            >
+              <option value="all">All categories</option>
+              <option value="properties">Properties only</option>
+              <option value="commodities">Commodities only</option>
+              <option value="cash">Saving Accounts only</option>
+            </select>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel}
+              style={{ marginTop: 0 }}
+            >
+              {exportingExcel ? "Exporting..." : "Export to Excel"}
+            </button>
+          </div>
         </div>
 
         <div

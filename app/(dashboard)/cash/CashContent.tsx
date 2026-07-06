@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CashAccount } from "@/lib/types";
 import { formatAed } from "@/lib/core/units";
@@ -18,6 +19,27 @@ export default function CashContent({
 }) {
   const router = useRouter();
   const totalBalance = accounts.reduce((s, a) => s + a.current_balance_fils, 0);
+  const [exporting, setExporting] = useState(false);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/cash/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      a.download = `accounts-export-${dateStr}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export error:", e);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function handleSelect(id: number) {
     router.push(`/cash?selected=${id}`);
@@ -43,7 +65,16 @@ export default function CashContent({
 
       <div>
         <AnimateOnScroll><div className="card">
-          <h3 style={{ marginTop: 0 }}>Accounts ({accounts.length})</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
+            <h3 style={{ margin: 0 }}>Accounts ({accounts.length})</h3>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
+            >
+              {exporting ? "Exporting..." : "Export"}
+            </button>
+          </div>
           {accounts.length === 0 ? (
             <p className="muted">No accounts yet. Add one above.</p>
           ) : (
