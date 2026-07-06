@@ -37,13 +37,13 @@ export function getDb(): DatabaseSyncT {
   db.exec("PRAGMA foreign_keys = ON");
   db.exec("PRAGMA busy_timeout = 5000");
 
-  // schema.sql is the SINGLE source of truth (applied idempotently via
-  // CREATE TABLE/VIEW IF NOT EXISTS). Schema changes use `npm run db:reset` — no
-  // ad-hoc migrations in Phase 1 (documented decision; one definition per
-  // table/view, no drift).
-  // ALTER TABLE statements in schema.sql add columns to existing databases.
-  // On fresh databases (db:reset), columns already exist from CREATE TABLE so
-  // ALTER fails. We split and catch to handle both paths safely.
+  // schema.sql is the single source of truth for the DB shape. It holds
+  // CREATE TABLE/VIEW/INDEX (IF NOT EXISTS) plus additive `ALTER TABLE ADD
+  // COLUMN` statements that migrate pre-existing databases to newer columns
+  // WITHOUT a destructive db:reset. We execute each statement individually and
+  // swallow "duplicate column"/"already exists" errors, so both paths converge:
+  // a fresh DB gets columns from CREATE TABLE (the ALTERs no-op), an existing DB
+  // gets any missing columns from the ALTERs. Any other error is re-thrown.
   const schema = readFileSync(SCHEMA_PATH, "utf8");
   const statements = schema.split(";\n").map((s) => s.trim()).filter(Boolean);
   for (const stmt of statements) {
