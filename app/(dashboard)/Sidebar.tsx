@@ -27,7 +27,7 @@ const NAV_ITEMS = [
 
 const BOTTOM_ITEMS = [
   { href: "/about", label: "About Us",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><rect x="10.5" y="7" width="3" height="8" rx="1.5" fill="var(--panel)"/><circle cx="12" cy="17" r="1.2" fill="var(--panel)"/></svg>,
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M12 6c-1.1 0-2 .9-2 2 0 .6.3 1.1.7 1.4.5.4.8 1 .8 1.6h1c0-1.1-.6-2.1-1.5-2.7-.3-.2-.5-.5-.5-.8 0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5c0 .3-.2.6-.5.8-.9.6-1.5 1.6-1.5 2.7h1c0-.6.3-1.2.8-1.6.4-.3.7-.8.7-1.4 0-1.1-.9-2-2-2zM12 17.25a.9.9 0 100 1.8.9.9 0 000-1.8z" fill="var(--panel)"/></svg>,
   },
   { href: "/settings", label: "Settings",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(0 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(60 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(120 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(180 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(240 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(300 12 12)"/><circle cx="12" cy="12" r="3" fill="var(--panel)"/></svg>,
