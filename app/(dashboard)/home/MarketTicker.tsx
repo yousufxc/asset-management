@@ -33,7 +33,7 @@ export default function MarketTicker() {
   if (loading) {
     return (
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Materials</h3>
+        <h3 style={{ marginBottom: 12 }}>Live Spot Prices</h3>
         <span className="muted">Loading market data...</span>
       </div>
     );
@@ -42,7 +42,7 @@ export default function MarketTicker() {
   if (error || prices.length === 0) {
     return (
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Materials</h3>
+        <h3 style={{ marginBottom: 12 }}>Live Spot Prices</h3>
         <span className="muted">Market data temporarily unavailable</span>
       </div>
     );
@@ -50,7 +50,7 @@ export default function MarketTicker() {
 
   return (
     <div className="card">
-      <h3 style={{ marginBottom: 12 }}>Materials</h3>
+      <h3 style={{ marginBottom: 12 }}>Live Spot Prices</h3>
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
         {prices.map((p) => (
           <div key={p.metal} style={{ display: "flex", alignItems: "center", gap: 8 }}>
