@@ -107,6 +107,7 @@ const DATA_TABLES = [
   "properties",
   "cash_accounts",
   "commodities",
+  "watchlist",
 ];
 
 export function resetAllData(): void {

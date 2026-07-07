@@ -16,6 +16,25 @@ export type WeightUnit = "gram" | "kg" | "troy_oz" | "tola";
 export type RentalDepositStatus = "pending" | "deposited";
 export type EndReason = "cancelled" | "vacant" | "renewed";
 
+export type WatchlistType = "property" | "commodity";
+
+export interface WatchlistItem {
+  id: number;
+  type: WatchlistType;
+  label: string;
+  target_price_fils: number | null;
+  target_price_per_unit_fils: number | null;
+  property_type: PropertyType | null;
+  city: string | null;
+  area: string | null;
+  metal_type: MetalType | null;
+  weight: number | null;
+  weight_unit: WeightUnit | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Property {
   id: number;
   name: string;

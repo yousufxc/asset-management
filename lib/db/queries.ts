@@ -20,8 +20,9 @@ import type {
   CommodityInput,
   CommodityUpdate,
   RentalDepositUpdate,
+  WatchlistInput,
 } from "@/lib/ingest/validate";
-import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit } from "@/lib/types";
+import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem } from "@/lib/types";
 import type { EndReason } from "@/lib/types";
 import type { DepositScheduleEntry } from "@/lib/core/rental-deposits";
 
@@ -603,4 +604,45 @@ export function upsertRentalDepositSchedule(
       });
     }
   }
+}
+
+// WATCHLIST ------------------------------------------------------------------
+export function insertWatchlistItem(input: WatchlistInput): WatchlistItem {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO watchlist
+      (type, label, target_price_fils, target_price_per_unit_fils,
+       property_type, city, area,
+       metal_type, weight, weight_unit, notes)
+    VALUES
+      (@type, @label, @target_price_fils, @target_price_per_unit_fils,
+       @property_type, @city, @area,
+       @metal_type, @weight, @weight_unit, @notes)
+  `);
+  const info = stmt.run({
+    type: input.type,
+    label: input.label,
+    target_price_fils: aedOrNull(input.target_price_aed ?? undefined),
+    target_price_per_unit_fils: aedOrNull(input.target_price_per_unit_aed ?? undefined),
+    property_type: input.type === "property" ? (input.property_type ?? null) : null,
+    city: input.type === "property" ? (input.city ?? null) : null,
+    area: input.type === "property" ? (input.area ?? null) : null,
+    metal_type: input.type === "commodity" ? (input.metal_type ?? null) : null,
+    weight: input.type === "commodity" ? (input.weight ?? null) : null,
+    weight_unit: input.type === "commodity" ? (input.weight_unit ?? null) : null,
+    notes: input.notes ?? null,
+  });
+  return getDb()
+    .prepare(`SELECT * FROM watchlist WHERE id = ?`)
+    .get(Number(info.lastInsertRowid)) as unknown as WatchlistItem;
+}
+
+export function listWatchlist(): WatchlistItem[] {
+  return getDb()
+    .prepare(`SELECT * FROM watchlist ORDER BY created_at DESC`)
+    .all() as unknown as WatchlistItem[];
+}
+
+export function deleteWatchlistItem(id: number): void {
+  getDb().prepare(`DELETE FROM watchlist WHERE id = ?`).run(id);
 }

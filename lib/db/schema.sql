@@ -234,6 +234,30 @@ CREATE VIEW IF NOT EXISTS v_rental_history AS
   FROM rental_history;
 
 -- ----------------------------------------------------------------------------
+-- WATCHLIST — aspirational items the user is considering but hasn't purchased.
+-- Type discriminator: 'property' or 'commodity' with relevant fields per type.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS watchlist (
+  id                          INTEGER PRIMARY KEY AUTOINCREMENT,
+  type                        TEXT    NOT NULL CHECK (type IN ('property', 'commodity')),
+  label                       TEXT    NOT NULL,
+  target_price_fils           INTEGER CHECK (target_price_fils IS NULL OR target_price_fils >= 0),
+  target_price_per_unit_fils  INTEGER CHECK (target_price_per_unit_fils IS NULL OR target_price_per_unit_fils >= 0),
+  -- Property-specific
+  property_type               TEXT    CHECK (property_type IS NULL OR property_type IN ('apartment', 'penthouse', 'townhouse', 'villa')),
+  city                        TEXT,
+  area                        TEXT,
+  -- Commodity-specific
+  metal_type                  TEXT    CHECK (metal_type IS NULL OR metal_type IN ('gold', 'silver', 'platinum', 'palladium', 'other')),
+  weight                      REAL    CHECK (weight IS NULL OR weight > 0),
+  weight_unit                 TEXT    CHECK (weight_unit IS NULL OR weight_unit IN ('gram', 'kg', 'troy_oz', 'tola')),
+  notes                       TEXT,
+  created_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at                  TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+ALTER TABLE watchlist ADD COLUMN target_price_per_unit_fils INTEGER CHECK (target_price_per_unit_fils IS NULL OR target_price_per_unit_fils >= 0);
+
+-- ----------------------------------------------------------------------------
 -- RENTAL DEPOSITS — individual deposit cheques with status tracking.
 -- Auto-generated from property rental config; user marks each as deposited.
 -- ----------------------------------------------------------------------------

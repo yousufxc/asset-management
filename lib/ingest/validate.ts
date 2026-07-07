@@ -223,4 +223,20 @@ export const RentalLifecycleSchema = z.object({
   short_term_rent_deposit_date: dateString.optional().nullable(),
   contract_start_date: dateString.optional().nullable(),
 });
-export type RentalLifecycleAction = z.infer<typeof RentalLifecycleSchema>;
+// ---------------------------------------------------------------------------
+// WATCHLIST — aspirational items (property or commodity)
+// ---------------------------------------------------------------------------
+export const WatchlistInputSchema = z.object({
+  type: z.enum(["property", "commodity"]),
+  label: z.string().min(1),
+  target_price_aed: aedAmount.optional().nullable(),
+  target_price_per_unit_aed: aedAmount.optional().nullable(),
+  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa"]).optional().nullable(),
+  city: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  metal_type: z.enum(["gold", "silver", "platinum", "palladium", "other"]).optional().nullable(),
+  weight: z.number().positive().optional().nullable(),
+  weight_unit: z.enum(["gram", "kg", "troy_oz", "tola"]).optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type WatchlistInput = z.infer<typeof WatchlistInputSchema>;
