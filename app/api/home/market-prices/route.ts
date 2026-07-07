@@ -2,42 +2,61 @@ import { NextResponse } from "next/server";
 
 interface MetalPrice {
   metal: string;
-  pricePerGramAed: number | null;
+  pricePerGramAed: number;
 }
 
-const METAL_MAP: Record<string, string> = {
-  gold: "gold",
-  silver: "silver",
-  platinum: "platinum",
-  palladium: "palladium",
-};
+const METALS = [
+  { symbol: "XAU", metal: "gold" },
+  { symbol: "XAG", metal: "silver" },
+  { symbol: "XPT", metal: "platinum" },
+  { symbol: "XPD", metal: "palladium" },
+];
 
-async function fetchMetalPrices(): Promise<MetalPrice[]> {
-  const res = await fetch("https://api.metals.live/v1/spot", {
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!res.ok) return [];
-
-  const data = (await res.json()) as Array<{ currency: string; metal: string; price: number }>;
-  const results: MetalPrice[] = [];
-
-  for (const entry of data) {
-    const metal = METAL_MAP[entry.metal.toLowerCase()];
-    if (metal && entry.currency === "USD") {
-      const pricePerOzUsd = entry.price;
-      const pricePerGramUsd = pricePerOzUsd / 31.1035;
-      const aedPerUsd = 3.673;
-      const pricePerGramAed = Math.round(pricePerGramUsd * aedPerUsd * 100) / 100;
-      results.push({ metal, pricePerGramAed });
-    }
+async function fetchAedPerUsd(): Promise<number> {
+  try {
+    const res = await fetch("https://open.er-api.com/v6/latest/USD", {
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return 3.673;
+    const data = (await res.json()) as { rates: { AED: number } };
+    return data.rates.AED;
+  } catch {
+    return 3.673;
   }
+}
 
-  return results;
+async function fetchMetalPrice(symbol: string): Promise<number | null> {
+  try {
+    const res = await fetch(`https://api.gold-api.com/price/${symbol}`, {
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as { price: number };
+    return data.price;
+  } catch {
+    return null;
+  }
 }
 
 export async function GET() {
   try {
-    const prices = await fetchMetalPrices();
+    const [aedPerUsd, ...metalResults] = await Promise.all([
+      fetchAedPerUsd(),
+      ...METALS.map((m) => fetchMetalPrice(m.symbol)),
+    ]);
+
+    const prices: MetalPrice[] = [];
+    for (let i = 0; i < METALS.length; i++) {
+      const priceUsdPerOz = metalResults[i];
+      if (priceUsdPerOz == null) continue;
+      const pricePerGramAed = Math.round((priceUsdPerOz / 31.1035) * aedPerUsd * 100) / 100;
+      prices.push({ metal: METALS[i]!.metal, pricePerGramAed });
+    }
+
+    if (prices.length === 0) {
+      return NextResponse.json({ prices: [], error: "Market data temporarily unavailable" }, { status: 200 });
+    }
+
     return NextResponse.json({ prices });
   } catch {
     return NextResponse.json({ prices: [], error: "Market data temporarily unavailable" }, { status: 200 });

@@ -9,9 +9,7 @@ interface NewsItem {
 }
 
 const FEEDS: { url: string; source: string; section: "gulf" | "global" }[] = [
-  { url: "https://gulfnews.com/business/rss", source: "Gulf News", section: "gulf" },
-  { url: "https://www.khaleejtimes.com/business/rss", source: "Khaleej Times", section: "gulf" },
-  { url: "https://feeds.reuters.com/reuters/businessNews", source: "Reuters", section: "global" },
+  { url: "https://gulfnews.com/stories.rss", source: "Gulf News", section: "gulf" },
   { url: "https://feeds.bbci.co.uk/news/business/rss.xml", source: "BBC", section: "global" },
 ];
 
@@ -47,7 +45,13 @@ async function fetchFeed(feed: { url: string; source: string; section: "gulf" | 
 export async function GET() {
   try {
     const results = await Promise.all(FEEDS.map(fetchFeed));
-    const items = results.flat().sort((a, b) => {
+    const seen = new Set<string>();
+    const items = results.flat().filter((item) => {
+      const key = `${item.source}:${item.title}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).sort((a, b) => {
       const da = a.pubDate ? new Date(a.pubDate).getTime() : 0;
       const db = b.pubDate ? new Date(b.pubDate).getTime() : 0;
       return db - da;
