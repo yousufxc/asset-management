@@ -63,7 +63,7 @@ export default function MarketTicker() {
           </div>
         ))}
         <span className="muted" style={{ fontSize: 11, marginLeft: "auto" }}>
-          Live spot via metals.live
+          Live spot via gold-api.com
         </span>
       </div>
     </div>
