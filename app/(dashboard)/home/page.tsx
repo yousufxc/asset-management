@@ -10,9 +10,9 @@ export default function HomePage() {
     <>
       <h2>Home</h2>
       <MarketTicker />
-      <QuickActions />
-      <Watchlist />
       <NewsDigest />
+      <Watchlist />
+      <QuickActions />
     </>
   );
 }
