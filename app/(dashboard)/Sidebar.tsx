@@ -11,6 +11,15 @@ const NAV_ITEMS = [
   { href: "/dashboard", label: "My Dashboard",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1" fill="currentColor"/><rect x="14" y="2" width="8" height="8" rx="1" fill="currentColor"/><rect x="2" y="14" width="8" height="8" rx="1" fill="currentColor"/><rect x="14" y="14" width="8" height="8" rx="1" fill="currentColor"/></svg>,
   },
+];
+
+const CHAT_ITEMS = [
+  { href: "/chat", label: "Chat",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/></svg>,
+  },
+];
+
+const MY_ASSETS_ITEMS = [
   { href: "/properties", label: "Property",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3L2 12h3v9h6v-6h2v6h6v-9h3L12 3z" fill="currentColor"/></svg>,
   },
@@ -20,23 +29,29 @@ const NAV_ITEMS = [
   { href: "/cash", label: "Saving Accounts",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" fill="currentColor"/><rect x="1" y="9" width="22" height="2" fill="var(--panel)"/></svg>,
   },
-  { href: "/chat", label: "Chat",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/></svg>,
-  },
 ];
 
 const BOTTOM_ITEMS = [
   { href: "/about", label: "About Us",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><path d="M12 6c-1.1 0-2 .9-2 2 0 .6.3 1.1.7 1.4.5.4.8 1 .8 1.6h1c0-1.1-.6-2.1-1.5-2.7-.3-.2-.5-.5-.5-.8 0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5c0 .3-.2.6-.5.8-.9.6-1.5 1.6-1.5 2.7h1c0-.6.3-1.2.8-1.6.4-.3.7-.8.7-1.4 0-1.1-.9-2-2-2zM12 17.25a.9.9 0 100 1.8.9.9 0 000-1.8z" fill="var(--panel)"/></svg>,
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="currentColor"/><text x="12" y="17" textAnchor="middle" fontSize="14" fontWeight="bold" fill="var(--panel)">?</text></svg>,
   },
   { href: "/settings", label: "Settings",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="7" fill="currentColor"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(0 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(60 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(120 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(180 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(240 12 12)"/><rect x="9" y="1" width="6" height="4" rx="1" fill="currentColor" transform="rotate(300 12 12)"/><circle cx="12" cy="12" r="3" fill="var(--panel)"/></svg>,
   },
 ];
 
+const BRIEFCASE_ICON = <svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" fill="currentColor"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2" fill="none" stroke="currentColor" strokeWidth="2"/></svg>;
+
+const CHEVRON_ICON = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6,9 12,15 18,9"/></svg>;
+
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [hoverOpen, setHoverOpen] = useState(false);
   const pathname = usePathname();
+
+  const assetRoutes = ["/properties", "/commodities", "/cash"];
+  const isMyAssetsActive = assetRoutes.some((r) => pathname.startsWith(r));
+  const myAssetsOpen = hoverOpen || isMyAssetsActive;
 
   function isActive(href: string) {
     if (href === "/home") return pathname === "/home";
@@ -72,6 +87,50 @@ export default function Sidebar() {
             </Link>
           ))}
         </nav>
+
+        {collapsed ? (
+          <div className="my-assets-collapsed">
+            <span className="sidebar-icon">{BRIEFCASE_ICON}</span>
+          </div>
+        ) : (
+          <div
+            className={`my-assets-section${isMyAssetsActive ? " my-assets-active" : ""}`}
+            onMouseEnter={() => setHoverOpen(true)}
+            onMouseLeave={() => setHoverOpen(false)}
+          >
+            <div className={`my-assets-parent${isMyAssetsActive ? " active" : ""}`}>
+              <span className="sidebar-icon">{BRIEFCASE_ICON}</span>
+              <span className="sidebar-label">My Assets</span>
+              <span className={`my-assets-arrow${myAssetsOpen ? " open" : ""}`}>{CHEVRON_ICON}</span>
+            </div>
+            <div className={`my-assets-dropdown${myAssetsOpen ? " open" : ""}`}>
+              {MY_ASSETS_ITEMS.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={isActive(item.href) ? "active" : ""}
+                >
+                  <span className="sidebar-icon">{item.icon}</span>
+                  <span className="sidebar-label">{item.label}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <nav>
+          {CHAT_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive(item.href) ? "active" : ""}
+            >
+              <span className="sidebar-icon">{item.icon}</span>
+              <span className="sidebar-label">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
         <div className="sidebar-divider" />
         <nav>
           {BOTTOM_ITEMS.map((item) => (
