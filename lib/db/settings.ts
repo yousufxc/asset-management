@@ -1,11 +1,12 @@
 import { getDb } from "@/lib/db/client";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { Property, CashAccount, Commodity, Installment } from "@/lib/types";
+import type { Property, CashAccount, Commodity, Installment, Land } from "@/lib/types";
 
 const DEFAULTS: Record<string, string> = {
   runwayHorizonDays: "90",
   theme: "dark",
+  assetSelection: JSON.stringify(["properties", "commodities", "cash", "lands"]),
 };
 
 // Settings that hold secrets/credentials — never included in a data export
@@ -59,6 +60,7 @@ export interface AllDataExport {
   properties: Property[];
   cashAccounts: CashAccount[];
   commodities: Commodity[];
+  lands: Land[];
   installments: Installment[];
   settings: Record<string, string>;
 }
@@ -76,6 +78,15 @@ export function getAllData(): AllDataExport {
     commodities: db
       .prepare("SELECT * FROM commodities ORDER BY id")
       .all() as unknown as Commodity[],
+    lands: (() => {
+      try {
+        return db
+          .prepare("SELECT * FROM lands ORDER BY id")
+          .all() as unknown as Land[];
+      } catch {
+        return [] as Land[];
+      }
+    })(),
     installments: db
       .prepare("SELECT * FROM installments ORDER BY id")
       .all() as unknown as Installment[],
@@ -107,6 +118,7 @@ const DATA_TABLES = [
   "properties",
   "cash_accounts",
   "commodities",
+  "lands",
   "watchlist",
 ];
 
@@ -114,20 +126,28 @@ export function resetAllData(): void {
   const db = getDb();
   db.exec("PRAGMA foreign_keys = OFF");
   for (const table of DATA_TABLES) {
-    db.exec(`DELETE FROM ${table}`);
+    try {
+      db.exec(`DELETE FROM ${table}`);
+    } catch {
+      // table may not exist yet if schema hasn't been fully applied
+    }
   }
   db.exec("PRAGMA foreign_keys = ON");
 }
 
 export function getTableCounts(): Record<string, number> {
   const db = getDb();
-  const tables = ["properties", "cash_accounts", "commodities", "installments"];
+  const tables = ["properties", "cash_accounts", "commodities", "lands", "installments"];
   const result: Record<string, number> = {};
   for (const table of tables) {
-    const row = db
-      .prepare(`SELECT COUNT(*) AS cnt FROM ${table}`)
-      .get() as { cnt: number };
-    result[table] = row.cnt;
+    try {
+      const row = db
+        .prepare(`SELECT COUNT(*) AS cnt FROM ${table}`)
+        .get() as { cnt: number };
+      result[table] = row.cnt;
+    } catch {
+      result[table] = 0;
+    }
   }
   return result;
 }

@@ -119,6 +119,27 @@ CREATE TABLE IF NOT EXISTS commodities (
 );
 
 -- ----------------------------------------------------------------------------
+-- ASSET CLASS 4: LAND — manual entry only.
+--   Minimal record: name, land_type, city, area, size, purchase/value/dates.
+--   No installments or rental features (owner decision 2026-07).
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS lands (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  name                TEXT    NOT NULL,
+  land_type           TEXT    CHECK (land_type IS NULL OR land_type IN ('residential', 'commercial', 'agricultural', 'industrial', 'mixed_use', 'other')),
+  city                TEXT,
+  area                TEXT,
+  size_sqft           REAL    CHECK (size_sqft IS NULL OR size_sqft > 0),
+  purchase_price_fils INTEGER CHECK (purchase_price_fils IS NULL OR purchase_price_fils >= 0),
+  current_value_fils  INTEGER CHECK (current_value_fils  IS NULL OR current_value_fils  >= 0),
+  purchased_at        TEXT,
+  valued_at           TEXT,
+  notes               TEXT,
+  created_at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at          TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
+-- ----------------------------------------------------------------------------
 -- INGESTION: bank/SPA statements and their transactions (Phase 1 PDF pipeline).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS statements (
@@ -277,3 +298,9 @@ CREATE TABLE IF NOT EXISTS rental_deposits (
 CREATE VIEW IF NOT EXISTS v_rental_deposits AS
   SELECT id, property_id, cheque_number, deposit_date, amount_fils, status, deposited_date
   FROM rental_deposits;
+
+DROP VIEW IF EXISTS v_lands;
+CREATE VIEW IF NOT EXISTS v_lands AS
+  SELECT id, name, land_type, city, area, size_sqft,
+         purchase_price_fils, current_value_fils, purchased_at, valued_at
+  FROM lands;

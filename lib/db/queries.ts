@@ -21,8 +21,10 @@ import type {
   CommodityUpdate,
   RentalDepositUpdate,
   WatchlistInput,
+  LandInput,
+  LandUpdate,
 } from "@/lib/ingest/validate";
-import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem } from "@/lib/types";
+import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem, Land } from "@/lib/types";
 import type { EndReason } from "@/lib/types";
 import type { DepositScheduleEntry } from "@/lib/core/rental-deposits";
 
@@ -645,4 +647,67 @@ export function listWatchlist(): WatchlistItem[] {
 
 export function deleteWatchlistItem(id: number): void {
   getDb().prepare(`DELETE FROM watchlist WHERE id = ?`).run(id);
+}
+
+// LANDS ----------------------------------------------------------------------
+export function insertLand(input: LandInput): Land {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO lands
+      (name, land_type, city, area, size_sqft,
+       purchase_price_fils, current_value_fils, purchased_at, valued_at, notes)
+    VALUES
+      (@name, @land_type, @city, @area, @size_sqft,
+       @purchase_price_fils, @current_value_fils, @purchased_at, @valued_at, @notes)
+  `);
+  const info = stmt.run({
+    name: input.name,
+    land_type: input.land_type ?? null,
+    city: input.city ?? null,
+    area: input.area ?? null,
+    size_sqft: input.size_sqft ?? null,
+    purchase_price_fils: aedOrNull(input.purchase_price_aed),
+    current_value_fils: aedOrNull(input.current_value_aed),
+    purchased_at: dateOrNull(input.purchased_at),
+    valued_at: dateOrNull(input.valued_at),
+    notes: input.notes ?? null,
+  });
+  return getDb()
+    .prepare(`SELECT * FROM lands WHERE id = ?`)
+    .get(Number(info.lastInsertRowid)) as unknown as Land;
+}
+
+export function getLand(id: number): Land | undefined {
+  return getDb().prepare(`SELECT * FROM lands WHERE id = ?`).get(id) as unknown as Land | undefined;
+}
+
+export function listLands(): Land[] {
+  return getDb().prepare(`SELECT * FROM lands ORDER BY created_at DESC`).all() as unknown as Land[];
+}
+
+export function deleteLand(id: number): void {
+  getDb().prepare(`DELETE FROM lands WHERE id = ?`).run(id);
+}
+
+export function updateLand(id: number, data: LandUpdate): Land | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.name !== undefined) { sets.push("name = @name"); params.name = data.name; }
+  if (data.land_type !== undefined) { sets.push("land_type = @land_type"); params.land_type = data.land_type; }
+  if (data.city !== undefined) { sets.push("city = @city"); params.city = data.city; }
+  if (data.area !== undefined) { sets.push("area = @area"); params.area = data.area; }
+  if (data.size_sqft !== undefined) { sets.push("size_sqft = @size_sqft"); params.size_sqft = data.size_sqft; }
+  if (data.purchase_price_aed !== undefined) { sets.push("purchase_price_fils = @purchase_price_fils"); params.purchase_price_fils = aedOrNull(data.purchase_price_aed); }
+  if (data.current_value_aed !== undefined) { sets.push("current_value_fils = @current_value_fils"); params.current_value_fils = aedOrNull(data.current_value_aed); }
+  if (data.purchased_at !== undefined) { sets.push("purchased_at = @purchased_at"); params.purchased_at = dateOrNull(data.purchased_at); }
+  if (data.valued_at !== undefined) { sets.push("valued_at = @valued_at"); params.valued_at = dateOrNull(data.valued_at); }
+  if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
+
+  if (sets.length === 0) return getLand(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE lands SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getLand(id);
 }

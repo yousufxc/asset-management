@@ -13,6 +13,8 @@ export type InstallmentSource = "manual" | "pdf";
 export type MetalType = "gold" | "silver" | "platinum" | "palladium" | "other";
 export type WeightUnit = "gram" | "kg" | "troy_oz" | "tola";
 
+export type LandType = "residential" | "commercial" | "agricultural" | "industrial" | "mixed_use" | "other";
+
 export type RentalDepositStatus = "pending" | "deposited";
 export type EndReason = "cancelled" | "vacant" | "renewed";
 
@@ -147,6 +149,22 @@ export interface RentalDeposit {
   amount_fils: number;
   status: RentalDepositStatus;
   deposited_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Land {
+  id: number;
+  name: string;
+  land_type: LandType | null;
+  city: string | null;
+  area: string | null;
+  size_sqft: number | null;
+  purchase_price_fils: number | null;
+  current_value_fils: number | null;
+  purchased_at: string | null;
+  valued_at: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;

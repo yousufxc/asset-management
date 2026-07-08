@@ -224,6 +224,37 @@ export const RentalLifecycleSchema = z.object({
   contract_start_date: dateString.optional().nullable(),
 });
 // ---------------------------------------------------------------------------
+// LAND — manual entry: name, type, city, area, size, price/value/dates.
+// ---------------------------------------------------------------------------
+export const LandInputSchema = z.object({
+  name: z.string().min(1),
+  land_type: z.enum(["residential", "commercial", "agricultural", "industrial", "mixed_use", "other"]).optional().nullable(),
+  city: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  size_sqft: z.number().positive().optional().nullable(),
+  purchase_price_aed: aedAmount.optional().nullable(),
+  current_value_aed: aedAmount.optional().nullable(),
+  purchased_at: noFutureDate.optional().nullable(),
+  valued_at: noFutureDate.optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type LandInput = z.infer<typeof LandInputSchema>;
+
+export const LandUpdateSchema = z.object({
+  name: z.string().min(1).optional(),
+  land_type: z.enum(["residential", "commercial", "agricultural", "industrial", "mixed_use", "other"]).optional().nullable(),
+  city: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  size_sqft: z.number().positive().optional().nullable(),
+  purchase_price_aed: aedAmount.optional().nullable(),
+  current_value_aed: aedAmount.optional().nullable(),
+  purchased_at: noFutureDate.optional().nullable(),
+  valued_at: noFutureDate.optional().nullable(),
+  notes: z.string().optional().nullable(),
+});
+export type LandUpdate = z.infer<typeof LandUpdateSchema>;
+
+// ---------------------------------------------------------------------------
 // WATCHLIST — aspirational items (property or commodity)
 // ---------------------------------------------------------------------------
 export const WatchlistInputSchema = z.object({

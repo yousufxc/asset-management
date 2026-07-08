@@ -9,8 +9,9 @@ import {
   listCashAccounts,
   listCommodities,
   listAllInstallments,
+  listLands,
 } from "@/lib/db/queries";
-import { getSettingInt } from "@/lib/db/settings";
+import { getSettingInt, getSetting } from "@/lib/db/settings";
 import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
 import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
@@ -34,17 +35,41 @@ export default function DashboardPage() {
   const properties = listProperties();
   const accounts = listCashAccounts();
   const commodities = listCommodities();
+  const lands = listLands();
   const installments = listAllInstallments();
 
-  const propertyTotalFils = properties.reduce(
+  // ── Asset selection filtering ──────────────────────────────────────────
+  let selected: Set<string> = new Set(["properties", "commodities", "cash", "lands"]);
+  try {
+    const raw = getSetting("assetSelection");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every((s: unknown) => typeof s === "string")) {
+        selected = new Set(parsed);
+      }
+    }
+  } catch {}
+
+  const showProperties = selected.has("properties");
+  const showCash = selected.has("cash");
+  const showCommodities = selected.has("commodities");
+  const showLands = selected.has("lands");
+
+  const filteredProperties = showProperties ? properties : [];
+  const filteredAccounts = showCash ? accounts : [];
+  const filteredCommodities = showCommodities ? commodities : [];
+  const filteredLands = showLands ? lands : [];
+  const filteredInstallments = showProperties ? installments : [];
+
+  const propertyTotalFils = filteredProperties.reduce(
     (sum, p) => sum + (p.current_value_fils ?? 0),
     0,
   );
-  const cashTotalFils = accounts.reduce(
+  const cashTotalFils = filteredAccounts.reduce(
     (sum, a) => sum + a.current_balance_fils,
     0,
   );
-  const commodityTotalFilsAgg = commodities.reduce(
+  const commodityTotalFilsAgg = filteredCommodities.reduce(
     (sum, c) =>
       sum +
       commodityTotalFils({
@@ -53,21 +78,25 @@ export default function DashboardPage() {
       }).totalFils,
     0,
   );
-  const chartData: Slice[] = [
-    { name: "Property", value: propertyTotalFils },
-    { name: "Saving Accounts", value: cashTotalFils },
-    { name: "Commodities", value: commodityTotalFilsAgg },
-  ];
+  const landTotalFils = filteredLands.reduce(
+    (sum, l) => sum + (l.current_value_fils ?? 0),
+    0,
+  );
+  const chartData: Slice[] = [];
+  if (showProperties) chartData.push({ name: "Property", value: propertyTotalFils });
+  if (showCash) chartData.push({ name: "Saving Accounts", value: cashTotalFils });
+  if (showCommodities) chartData.push({ name: "Commodities", value: commodityTotalFilsAgg });
+  if (showLands) chartData.push({ name: "Land", value: landTotalFils });
 
   const today = new Date();
   const todayIso = today.toISOString().slice(0, 10);
 
   // ── Liquid cash (all cash counts as liquid — owner decision 2026-06-04) ───
-  const liquidAccounts = accounts;
+  const liquidAccounts = filteredAccounts;
   const liquidFils = liquidAccounts.reduce((sum, a) => sum + a.current_balance_fils, 0);
 
   // ── Liabilities (unpaid installments) ────────────────────────────────────
-  const liabilities: Liability[] = installments
+  const liabilities: Liability[] = filteredInstallments
     .filter((i) => i.status !== "paid")
     .map((i) => ({
       id: i.id,
@@ -78,7 +107,7 @@ export default function DashboardPage() {
     }));
 
   // ── Rental inflows (real cheques-per-year timing) ───────────────────────
-  const rentalProperties = properties.filter(
+  const rentalProperties = filteredProperties.filter(
     (p) => p.is_rental === 1 && (
       (p.annual_rent_fils && p.annual_rent_fils > 0) ||
       (p.short_term_annual_rent_fils && p.short_term_annual_rent_fils > 0)
@@ -92,7 +121,7 @@ export default function DashboardPage() {
   }
 
   const inflows: Inflow[] = generateRentalInflows(
-    properties as RentalPropertyInput[],
+    filteredProperties as RentalPropertyInput[],
     latestDate,
   );
 
@@ -164,30 +193,45 @@ export default function DashboardPage() {
       )}
 
       {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
-      <AnimateChartOnScroll><AssetPieChart data={chartData} /></AnimateChartOnScroll>
+      {chartData.length > 0 && (
+        <AnimateChartOnScroll><AssetPieChart data={chartData} /></AnimateChartOnScroll>
+      )}
 
       {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
       <div className="row" style={{ justifyContent: "center" }}>
-        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200, maxWidth: 280 }}>
-          <div className="muted">Properties</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{properties.length}</div>
-          <Link href="/properties">Manage →</Link>
-        </div></AnimateOnScroll>
-        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
-          <div className="muted">Saving Accounts</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{accounts.length}</div>
-          <Link href="/cash">Manage →</Link>
-        </div></AnimateOnScroll>
-        <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
-          <div className="muted">Commodities</div>
-          <div style={{ fontSize: 24, fontWeight: 700 }}>{commodities.length}</div>
-          <Link href="/commodities">Manage →</Link>
-        </div></AnimateOnScroll>
+        {showProperties && (
+          <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200, maxWidth: 280 }}>
+            <div className="muted">Properties</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{filteredProperties.length}</div>
+            <Link href="/properties">Manage →</Link>
+          </div></AnimateOnScroll>
+        )}
+        {showCash && (
+          <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
+            <div className="muted">Saving Accounts</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{filteredAccounts.length}</div>
+            <Link href="/cash">Manage →</Link>
+          </div></AnimateOnScroll>
+        )}
+        {showCommodities && (
+          <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
+            <div className="muted">Commodities</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{filteredCommodities.length}</div>
+            <Link href="/commodities">Manage →</Link>
+          </div></AnimateOnScroll>
+        )}
+        {showLands && (
+          <AnimateOnScroll><div className="card" style={{ flex: 1, minWidth: 200 }}>
+            <div className="muted">Land</div>
+            <div style={{ fontSize: 24, fontWeight: 700 }}>{filteredLands.length}</div>
+            <Link href="/lands">Manage →</Link>
+          </div></AnimateOnScroll>
+        )}
       </div>
 
       {/* ─── SELL ALERTS — commodities at or above target price ─────────── */}
-      {(() => {
-        const sellAlerts = commodities.filter(shouldSellAlert);
+      {showCommodities && (() => {
+        const sellAlerts = filteredCommodities.filter(shouldSellAlert);
         if (sellAlerts.length === 0) return null;
         return (
           <AnimateOnScroll><div
@@ -319,10 +363,10 @@ export default function DashboardPage() {
       <RecommendedMoves
         recommendations={computeRecommendations({
           asOf: todayIso,
-          properties,
-          cashAccounts: accounts,
-          commodities,
-          installments,
+          properties: filteredProperties,
+          cashAccounts: filteredAccounts,
+          commodities: filteredCommodities,
+          installments: filteredInstallments,
           liquidCashFils: liquidFils,
           runwayInput: {
             asOf: todayIso,

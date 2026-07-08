@@ -20,14 +20,17 @@ const CHAT_ITEMS = [
 ];
 
 const MY_ASSETS_ITEMS = [
-  { href: "/properties", label: "Property",
+  { href: "/properties", label: "Property", key: "properties",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 3L2 12h3v9h6v-6h2v6h6v-9h3L12 3z" fill="currentColor"/></svg>,
   },
-  { href: "/commodities", label: "Commodities",
+  { href: "/commodities", label: "Commodities", key: "commodities",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="8" y="4" width="8" height="5" rx="1" fill="currentColor"/><rect x="4" y="11" width="7" height="5" rx="1" fill="currentColor"/><rect x="13" y="11" width="7" height="5" rx="1" fill="currentColor"/></svg>,
   },
-  { href: "/cash", label: "Saving Accounts",
+  { href: "/cash", label: "Saving Accounts", key: "cash",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" fill="currentColor"/><rect x="1" y="9" width="22" height="2" fill="var(--panel)"/></svg>,
+  },
+  { href: "/lands", label: "Land", key: "lands",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><path d="M3 21h18v-2H3v2zm2-4h14l-3-7-2 3-3-5-6 9z" fill="currentColor"/></svg>,
   },
 ];
 
@@ -44,12 +47,16 @@ const BRIEFCASE_ICON = <svg width="18" height="18" viewBox="0 0 24 24"><rect x="
 
 const CHEVRON_ICON = <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6,9 12,15 18,9"/></svg>;
 
-export default function Sidebar() {
+export default function Sidebar({ assetSelection }: { assetSelection: string[] }) {
   const [collapsed, setCollapsed] = useState(false);
   const [hoverOpen, setHoverOpen] = useState(false);
   const pathname = usePathname();
 
-  const assetRoutes = ["/properties", "/commodities", "/cash"];
+  const visibleAssets = assetSelection.length > 0
+    ? MY_ASSETS_ITEMS.filter((item) => assetSelection.includes(item.key))
+    : MY_ASSETS_ITEMS;
+
+  const assetRoutes = visibleAssets.map((item) => item.href);
   const isMyAssetsActive = assetRoutes.some((r) => pathname.startsWith(r));
   const myAssetsOpen = hoverOpen || isMyAssetsActive;
 
@@ -104,7 +111,7 @@ export default function Sidebar() {
               <span className={`my-assets-arrow${myAssetsOpen ? " open" : ""}`}>{CHEVRON_ICON}</span>
             </div>
             <div className={`my-assets-dropdown${myAssetsOpen ? " open" : ""}`}>
-              {MY_ASSETS_ITEMS.map((item) => (
+              {visibleAssets.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}

@@ -16,6 +16,14 @@ const VALID_KEYS: Record<string, z.ZodType<string>> = {
     }, "must be an integer between 7 and 365"),
   theme: z.enum(["dark", "light"]),
   anthropicApiKey: z.string().min(1, "API key cannot be empty"),
+  assetSelection: z.string().refine((v) => {
+    try {
+      const arr = JSON.parse(v);
+      return Array.isArray(arr) && arr.every((s: unknown) => typeof s === "string");
+    } catch {
+      return false;
+    }
+  }, "must be a JSON array of strings"),
 };
 
 export async function GET() {

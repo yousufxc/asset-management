@@ -19,6 +19,17 @@ export default function SettingsPage() {
 
   const dbPath = process.env.PORTFOLIO_DB_PATH ?? join(process.cwd(), "data", "portfolio.db");
 
+  let assetSelection: string[] = [];
+  try {
+    const raw = settings.assetSelection;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.every((s: unknown) => typeof s === "string")) {
+        assetSelection = parsed;
+      }
+    }
+  } catch {}
+
   return (
     <>
       <h2>Settings</h2>
@@ -29,6 +40,7 @@ export default function SettingsPage() {
         version={version}
         dbPath={dbPath}
         tableCounts={counts}
+        assetSelection={assetSelection}
       />
     </>
   );
