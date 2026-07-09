@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 interface Props {
   runwayHorizonDays: number;
@@ -35,7 +36,7 @@ export default function SettingsContent({
   tableCounts,
   assetSelection: initialSelection,
 }: Props) {
-  const [openSection, setOpenSection] = useState<string | null>("assets");
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const [horizonDays, setHorizonDays] = useState(initialHorizon);
   const [horizonSaving, setHorizonSaving] = useState(false);
@@ -56,6 +57,7 @@ export default function SettingsContent({
   const [resetError, setResetError] = useState<string | null>(null);
   const [excelCategory, setExcelCategory] = useState("all");
   const [exportingExcel, setExportingExcel] = useState(false);
+  const [pendingExport, setPendingExport] = useState<"json" | "excel" | null>(null);
 
   const [selectedAssets, setSelectedAssets] = useState<Set<string>>(
     new Set(initialSelection.length > 0 ? initialSelection : ALL_ASSETS.map((a) => a.key)),
@@ -441,7 +443,7 @@ export default function SettingsContent({
                 lands, installments, and settings) as a JSON file for backup.
               </p>
               <button
-                onClick={handleExport}
+                onClick={() => setPendingExport("json")}
                 disabled={exporting}
                 style={{ marginTop: 0 }}
               >
@@ -471,7 +473,7 @@ export default function SettingsContent({
                   <option value="lands">Lands only</option>
                 </select>
                 <button
-                  onClick={handleExportExcel}
+                  onClick={() => setPendingExport("excel")}
                   disabled={exportingExcel}
                   style={{ marginTop: 0 }}
                 >
@@ -575,6 +577,26 @@ export default function SettingsContent({
           </div>
         </div>
       </div>
+      {pendingExport && (
+        <ConfirmModal
+          title="Export Data"
+          message={
+            pendingExport === "json"
+              ? "Are you sure you want to export all data as JSON?"
+              : "Are you sure you want to export to Excel?"
+          }
+          confirmLabel="Export"
+          onConfirm={() => {
+            if (pendingExport === "json") {
+              handleExport();
+            } else {
+              handleExportExcel();
+            }
+            setPendingExport(null);
+          }}
+          onCancel={() => setPendingExport(null)}
+        />
+      )}
     </>
   );
 }

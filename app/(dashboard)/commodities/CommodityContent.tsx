@@ -15,6 +15,7 @@ import CommodityROIChart from "./charts/CommodityROIChart";
 import CommodityWeightByMetalChart from "./charts/CommodityWeightByMetalChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 const METAL_LABEL: Record<string, string> = {
   gold: "Gold",
@@ -41,6 +42,7 @@ export default function CommodityContent({
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [exporting, setExporting] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -225,7 +227,7 @@ export default function CommodityContent({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
             <h3 style={{ margin: 0 }}>My Holdings ({commodities.length})</h3>
             <button
-              onClick={handleExport}
+              onClick={() => setShowExportConfirm(true)}
               disabled={exporting}
               style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
             >
@@ -414,6 +416,18 @@ export default function CommodityContent({
           </div>
         )}
       </div>
+      {showExportConfirm && (
+        <ConfirmModal
+          title="Export Data"
+          message="Are you sure you want to export commodities data?"
+          confirmLabel="Export"
+          onConfirm={() => {
+            handleExport();
+            setShowExportConfirm(false);
+          }}
+          onCancel={() => setShowExportConfirm(false)}
+        />
+      )}
     </>
   );
 }

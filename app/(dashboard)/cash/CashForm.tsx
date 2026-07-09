@@ -62,7 +62,7 @@ export default function CashForm() {
     return (
       <div style={{ marginBottom: 18, display: "flex", justifyContent: "flex-end" }}>
         <button type="button" style={{ marginTop: 0 }} onClick={() => setIsOpen(true)}>
-          + Add Cash Balance
+          + Add Account
         </button>
       </div>
     );

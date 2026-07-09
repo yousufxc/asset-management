@@ -7,6 +7,7 @@ import { formatAed, formatIsoToUae } from "@/lib/core/units";
 import LandForm from "./LandForm";
 import LandDetailPanel from "./LandDetailPanel";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 const LAND_TYPE_LABEL: Record<string, string> = {
   residential: "Residential",
@@ -30,6 +31,7 @@ export default function LandContent({
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [exporting, setExporting] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
 
   const sorted = useMemo(() => {
     if (!sortCol) return lands;
@@ -128,7 +130,7 @@ export default function LandContent({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
             <h3 style={{ margin: 0 }}>My Lands ({lands.length})</h3>
             <button
-              onClick={handleExport}
+              onClick={() => setShowExportConfirm(true)}
               disabled={exporting}
               style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
             >
@@ -240,6 +242,18 @@ export default function LandContent({
           </div>
         )}
       </div>
+      {showExportConfirm && (
+        <ConfirmModal
+          title="Export Data"
+          message="Are you sure you want to export lands data?"
+          confirmLabel="Export"
+          onConfirm={() => {
+            handleExport();
+            setShowExportConfirm(false);
+          }}
+          onCancel={() => setShowExportConfirm(false)}
+        />
+      )}
     </>
   );
 }
