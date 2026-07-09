@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Property, Installment, RentalDeposit, RentalHistory } from "@/lib/types";
+import type { Property, Installment, RentalDeposit, RentalHistory, Mortgage } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
 import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry, totalROIPct, annualizedROIPct } from "@/lib/core/property-analytics";
 import { installmentStatus } from "@/lib/core/installments";
 import { depositStatus } from "@/lib/core/rental-deposits";
+import { computeMonthlyPayment, computeOutstandingBalance, computeLoanEndDate, monthsElapsed } from "@/lib/core/mortgage";
 import { numeralOnly } from "./numeralOnly";
 import InstallmentTimelineChart from "./charts/InstallmentTimelineChart";
 import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
@@ -83,6 +84,26 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
   const [editIsRental, setEditIsRental] = useState(!!property.is_rental);
   const [editRentalType, setEditRentalType] = useState<string>(property.rental_type ?? "long_term");
   const [editCheques, setEditCheques] = useState<number>(property.rent_cheques_per_year ?? 1);
+
+  const [mortgage, setMortgage] = useState<Mortgage | null>(null);
+  const [editIsMortgage, setEditIsMortgage] = useState(false);
+  const [editMortgageRateType, setEditMortgageRateType] = useState<string>("fixed");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      const res = await fetch(`/api/mortgages?property_id=${property.id}`);
+      if (cancelled) return;
+      if (res.ok) {
+        const data = await res.json();
+        setMortgage(data.mortgage ?? null);
+        setEditIsMortgage(data.mortgage != null);
+        setEditMortgageRateType(data.mortgage?.rate_type ?? "fixed");
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [property.id]);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -236,22 +257,101 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
     if (notes !== (property.notes ?? null)) payload.notes = notes;
 
     if (Object.keys(payload).length === 0) {
-      setSaving(false);
-      setEditing(false);
-      return;
+      // No property changes — skip the PATCH but still handle mortgage below
+    } else {
+      const res = await fetch(`/api/properties/${property.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        setSaving(false);
+        const data = await res.json().catch(() => ({}));
+        setError(data?.error ? JSON.stringify(data.error) + (data.issues ? " " + JSON.stringify(data.issues.fieldErrors) : "") : "Save failed");
+        return;
+      }
     }
 
-    const res = await fetch(`/api/properties/${property.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    setSaving(false);
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      setError(data?.error ? JSON.stringify(data.error) + (data.issues ? " " + JSON.stringify(data.issues.fieldErrors) : "") : "Save failed");
-      return;
+    const mortgageNeedsSave = editIsMortgage !== (mortgage != null) ||
+      (editIsMortgage && (
+        Number(fd.get("mortgage_loan_amount_aed") || 0) !== (mortgage ? filsToAed(mortgage.loan_amount_fils) : 0) ||
+        Number(fd.get("mortgage_interest_rate_pct") || 0) !== (mortgage?.interest_rate_pct ?? 0) ||
+        editMortgageRateType !== (mortgage?.rate_type ?? "fixed") ||
+        String(fd.get("mortgage_loan_start_date") ?? "") !== (mortgage?.loan_start_date ?? "") ||
+        (Number(fd.get("mortgage_loan_term_years") || 0) * 12) !== (mortgage?.loan_term_months ?? 0) ||
+        String(fd.get("mortgage_lender_name") ?? "") !== (mortgage?.lender_name ?? "") ||
+        String(fd.get("mortgage_notes") ?? "") !== (mortgage?.notes ?? "")
+      ));
+
+    if (mortgageNeedsSave) {
+      if (editIsMortgage && !mortgage) {
+        const termYears = Number(fd.get("mortgage_loan_term_years"));
+        const mtgPayload = {
+          property_id: property.id,
+          loan_amount_aed: Number(fd.get("mortgage_loan_amount_aed")),
+          interest_rate_pct: Number(fd.get("mortgage_interest_rate_pct")),
+          rate_type: editMortgageRateType,
+          loan_start_date: String(fd.get("mortgage_loan_start_date") ?? ""),
+          loan_term_months: termYears * 12,
+          lender_name: String(fd.get("mortgage_lender_name") ?? ""),
+          notes: strOrNull("mortgage_notes"),
+        };
+        const mtgRes = await fetch("/api/mortgages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(mtgPayload),
+        });
+        if (!mtgRes.ok) {
+          setSaving(false);
+          setError("Property saved but mortgage creation failed");
+          return;
+        }
+      } else if (editIsMortgage && mortgage) {
+        const mtgPayload: Record<string, unknown> = {};
+        const newAmount = Number(fd.get("mortgage_loan_amount_aed"));
+        const oldAmount = filsToAed(mortgage.loan_amount_fils);
+        if (newAmount !== oldAmount) mtgPayload.loan_amount_aed = newAmount;
+
+        const newRate = Number(fd.get("mortgage_interest_rate_pct"));
+        if (newRate !== mortgage.interest_rate_pct) mtgPayload.interest_rate_pct = newRate;
+
+        if (editMortgageRateType !== mortgage.rate_type) mtgPayload.rate_type = editMortgageRateType;
+
+        const newStart = String(fd.get("mortgage_loan_start_date") ?? "");
+        if (newStart !== mortgage.loan_start_date) mtgPayload.loan_start_date = newStart;
+
+        const newTerm = Number(fd.get("mortgage_loan_term_years")) * 12;
+        if (newTerm !== mortgage.loan_term_months) mtgPayload.loan_term_months = newTerm;
+
+        const newLender = String(fd.get("mortgage_lender_name") ?? "");
+        if (newLender !== mortgage.lender_name) mtgPayload.lender_name = newLender;
+
+        const newNotes = strOrNull("mortgage_notes");
+        if (newNotes !== (mortgage.notes ?? null)) mtgPayload.notes = newNotes;
+
+        if (Object.keys(mtgPayload).length > 0) {
+          const mtgRes = await fetch(`/api/mortgages/${mortgage.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(mtgPayload),
+          });
+          if (!mtgRes.ok) {
+            setSaving(false);
+            setError("Property saved but mortgage update failed");
+            return;
+          }
+        }
+      } else if (!editIsMortgage && mortgage) {
+        const mtgRes = await fetch(`/api/mortgages/${mortgage.id}`, { method: "DELETE" });
+        if (!mtgRes.ok) {
+          setSaving(false);
+          setError("Property saved but mortgage removal failed");
+          return;
+        }
+      }
     }
+
+    setSaving(false);
     setEditing(false);
     router.refresh();
   }
@@ -304,6 +404,8 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
     setEditIsRental(!!property.is_rental);
     setEditRentalType(property.rental_type ?? "long_term");
     setEditCheques(property.rent_cheques_per_year ?? 1);
+    setEditIsMortgage(mortgage != null);
+    setEditMortgageRateType(mortgage?.rate_type ?? "fixed");
   }
 
   async function handleSaveInstalment(instId: number) {
@@ -541,6 +643,57 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
         <div className="detail-row">
           <span className="detail-label">Rental</span>
           <span>Not rented</span>
+        </div>
+      )}
+      {mortgage ? (
+        (() => {
+          const monthlyPayment = computeMonthlyPayment(mortgage.loan_amount_fils, mortgage.interest_rate_pct, mortgage.loan_term_months);
+          const elapsed = monthsElapsed(mortgage.loan_start_date, todayIso);
+          const outstanding = computeOutstandingBalance(mortgage.loan_amount_fils, mortgage.interest_rate_pct, mortgage.loan_term_months, elapsed);
+          const endDate = computeLoanEndDate(mortgage.loan_start_date, mortgage.loan_term_months);
+          return (
+            <>
+              <div className="detail-row">
+                <span className="detail-label">Mortgage</span>
+                <span style={{ fontWeight: 600 }}>{mortgage.lender_name}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Loan amount</span>
+                <span>{formatAedValue(mortgage.loan_amount_fils)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Interest rate</span>
+                <span>{mortgage.interest_rate_pct}% ({mortgage.rate_type})</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Monthly payment</span>
+                <span>{formatAedValue(monthlyPayment)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Outstanding balance</span>
+                <span>{formatAedValue(outstanding)}</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Loan period</span>
+                <span>{formatIsoDisplay(mortgage.loan_start_date)} — {formatIsoToUae(endDate)} ({mortgage.loan_term_months / 12} years)</span>
+              </div>
+              <div className="detail-row">
+                <span className="detail-label">Payments made</span>
+                <span>{elapsed} of {mortgage.loan_term_months}</span>
+              </div>
+              {mortgage.notes && (
+                <div className="detail-row">
+                  <span className="detail-label">Mortgage notes</span>
+                  <span style={{ whiteSpace: "pre-wrap" }}>{mortgage.notes}</span>
+                </div>
+              )}
+            </>
+          );
+        })()
+      ) : (
+        <div className="detail-row">
+          <span className="detail-label">Mortgage</span>
+          <span>No mortgage</span>
         </div>
       )}
       {property.notes && (
@@ -829,6 +982,103 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
             </>
           )}
         </>
+      )}
+      <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <input
+          name="is_mortgage"
+          type="checkbox"
+          style={{ width: "auto" }}
+          checked={editIsMortgage}
+          onChange={(e) => setEditIsMortgage(e.target.checked)}
+        />{" "}
+        This property is on a mortgage
+      </label>
+      {editIsMortgage && (
+        <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, marginTop: 12 }}>
+          <h4 style={{ marginTop: 0, marginBottom: 12 }}>Mortgage details</h4>
+          <div className="row">
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label>Loan amount (AED) *</label>
+              <input
+                name="mortgage_loan_amount_aed"
+                type="number"
+                step="0.01"
+                onKeyDown={numeralOnly}
+                required
+                defaultValue={mortgage ? filsToAed(mortgage.loan_amount_fils) : ""}
+                placeholder="e.g. 1200000"
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label>Annual interest rate (%) *</label>
+              <input
+                name="mortgage_interest_rate_pct"
+                type="number"
+                step="0.01"
+                onKeyDown={numeralOnly}
+                required
+                defaultValue={mortgage?.interest_rate_pct ?? ""}
+                placeholder="e.g. 3.99"
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label>Rate type *</label>
+              <select
+                name="mortgage_rate_type"
+                value={editMortgageRateType}
+                onChange={(e) => setEditMortgageRateType(e.target.value)}
+              >
+                <option value="fixed">Fixed</option>
+                <option value="variable">Variable</option>
+              </select>
+            </div>
+          </div>
+          <div className="row">
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label>Loan start date *</label>
+              <input
+                name="mortgage_loan_start_date"
+                type="date"
+                max={todayIso}
+                required
+                defaultValue={mortgage?.loan_start_date ?? ""}
+              />
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label>Loan term (years) *</label>
+              <input
+                name="mortgage_loan_term_years"
+                type="number"
+                min="1"
+                max="40"
+                step="1"
+                required
+                defaultValue={mortgage ? mortgage.loan_term_months / 12 : ""}
+                placeholder="e.g. 25"
+              />
+            </div>
+            <div style={{ flex: 2, minWidth: 220 }}>
+              <label>Lender / bank name *</label>
+              <input
+                name="mortgage_lender_name"
+                required
+                defaultValue={mortgage?.lender_name ?? ""}
+                placeholder="e.g. Emirates NBD"
+              />
+            </div>
+          </div>
+          <div className="row">
+            <div style={{ flex: 1 }}>
+              <label>Notes</label>
+              <textarea
+                name="mortgage_notes"
+                rows={2}
+                defaultValue={mortgage?.notes ?? ""}
+                placeholder="Any additional details about this mortgage"
+              />
+            </div>
+          </div>
+        </div>
       )}
       <label>Notes</label>
       <textarea name="notes" rows={2} defaultValue={property.notes ?? ""} />

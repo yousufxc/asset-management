@@ -108,6 +108,32 @@ export const PropertyUpdateSchema = z.object({
 export type PropertyUpdate = z.infer<typeof PropertyUpdateSchema>;
 
 // ---------------------------------------------------------------------------
+// MORTGAGE
+// ---------------------------------------------------------------------------
+export const MortgageInputSchema = z.object({
+  property_id: z.number().int().positive(),
+  loan_amount_aed: aedAmount,
+  interest_rate_pct: z.number().nonnegative().finite(),
+  rate_type: z.enum(["fixed", "variable"]),
+  loan_start_date: noFutureDate,
+  loan_term_months: z.number().int().positive(),
+  lender_name: z.string().min(1),
+  notes: z.string().optional().nullable(),
+});
+export type MortgageInput = z.infer<typeof MortgageInputSchema>;
+
+export const MortgageUpdateSchema = z.object({
+  loan_amount_aed: aedAmount.optional(),
+  interest_rate_pct: z.number().nonnegative().finite().optional(),
+  rate_type: z.enum(["fixed", "variable"]).optional(),
+  loan_start_date: noFutureDate.optional(),
+  loan_term_months: z.number().int().positive().optional(),
+  lender_name: z.string().min(1).optional(),
+  notes: z.string().optional().nullable(),
+});
+export type MortgageUpdate = z.infer<typeof MortgageUpdateSchema>;
+
+// ---------------------------------------------------------------------------
 // INSTALLMENT (manual form AND PDF pipeline target this shape)
 // ---------------------------------------------------------------------------
 export const InstallmentInputSchema = z.object({

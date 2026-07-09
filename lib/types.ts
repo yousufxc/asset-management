@@ -18,6 +18,7 @@ export type LandType = "residential" | "commercial" | "agricultural" | "industri
 export type RentalDepositStatus = "pending" | "deposited";
 export type EndReason = "cancelled" | "vacant" | "renewed";
 
+export type RateType = "fixed" | "variable";
 export type WatchlistType = "property" | "commodity";
 
 export interface WatchlistItem {
@@ -149,6 +150,20 @@ export interface RentalDeposit {
   amount_fils: number;
   status: RentalDepositStatus;
   deposited_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Mortgage {
+  id: number;
+  property_id: number;
+  loan_amount_fils: number;
+  interest_rate_pct: number;
+  rate_type: RateType;
+  loan_start_date: string;
+  loan_term_months: number;
+  lender_name: string;
   notes: string | null;
   created_at: string;
   updated_at: string;

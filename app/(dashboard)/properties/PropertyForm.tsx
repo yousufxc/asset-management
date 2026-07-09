@@ -120,12 +120,65 @@ function RentalFields({ rentalType, setRentalType }: { rentalType: string; setRe
   );
 }
 
+function MortgageFields({ rateType, setRateType }: { rateType: string; setRateType: (v: string) => void }) {
+  const today = new Date().toISOString().split("T")[0];
+
+  return (
+    <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, marginTop: 12 }}>
+      <h4 style={{ marginTop: 0, marginBottom: 12 }}>Mortgage details</h4>
+      <div className="row">
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Loan amount (AED) *</label>
+          <input name="mortgage_loan_amount_aed" type="number" step="0.01" onKeyDown={numeralOnly} required placeholder="e.g. 1200000" />
+        </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Annual interest rate (%) *</label>
+          <input name="mortgage_interest_rate_pct" type="number" step="0.01" onKeyDown={numeralOnly} required placeholder="e.g. 3.99" />
+        </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Rate type *</label>
+          <select
+            name="mortgage_rate_type"
+            value={rateType}
+            onChange={(e) => setRateType(e.target.value)}
+          >
+            <option value="fixed">Fixed</option>
+            <option value="variable">Variable</option>
+          </select>
+        </div>
+      </div>
+      <div className="row">
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Loan start date *</label>
+          <input name="mortgage_loan_start_date" type="date" max={today} required />
+        </div>
+        <div style={{ flex: 1, minWidth: 160 }}>
+          <label>Loan term (years) *</label>
+          <input name="mortgage_loan_term_years" type="number" min="1" max="40" step="1" required placeholder="e.g. 25" />
+        </div>
+        <div style={{ flex: 2, minWidth: 220 }}>
+          <label>Lender / bank name *</label>
+          <input name="mortgage_lender_name" required placeholder="e.g. Emirates NBD" />
+        </div>
+      </div>
+      <div className="row">
+        <div style={{ flex: 1 }}>
+          <label>Notes</label>
+          <textarea name="mortgage_notes" rows={2} placeholder="Any additional details about this mortgage" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PropertyForm() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [isRental, setIsRental] = useState(false);
   const [rentalType, setRentalType] = useState("long_term");
+  const [isMortgage, setIsMortgage] = useState(false);
+  const [mortgageRateType, setMortgageRateType] = useState("fixed");
   const [subcategory, setSubcategory] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [installments, setInstallments] = useState<{ key: number }[]>([]);
@@ -239,6 +292,32 @@ export default function PropertyForm() {
     const { property } = await res.json();
     const propertyId = property.id;
 
+    if (isMortgage) {
+      const termYears = numOrNull("mortgage_loan_term_years");
+      const mortgagePayload = {
+        property_id: propertyId,
+        loan_amount_aed: numOrNull("mortgage_loan_amount_aed"),
+        interest_rate_pct: numOrNull("mortgage_interest_rate_pct"),
+        rate_type: mortgageRateType,
+        loan_start_date: strOrNull("mortgage_loan_start_date"),
+        loan_term_months: termYears != null ? termYears * 12 : null,
+        lender_name: strOrNull("mortgage_lender_name"),
+        notes: strOrNull("mortgage_notes"),
+      };
+      const mtgRes = await fetch("/api/mortgages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mortgagePayload),
+      });
+      if (!mtgRes.ok) {
+        setSaving(false);
+        const data = await mtgRes.json().catch(() => ({}));
+        setError(`Property saved but mortgage failed: ${data?.error || "Unknown error"}`);
+        router.refresh();
+        return;
+      }
+    }
+
     // Save each installment and CHECK the result — never swallow a failure.
     const failed: string[] = [];
     for (const row of instRows) {
@@ -269,6 +348,8 @@ export default function PropertyForm() {
     (e.target as HTMLFormElement).reset();
     setIsRental(false);
     setRentalType("long_term");
+    setIsMortgage(false);
+    setMortgageRateType("fixed");
     setSubcategory("");
     setInstallments([]);
     setInstPercentages({});
@@ -390,6 +471,17 @@ export default function PropertyForm() {
             {isRental && <RentalFields rentalType={rentalType} setRentalType={setRentalType} />}
           </>
         )}
+        <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <input
+            name="is_mortgage"
+            type="checkbox"
+            style={{ width: "auto" }}
+            checked={isMortgage}
+            onChange={(e) => setIsMortgage(e.target.checked)}
+          />{" "}
+          This property is on a mortgage
+        </label>
+        {isMortgage && <MortgageFields rateType={mortgageRateType} setRateType={setMortgageRateType} />}
 
         {subcategory === "off_plan" && installments.length > 0 && (
           <>
