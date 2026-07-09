@@ -169,6 +169,20 @@ export interface Mortgage {
   updated_at: string;
 }
 
+export interface LandMortgage {
+  id: number;
+  land_id: number;
+  loan_amount_fils: number;
+  interest_rate_pct: number;
+  rate_type: RateType;
+  loan_start_date: string;
+  loan_term_months: number;
+  lender_name: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Land {
   id: number;
   name: string;

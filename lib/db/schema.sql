@@ -100,6 +100,26 @@ CREATE TABLE IF NOT EXISTS mortgages (
 CREATE INDEX IF NOT EXISTS idx_mortgages_property ON mortgages(property_id);
 
 -- ----------------------------------------------------------------------------
+-- LAND MORTGAGES — bank mortgage financing for lands.
+-- One mortgage per land (FK cascade-deletes when the land is removed).
+-- Monthly payment & outstanding balance are DERIVED (lib/core/mortgage.ts), never stored.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS land_mortgages (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  land_id           INTEGER NOT NULL REFERENCES lands(id) ON DELETE CASCADE,
+  loan_amount_fils  INTEGER NOT NULL CHECK (loan_amount_fils >= 0),
+  interest_rate_pct REAL    NOT NULL CHECK (interest_rate_pct >= 0),
+  rate_type         TEXT    NOT NULL CHECK (rate_type IN ('fixed', 'variable')),
+  loan_start_date   TEXT    NOT NULL,                              -- ISO date repayments began
+  loan_term_months  INTEGER NOT NULL CHECK (loan_term_months > 0),
+  lender_name       TEXT    NOT NULL,
+  notes             TEXT,
+  created_at        TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at        TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_land_mortgages_land ON land_mortgages(land_id);
+
+-- ----------------------------------------------------------------------------
 -- ASSET CLASS 2: SAVING ACCOUNTS (bank accounts). Manual entry only: an account
 --   label, balance, optional fixed-deposit fields, and interest rate.
 --   ALL cash counts as liquid for the runway (owner decision 2026-06-04).
@@ -330,3 +350,9 @@ CREATE VIEW IF NOT EXISTS v_mortgages AS
   SELECT id, property_id, loan_amount_fils, interest_rate_pct, rate_type,
          loan_start_date, loan_term_months, lender_name
   FROM mortgages;
+
+DROP VIEW IF EXISTS v_land_mortgages;
+CREATE VIEW IF NOT EXISTS v_land_mortgages AS
+  SELECT id, land_id, loan_amount_fils, interest_rate_pct, rate_type,
+         loan_start_date, loan_term_months, lender_name
+  FROM land_mortgages;

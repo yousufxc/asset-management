@@ -25,8 +25,10 @@ import type {
   LandUpdate,
   MortgageInput,
   MortgageUpdate,
+  LandMortgageInput,
+  LandMortgageUpdate,
 } from "@/lib/ingest/validate";
-import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem, Land, Mortgage } from "@/lib/types";
+import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem, Land, Mortgage, LandMortgage } from "@/lib/types";
 import type { EndReason } from "@/lib/types";
 import type { DepositScheduleEntry } from "@/lib/core/rental-deposits";
 
@@ -775,4 +777,67 @@ export function updateMortgage(id: number, data: MortgageUpdate): Mortgage | und
 
 export function deleteMortgage(id: number): void {
   getDb().prepare(`DELETE FROM mortgages WHERE id = ?`).run(id);
+}
+
+// LAND MORTGAGES --------------------------------------------------------------
+
+export function insertLandMortgage(input: LandMortgageInput): LandMortgage {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO land_mortgages
+      (land_id, loan_amount_fils, interest_rate_pct, rate_type,
+       loan_start_date, loan_term_months, lender_name, notes)
+    VALUES
+      (@land_id, @loan_amount_fils, @interest_rate_pct, @rate_type,
+       @loan_start_date, @loan_term_months, @lender_name, @notes)
+  `);
+  const info = stmt.run({
+    land_id: input.land_id,
+    loan_amount_fils: aedToFils(input.loan_amount_aed),
+    interest_rate_pct: input.interest_rate_pct,
+    rate_type: input.rate_type,
+    loan_start_date: dateOrNull(input.loan_start_date)!,
+    loan_term_months: input.loan_term_months,
+    lender_name: input.lender_name,
+    notes: input.notes ?? null,
+  });
+  return getDb()
+    .prepare(`SELECT * FROM land_mortgages WHERE id = ?`)
+    .get(Number(info.lastInsertRowid)) as unknown as LandMortgage;
+}
+
+export function getLandMortgage(id: number): LandMortgage | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM land_mortgages WHERE id = ?`)
+    .get(id) as unknown as LandMortgage | undefined;
+}
+
+export function getLandMortgageForLand(landId: number): LandMortgage | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM land_mortgages WHERE land_id = ? LIMIT 1`)
+    .get(landId) as unknown as LandMortgage | undefined;
+}
+
+export function updateLandMortgage(id: number, data: LandMortgageUpdate): LandMortgage | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.loan_amount_aed !== undefined) { sets.push("loan_amount_fils = @loan_amount_fils"); params.loan_amount_fils = aedToFils(data.loan_amount_aed); }
+  if (data.interest_rate_pct !== undefined) { sets.push("interest_rate_pct = @interest_rate_pct"); params.interest_rate_pct = data.interest_rate_pct; }
+  if (data.rate_type !== undefined) { sets.push("rate_type = @rate_type"); params.rate_type = data.rate_type; }
+  if (data.loan_start_date !== undefined) { sets.push("loan_start_date = @loan_start_date"); params.loan_start_date = dateOrNull(data.loan_start_date); }
+  if (data.loan_term_months !== undefined) { sets.push("loan_term_months = @loan_term_months"); params.loan_term_months = data.loan_term_months; }
+  if (data.lender_name !== undefined) { sets.push("lender_name = @lender_name"); params.lender_name = data.lender_name; }
+  if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
+
+  if (sets.length === 0) return getLandMortgage(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE land_mortgages SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getLandMortgage(id);
+}
+
+export function deleteLandMortgage(id: number): void {
+  getDb().prepare(`DELETE FROM land_mortgages WHERE id = ?`).run(id);
 }
