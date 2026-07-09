@@ -20,6 +20,7 @@ import EquityChart from "./charts/EquityChart";
 import PortfolioROIChart from "./charts/PortfolioROIChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -70,6 +71,7 @@ export default function PropertyContent({
   const [sortCol, setSortCol] = useState<SortCol | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [exporting, setExporting] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -304,7 +306,7 @@ export default function PropertyContent({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
           <h3 style={{ margin: 0 }}>My Properties ({sorted.length})</h3>
           <button
-            onClick={handleExport}
+            onClick={() => setShowExportConfirm(true)}
             disabled={exporting}
             style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
           >
@@ -459,6 +461,18 @@ export default function PropertyContent({
         <div style={{ marginTop: 18 }}>
           <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} installments={installments.filter((i) => i.property_id === selectedProperty.id).sort((a, b) => a.due_date.localeCompare(b.due_date))} deposits={deposits.filter((d) => d.property_id === selectedProperty.id)} history={history.filter((h) => h.property_id === selectedProperty.id)} />
         </div>
+      )}
+      {showExportConfirm && (
+        <ConfirmModal
+          title="Export Data"
+          message="Are you sure you want to export properties data?"
+          confirmLabel="Export"
+          onConfirm={() => {
+            handleExport();
+            setShowExportConfirm(false);
+          }}
+          onCancel={() => setShowExportConfirm(false)}
+        />
       )}
     </>
   );

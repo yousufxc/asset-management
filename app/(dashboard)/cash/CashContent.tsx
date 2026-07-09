@@ -9,6 +9,7 @@ import CashDetailPanel from "./CashDetailPanel";
 import CashCompositionChart from "./charts/CashCompositionChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 export default function CashContent({
   accounts,
@@ -20,6 +21,7 @@ export default function CashContent({
   const router = useRouter();
   const totalBalance = accounts.reduce((s, a) => s + a.current_balance_fils, 0);
   const [exporting, setExporting] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
 
   async function handleExport() {
     setExporting(true);
@@ -68,7 +70,7 @@ export default function CashContent({
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 0 }}>
             <h3 style={{ margin: 0 }}>My Accounts ({accounts.length})</h3>
             <button
-              onClick={handleExport}
+              onClick={() => setShowExportConfirm(true)}
               disabled={exporting}
               style={{ marginTop: 0, fontSize: 13, padding: "4px 12px" }}
             >
@@ -145,6 +147,18 @@ export default function CashContent({
           </div>
         )}
       </div>
+      {showExportConfirm && (
+        <ConfirmModal
+          title="Export Data"
+          message="Are you sure you want to export saving accounts data?"
+          confirmLabel="Export"
+          onConfirm={() => {
+            handleExport();
+            setShowExportConfirm(false);
+          }}
+          onCancel={() => setShowExportConfirm(false)}
+        />
+      )}
     </>
   );
 }
