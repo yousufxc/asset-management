@@ -21,7 +21,13 @@ export async function POST(
     return NextResponse.json({ error: "Invalid property id" }, { status: 400 });
   }
 
-  const property = getProperty(id);
+  let property;
+  try {
+    property = getProperty(id);
+  } catch (e) {
+    console.error("rental-lifecycle: getProperty failed", e);
+    return NextResponse.json({ error: "Failed to load property" }, { status: 500 });
+  }
   if (!property) {
     return NextResponse.json({ error: "Property not found" }, { status: 404 });
   }
@@ -114,7 +120,10 @@ export async function POST(
 
     db.exec("COMMIT");
   } catch (e) {
-    db.exec("ROLLBACK");
+    console.error("rental-lifecycle: transaction failed", e);
+    try { db.exec("ROLLBACK"); } catch (rollbackErr) {
+      console.error("rental-lifecycle: ROLLBACK also failed", rollbackErr);
+    }
     return NextResponse.json({ error: "Lifecycle action failed" }, { status: 500 });
   }
 

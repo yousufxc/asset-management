@@ -1,4 +1,5 @@
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import MarketInsights from "./MarketInsights";
 import MarketTicker from "./MarketTicker";
 import NewsDigest from "./NewsDigest";
 import QuickActions from "./QuickActions";
@@ -6,10 +7,11 @@ import Watchlist from "./Watchlist";
 
 export const dynamic = "force-dynamic";
 
-export default function HomePage() {
+export default function NewsPage() {
   return (
     <>
-      <h2>Home</h2>
+      <h2>News</h2>
+      <MarketInsights />
       <AnimateOnScroll delay={0}>
         <MarketTicker />
       </AnimateOnScroll>

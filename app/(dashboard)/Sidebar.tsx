@@ -5,9 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV_ITEMS = [
-  { href: "/home", label: "Home",
-    icon: <svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2"/><polygon points="12,3 14,9 20,9 15,13 17,19 12,15 7,19 9,13 4,9 10,9" fill="currentColor"/></svg>,
-  },
   { href: "/dashboard", label: "My Dashboard",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="2" y="2" width="8" height="8" rx="1" fill="currentColor"/><rect x="14" y="2" width="8" height="8" rx="1" fill="currentColor"/><rect x="2" y="14" width="8" height="8" rx="1" fill="currentColor"/><rect x="14" y="14" width="8" height="8" rx="1" fill="currentColor"/></svg>,
   },
@@ -16,6 +13,12 @@ const NAV_ITEMS = [
 const CHAT_ITEMS = [
   { href: "/chat", label: "Chat",
     icon: <svg width="18" height="18" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" fill="currentColor"/></svg>,
+  },
+];
+
+const NEWS_ITEMS = [
+  { href: "/news", label: "News",
+    icon: <svg width="18" height="18" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2" fill="currentColor"/><rect x="7" y="8" width="7" height="1.5" rx="0.5" fill="var(--panel)"/><rect x="7" y="11" width="10" height="1.5" rx="0.5" fill="var(--panel)"/><rect x="7" y="14" width="10" height="1.5" rx="0.5" fill="var(--panel)"/><rect x="7" y="17" width="6" height="1.5" rx="0.5" fill="var(--panel)"/><rect x="15.5" y="8" width="4" height="3.5" rx="0.5" fill="var(--panel)"/></svg>,
   },
 ];
 
@@ -61,7 +64,7 @@ export default function Sidebar({ assetSelection }: { assetSelection: string[] }
   const myAssetsOpen = hoverOpen || isMyAssetsActive;
 
   function isActive(href: string) {
-    if (href === "/home") return pathname === "/home";
+    if (href === "/news") return pathname === "/news";
     if (href === "/dashboard") return pathname === "/dashboard";
     return pathname.startsWith(href);
   }
@@ -124,6 +127,19 @@ export default function Sidebar({ assetSelection }: { assetSelection: string[] }
             </div>
           </div>
         )}
+
+        <nav>
+          {NEWS_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={isActive(item.href) ? "active" : ""}
+            >
+              <span className="sidebar-icon">{item.icon}</span>
+              <span className="sidebar-label">{item.label}</span>
+            </Link>
+          ))}
+        </nav>
 
         <nav>
           {CHAT_ITEMS.map((item) => (

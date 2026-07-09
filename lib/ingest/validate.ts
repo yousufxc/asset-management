@@ -43,7 +43,7 @@ const noFutureDate = dateString.refine(
 export const PropertyInputSchema = z.object({
   name: z.string().min(1),
   subcategory: z.enum(["off_plan", "existing"]),
-  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa"]).optional().nullable(),
+  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa", "farm", "commercial"]).optional().nullable(),
   bedrooms: z.enum(["Studio", "1BR", "2BR", "3BR", "4BR", "5BR", "+5BR"]).optional().nullable(),
   city: z.string().optional().nullable(),
   area: z.string().optional().nullable(),
@@ -78,7 +78,7 @@ export type PropertyInput = z.infer<typeof PropertyInputSchema>;
 export const PropertyUpdateSchema = z.object({
   name: z.string().min(1).optional(),
   subcategory: z.enum(["off_plan", "existing"]).optional(),
-  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa"]).optional().nullable(),
+  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa", "farm", "commercial"]).optional().nullable(),
   bedrooms: z.enum(["Studio", "1BR", "2BR", "3BR", "4BR", "5BR", "+5BR"]).optional().nullable(),
   city: z.string().optional().nullable(),
   area: z.string().optional().nullable(),
@@ -314,7 +314,7 @@ export const WatchlistInputSchema = z.object({
   label: z.string().min(1),
   target_price_aed: aedAmount.optional().nullable(),
   target_price_per_unit_aed: aedAmount.optional().nullable(),
-  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa"]).optional().nullable(),
+  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa", "farm", "commercial"]).optional().nullable(),
   city: z.string().optional().nullable(),
   area: z.string().optional().nullable(),
   metal_type: z.enum(["gold", "silver", "platinum", "palladium", "other"]).optional().nullable(),

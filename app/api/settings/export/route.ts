@@ -20,7 +20,13 @@ export async function GET(request: NextRequest) {
     return exportXlsx();
   }
 
-  const data = getAllData();
+  let data;
+  try {
+    data = getAllData();
+  } catch (e) {
+    console.error("settings export (json): getAllData failed", e);
+    return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
   const json = JSON.stringify(data, null, 2);
   return new NextResponse(json, {
     headers: {
@@ -31,7 +37,13 @@ export async function GET(request: NextRequest) {
 }
 
 async function exportXlsx(): Promise<NextResponse> {
-  const data = getAllData();
+  let data;
+  try {
+    data = getAllData();
+  } catch (e) {
+    console.error("settings export (xlsx): getAllData failed", e);
+    return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
   const wb = new ExcelJS.Workbook();
 
   buildPropertiesOverview(wb, data.properties);

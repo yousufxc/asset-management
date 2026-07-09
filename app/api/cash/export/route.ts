@@ -8,7 +8,13 @@ import {
 } from "@/lib/core/excel-utils";
 
 export async function GET() {
-  const accounts = listCashAccounts();
+  let accounts;
+  try {
+    accounts = listCashAccounts();
+  } catch (e) {
+    console.error("cash export: DB query failed", e);
+    return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Saving Accounts");

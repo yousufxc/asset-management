@@ -4,7 +4,7 @@
  */
 
 export type PropertySubcategory = "off_plan" | "existing";
-export type PropertyType = "apartment" | "penthouse" | "townhouse" | "villa";
+export type PropertyType = "apartment" | "penthouse" | "townhouse" | "villa" | "farm" | "commercial";
 export type Bedrooms = "Studio" | "1BR" | "2BR" | "3BR" | "4BR" | "5BR" | "+5BR";
 export type RentalType = "long_term" | "short_term";
 export type ShortTermReturnFrequency = "monthly" | "quarterly";

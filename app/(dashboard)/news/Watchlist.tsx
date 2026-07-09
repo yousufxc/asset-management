@@ -145,6 +145,8 @@ export default function Watchlist() {
                 <option value="penthouse">Penthouse</option>
                 <option value="townhouse">Townhouse</option>
                 <option value="villa">Villa</option>
+                <option value="farm">Farm</option>
+                <option value="commercial">Commercial</option>
               </select>
               <label>City</label>
               <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Dubai" />

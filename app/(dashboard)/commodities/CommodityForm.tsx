@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { numeralOnly } from "./numeralOnly";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import { GRAMS_PER_UNIT } from "@/lib/core/units";
+import type { WeightUnit } from "@/lib/types";
 
 const UNIT_LABEL: Record<string, string> = {
   gram: "gram",
@@ -20,7 +22,25 @@ export default function CommodityForm() {
   const [saving, setSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [unit, setUnit] = useState("");
-  const [hasCurrentPrice, setHasCurrentPrice] = useState(false);
+  const [metalType, setMetalType] = useState("");
+  const [spotPrices, setSpotPrices] = useState<Record<string, number>>({});
+  const [spotLoading, setSpotLoading] = useState(false);
+
+  useEffect(() => {
+    if (!metalType || metalType === "" || metalType === "other") return;
+    setSpotLoading(true);
+    fetch("/api/home/market-prices")
+      .then((r) => r.json())
+      .then((data: { prices?: { metal: string; pricePerGramAed: number }[] }) => {
+        const map: Record<string, number> = {};
+        for (const p of data.prices ?? []) {
+          map[p.metal] = p.pricePerGramAed;
+        }
+        setSpotPrices(map);
+      })
+      .catch(() => setSpotPrices({}))
+      .finally(() => setSpotLoading(false));
+  }, [metalType]);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,15 +56,25 @@ export default function CommodityForm() {
       return v === "" || v === null ? null : String(v);
     };
 
+    const metal = String(fd.get("metal_type") ?? "");
+    const weightUnit = String(fd.get("weight_unit") ?? "") as WeightUnit;
+    const gramsPerUnit = GRAMS_PER_UNIT[weightUnit] ?? 1;
+    const spotPerGram = spotPrices[metal] ?? 0;
+    const manualPrice = numOrNull("current_price_per_unit_aed_manual");
+    const computedCurrentPrice =
+      metal !== "other"
+        ? Math.round(spotPerGram * gramsPerUnit * 100) / 100
+        : manualPrice ?? 0;
+
     const payload = {
-      metal_type: String(fd.get("metal_type") ?? ""),
+      metal_type: metal,
       weight: Number(fd.get("weight") ?? 0),
-      weight_unit: String(fd.get("weight_unit") ?? ""),
-      current_price_per_unit_aed: numOrNull("current_price_per_unit_aed") ?? 0,
+      weight_unit: weightUnit,
+      current_price_per_unit_aed: computedCurrentPrice,
       bought_price_per_unit_aed: numOrNull("bought_price_per_unit_aed"),
       target_sell_price_per_unit_aed: numOrNull("target_sell_price_per_unit_aed"),
       purchase_date: strOrNull("purchase_date"),
-      current_price_date: strOrNull("current_price_date"),
+      current_price_date: today,
       notes: strOrNull("notes"),
     };
 
@@ -66,7 +96,8 @@ export default function CommodityForm() {
     }
     (e.target as HTMLFormElement).reset();
     setUnit("");
-    setHasCurrentPrice(false);
+    setMetalType("");
+    setSpotPrices({});
     setIsOpen(false);
     router.refresh();
   }
@@ -89,7 +120,11 @@ export default function CommodityForm() {
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Type *</label>
-          <select name="metal_type" defaultValue="">
+          <select
+            name="metal_type"
+            value={metalType}
+            onChange={(e) => setMetalType(e.target.value)}
+          >
             <option value="">Select</option>
             <option value="gold">Gold</option>
             <option value="silver">Silver</option>
@@ -139,14 +174,24 @@ export default function CommodityForm() {
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
           <label>Current price (AED per {perUnit})</label>
-          <input
-            name="current_price_per_unit_aed"
-            type="number"
-            step="0.01"
-            placeholder="Enter current price here"
-            onKeyDown={numeralOnly}
-            onChange={(e) => setHasCurrentPrice(e.target.value !== "")}
-          />
+          {metalType && metalType !== "other" ? (
+            spotLoading ? (
+              <div style={{ padding: "6px 0", color: "var(--muted)" }}>Loading spot price...</div>
+            ) : spotPrices[metalType] ? (
+              <div style={{ padding: "6px 0", fontWeight: 600 }}>
+                {((spotPrices[metalType]! * (GRAMS_PER_UNIT[unit as WeightUnit] ?? 1))).toFixed(2)}
+                <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>
+                  (live spot)
+                </span>
+              </div>
+            ) : (
+              <div style={{ padding: "6px 0", color: "var(--bad)" }}>Spot price unavailable</div>
+            )
+          ) : (
+            <div style={{ padding: "6px 0", color: "var(--muted)" }}>
+              {metalType === "other" ? "Enter manually below" : "Select a metal type first"}
+            </div>
+          )}
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
           <label>Target sell price (AED per {perUnit})</label>
@@ -164,10 +209,16 @@ export default function CommodityForm() {
           <label>Date of purchase *</label>
           <input name="purchase_date" type="date" max={today} required />
         </div>
-        {hasCurrentPrice && (
+        {metalType === "other" && (
           <div style={{ flex: 1, minWidth: 180 }}>
-            <label>Date of current price *</label>
-            <input name="current_price_date" type="date" max={today} required />
+            <label>Current price (AED per {perUnit})</label>
+            <input
+              name="current_price_per_unit_aed_manual"
+              type="number"
+              step="0.01"
+              placeholder="Enter current price here"
+              onKeyDown={numeralOnly}
+            />
           </div>
         )}
       </div>

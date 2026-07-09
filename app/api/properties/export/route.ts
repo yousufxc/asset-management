@@ -11,10 +11,16 @@ import { appreciationPct, netAnnualRentFils, rentalYieldPct, totalROIPct, annual
 const TODAY = new Date().toISOString().slice(0, 10);
 
 export async function GET() {
-  const properties = listProperties();
-  const installments = listAllInstallments();
-  const history = listAllRentalHistory();
-  const deposits = listAllRentalDeposits();
+  let properties, installments, history, deposits;
+  try {
+    properties = listProperties();
+    installments = listAllInstallments();
+    history = listAllRentalHistory();
+    deposits = listAllRentalDeposits();
+  } catch (e) {
+    console.error("properties export: DB query failed", e);
+    return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
 
   const wb = new ExcelJS.Workbook();
 

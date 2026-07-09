@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Commodity } from "@/lib/types";
-import { filsToAed, formatAed, formatIsoToUae } from "@/lib/core/units";
+import { filsToAed, formatAed, formatIsoToUae, GRAMS_PER_UNIT } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import type { WeightUnit } from "@/lib/types";
 
 const METAL_LABEL: Record<string, string> = {
   gold: "Gold",
@@ -43,15 +44,31 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [unit, setUnit] = useState<string>(commodity.weight_unit);
-  const [hasCurrentPrice, setHasCurrentPrice] = useState(
-    commodity.current_price_per_unit_fils > 0
-  );
+  const [spotPrices, setSpotPrices] = useState<Record<string, number>>({});
+  const [spotLoading, setSpotLoading] = useState(false);
+
+  useEffect(() => {
+    if (!editing) return;
+    const metal = commodity.metal_type;
+    if (!metal || metal === "other") return;
+    setSpotLoading(true);
+    fetch("/api/home/market-prices")
+      .then((r) => r.json())
+      .then((data: { prices?: { metal: string; pricePerGramAed: number }[] }) => {
+        const map: Record<string, number> = {};
+        for (const p of data.prices ?? []) {
+          map[p.metal] = p.pricePerGramAed;
+        }
+        setSpotPrices(map);
+      })
+      .catch(() => setSpotPrices({}))
+      .finally(() => setSpotLoading(false));
+  }, [editing, commodity.metal_type]);
 
   const perUnit = UNIT_LABEL[commodity.weight_unit] ?? commodity.weight_unit;
 
   useEffect(() => {
     setUnit(commodity.weight_unit);
-    setHasCurrentPrice(commodity.current_price_per_unit_fils > 0);
   }, [commodity]);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
@@ -80,12 +97,23 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
     const weightUnitVal = String(fd.get("weight_unit") ?? "");
     if (weightUnitVal !== commodity.weight_unit) payload.weight_unit = weightUnitVal;
 
-    // Empty current price means "not set" → 0 (the column's sentinel/default),
-    // never null — sending null would fail Zod and block editing a commodity
-    // that has no current price yet.
-    const currentPriceVal = numOrNull("current_price_per_unit_aed") ?? 0;
-    const existingCurrentPrice = filsToAed(commodity.current_price_per_unit_fils);
-    if (currentPriceVal !== existingCurrentPrice) payload.current_price_per_unit_aed = currentPriceVal;
+    // Current price: auto-fetched from spot for precious metals, manual for "other"
+    const currentUnit = (unit || commodity.weight_unit) as WeightUnit;
+    const gramsPerUnit = GRAMS_PER_UNIT[currentUnit] ?? 1;
+    const spotPerGram = spotPrices[commodity.metal_type] ?? 0;
+    if (commodity.metal_type !== "other") {
+      const newCurrentPrice = Math.round(spotPerGram * gramsPerUnit * 100) / 100;
+      const existingCurrentPrice = filsToAed(commodity.current_price_per_unit_fils);
+      if (newCurrentPrice !== existingCurrentPrice && newCurrentPrice > 0) {
+        payload.current_price_per_unit_aed = newCurrentPrice;
+      }
+    } else {
+      const manualPrice = numOrNull("current_price_per_unit_aed_manual");
+      if (manualPrice !== null) {
+        const existingCurrentPrice = filsToAed(commodity.current_price_per_unit_fils);
+        if (manualPrice !== existingCurrentPrice) payload.current_price_per_unit_aed = manualPrice;
+      }
+    }
 
     const boughtPriceVal = numOrNull("bought_price_per_unit_aed");
     const existingBoughtPrice = filsToAed(commodity.bought_price_per_unit_fils);
@@ -129,7 +157,6 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
     setEditing(false);
     setError(null);
     setUnit(commodity.weight_unit);
-    setHasCurrentPrice(commodity.current_price_per_unit_fils > 0);
   }
 
   async function handleRemove() {
@@ -274,19 +301,31 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
         </div>
         <div style={{ flex: 1, minWidth: 180 }}>
           <label>Current price (AED per {UNIT_LABEL[unit] ?? unit})</label>
-          <input
-            name="current_price_per_unit_aed"
-            type="number"
-            step="0.01"
-            defaultValue={
-              commodity.current_price_per_unit_fils > 0
-                ? aedInputOrEmpty(commodity.current_price_per_unit_fils)
-                : ""
-            }
-            placeholder="Enter current price here"
-            onKeyDown={numeralOnly}
-            onChange={(e) => setHasCurrentPrice(e.target.value !== "")}
-          />
+          {commodity.metal_type !== "other" ? (
+            spotLoading ? (
+              <div style={{ padding: "6px 0", color: "var(--muted)" }}>Loading spot price...</div>
+            ) : spotPrices[commodity.metal_type] ? (
+              <div style={{ padding: "6px 0", fontWeight: 600 }}>
+                {((spotPrices[commodity.metal_type]! * (GRAMS_PER_UNIT[unit as WeightUnit] ?? 1))).toFixed(2)}
+                <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>(live spot)</span>
+              </div>
+            ) : (
+              <div style={{ padding: "6px 0", color: "var(--bad)" }}>Spot price unavailable</div>
+            )
+          ) : (
+            <input
+              name="current_price_per_unit_aed_manual"
+              type="number"
+              step="0.01"
+              defaultValue={
+                commodity.current_price_per_unit_fils > 0
+                  ? aedInputOrEmpty(commodity.current_price_per_unit_fils)
+                  : ""
+              }
+              placeholder="Enter current price here"
+              onKeyDown={numeralOnly}
+            />
+          )}
         </div>
       </div>
       <div className="row">
@@ -317,18 +356,6 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
             defaultValue={commodity.purchase_date}
           />
         </div>
-        {hasCurrentPrice && (
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <label>Date of current price *</label>
-            <input
-              name="current_price_date"
-              type="date"
-              max={today}
-              required
-              defaultValue={commodity.current_price_date ?? ""}
-            />
-          </div>
-        )}
       </div>
       <label>Notes</label>
       <textarea

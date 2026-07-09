@@ -9,7 +9,13 @@ import {
 } from "@/lib/core/excel-utils";
 
 export async function GET() {
-  const commodities = listCommodities();
+  let commodities;
+  try {
+    commodities = listCommodities();
+  } catch (e) {
+    console.error("commodities export: DB query failed", e);
+    return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
   const enriched = enrichCommodities(commodities);
 
   const wb = new ExcelJS.Workbook();

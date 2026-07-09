@@ -400,6 +400,8 @@ export default function PropertyForm() {
               <option value="penthouse">Penthouse</option>
               <option value="townhouse">Townhouse</option>
               <option value="villa">Villa</option>
+              <option value="farm">Farm</option>
+              <option value="commercial">Commercial</option>
             </select>
           </div>
           <div style={{ flex: 1, minWidth: 140 }}>

@@ -35,14 +35,18 @@ import RecommendedMoves from "./RecommendedMoves";
 
 export const dynamic = "force-dynamic";
 
+function safeList<T>(fn: () => T[]): T[] {
+  try { return fn(); } catch (e) { console.error("dashboard: list query failed", e); return []; }
+}
+
 export default function DashboardPage() {
-  const properties = listProperties();
-  const accounts = listCashAccounts();
-  const commodities = listCommodities();
-  const lands = listLands();
-  const installments = listAllInstallments();
-  const mortgages = listMortgages();
-  const landMortgages = listLandMortgages();
+  const properties = safeList(listProperties);
+  const accounts = safeList(listCashAccounts);
+  const commodities = safeList(listCommodities);
+  const lands = safeList(listLands);
+  const installments = safeList(listAllInstallments);
+  const mortgages = safeList(listMortgages);
+  const landMortgages = safeList(listLandMortgages);
 
   // ── Asset selection filtering ──────────────────────────────────────────
   let selected: Set<string> = new Set(["properties", "commodities", "cash", "lands"]);

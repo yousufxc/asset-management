@@ -2,8 +2,10 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 
-// Load the `node:sqlite` builtin via runtime require so bundlers (Vitest/Vite,
-// Next) don't try to pre-resolve this newer specifier. Type stays compile-time.
+// node:sqlite is a Node 22.5+ built-in. Vite/Vitest cannot resolve the
+// node: protocol at build time, so we load it via createRequire (works in
+// Node ESM). Next.js 15 externalises it via serverExternalPackages so HMR
+// won't re-bundle and break the require.
 import type { DatabaseSync as DatabaseSyncT } from "node:sqlite";
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 

@@ -11,6 +11,7 @@ export default function CashForm() {
   const [saving, setSaving] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isFixedDeposit, setIsFixedDeposit] = useState(false);
+  const [hasInterestRate, setHasInterestRate] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -29,7 +30,7 @@ export default function CashForm() {
     const payload = {
       label: String(fd.get("label") ?? ""),
       current_balance_aed: numOrNull("current_balance_aed") ?? 0,
-      interest_rate: numOrNull("interest_rate"),
+      interest_rate: hasInterestRate ? numOrNull("interest_rate") : null,
       is_fixed_deposit: isFixedDeposit,
       fixed_deposit_period_months: isFixedDeposit ? numOrNull("fixed_deposit_period_months") : null,
       fixed_deposit_start_date: isFixedDeposit ? strOrNull("fixed_deposit_start_date") : null,
@@ -54,6 +55,7 @@ export default function CashForm() {
     }
     (e.target as HTMLFormElement).reset();
     setIsFixedDeposit(false);
+    setHasInterestRate(false);
     setIsOpen(false);
     router.refresh();
   }
@@ -108,14 +110,26 @@ export default function CashForm() {
 
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
-          <label>Interest Rate (%)</label>
-          <input
-            name="interest_rate"
-            type="number"
-            step="0.01"
-            placeholder="Enter Interest Rate (%)"
-            onKeyDown={numeralOnly}
-          />
+          <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <input
+              type="checkbox"
+              style={{ width: "auto" }}
+              checked={hasInterestRate}
+              onChange={(e) => setHasInterestRate(e.target.checked)}
+            />
+            Does this account have an applied interest rate?
+          </label>
+          {hasInterestRate && (
+            <div style={{ marginTop: 8 }}>
+              <input
+                name="interest_rate"
+                type="number"
+                step="0.01"
+                placeholder="Enter Interest Rate (%)"
+                onKeyDown={numeralOnly}
+              />
+            </div>
+          )}
         </div>
         {isFixedDeposit && (
           <div style={{ flex: 1, minWidth: 160 }}>

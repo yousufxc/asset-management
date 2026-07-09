@@ -6,8 +6,20 @@ import SettingsContent from "./SettingsContent";
 export const dynamic = "force-dynamic";
 
 export default function SettingsPage() {
-  const settings = getAllSettings();
-  const counts = getTableCounts();
+  let settings: Record<string, string>;
+  let counts: Record<string, number>;
+  try {
+    settings = getAllSettings();
+  } catch (e) {
+    console.error("settings page: getAllSettings failed", e);
+    settings = {};
+  }
+  try {
+    counts = getTableCounts();
+  } catch (e) {
+    console.error("settings page: getTableCounts failed", e);
+    counts = {};
+  }
 
   let version = "0.1.0";
   try {

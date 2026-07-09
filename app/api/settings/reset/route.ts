@@ -21,13 +21,22 @@ export async function POST(request: Request) {
   try {
     backupPath = exportToDisk();
   } catch (e) {
+    console.error("settings reset: backup failed", e);
     return NextResponse.json(
       { error: "Backup failed, reset aborted", detail: String(e) },
       { status: 500 },
     );
   }
 
-  resetAllData();
+  try {
+    resetAllData();
+  } catch (e) {
+    console.error("settings reset: resetAllData failed", e);
+    return NextResponse.json(
+      { error: "Reset failed (backup saved)", detail: String(e) },
+      { status: 500 },
+    );
+  }
 
   return NextResponse.json({
     reset: true,

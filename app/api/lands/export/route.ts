@@ -16,7 +16,13 @@ const LAND_TYPE_LABEL: Record<string, string> = {
 };
 
 export async function GET() {
-  const lands = listLands();
+  let lands;
+  try {
+    lands = listLands();
+  } catch (e) {
+    console.error("lands export: DB query failed", e);
+    return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
 
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Lands");

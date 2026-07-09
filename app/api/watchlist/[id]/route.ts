@@ -11,6 +11,11 @@ export async function DELETE(
     return NextResponse.json({ error: "Invalid id" }, { status: 400 });
   }
 
-  deleteWatchlistItem(idNum);
+  try {
+    deleteWatchlistItem(idNum);
+  } catch (e) {
+    console.error("watchlist delete: DB operation failed", e);
+    return NextResponse.json({ error: "Failed to delete item" }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
