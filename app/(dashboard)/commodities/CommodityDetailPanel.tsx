@@ -101,17 +101,24 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
     const currentUnit = (unit || commodity.weight_unit) as WeightUnit;
     const gramsPerUnit = GRAMS_PER_UNIT[currentUnit] ?? 1;
     const spotPerGram = spotPrices[commodity.metal_type] ?? 0;
+    // Whenever the current price changes we also stamp the "as of" date to
+    // today — the price-date input was removed from the form, so it must be
+    // kept in sync here rather than read from a (now non-existent) field.
     if (commodity.metal_type !== "other") {
       const newCurrentPrice = Math.round(spotPerGram * gramsPerUnit * 100) / 100;
       const existingCurrentPrice = filsToAed(commodity.current_price_per_unit_fils);
       if (newCurrentPrice !== existingCurrentPrice && newCurrentPrice > 0) {
         payload.current_price_per_unit_aed = newCurrentPrice;
+        payload.current_price_date = today;
       }
     } else {
       const manualPrice = numOrNull("current_price_per_unit_aed_manual");
       if (manualPrice !== null) {
         const existingCurrentPrice = filsToAed(commodity.current_price_per_unit_fils);
-        if (manualPrice !== existingCurrentPrice) payload.current_price_per_unit_aed = manualPrice;
+        if (manualPrice !== existingCurrentPrice) {
+          payload.current_price_per_unit_aed = manualPrice;
+          payload.current_price_date = today;
+        }
       }
     }
 
@@ -121,9 +128,6 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
 
     const purchaseDateVal = strOrNull("purchase_date");
     if (purchaseDateVal !== commodity.purchase_date) payload.purchase_date = purchaseDateVal;
-
-    const currentPriceDateVal = strOrNull("current_price_date");
-    if (currentPriceDateVal !== (commodity.current_price_date ?? null)) payload.current_price_date = currentPriceDateVal;
 
     const notesVal = strOrNull("notes");
     if (notesVal !== (commodity.notes ?? null)) payload.notes = notesVal;
