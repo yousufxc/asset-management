@@ -524,7 +524,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {runway.timeline.map((t, idx) => (
+                {runway.timeline.slice(0, 24).map((t, idx) => (
                   <tr
                     key={idx}
                     style={
@@ -556,6 +556,14 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ))}
+                {runway.timeline.length > 24 && (
+                  <tr>
+                    <td colSpan={4} className="muted" style={{ paddingTop: 8 }}>
+                      + {runway.timeline.length - 24} more scheduled event(s) beyond the first 24
+                      (mostly future mortgage payments). The shortfall date above accounts for all of them.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
 
