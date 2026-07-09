@@ -1,5 +1,4 @@
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
-import MarketInsights from "./MarketInsights";
 import MarketTicker from "./MarketTicker";
 import NewsDigest from "./NewsDigest";
 import QuickActions from "./QuickActions";
@@ -11,7 +10,6 @@ export default function NewsPage() {
   return (
     <>
       <h2>News</h2>
-      <MarketInsights />
       <AnimateOnScroll delay={0}>
         <MarketTicker />
       </AnimateOnScroll>

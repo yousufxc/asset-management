@@ -14,6 +14,8 @@ export default function NewsDigest() {
   const [global, setGlobal] = useState<NewsItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/home/news")
@@ -27,6 +29,12 @@ export default function NewsDigest() {
       })
       .catch(() => setError("News unavailable"))
       .finally(() => setLoading(false));
+
+    fetch("/api/home/news-summary")
+      .then((res) => res.json())
+      .then((data) => setSummary(data.summary ?? null))
+      .catch(() => setSummary(null))
+      .finally(() => setSummaryLoading(false));
   }, []);
 
   if (loading) {
@@ -50,6 +58,28 @@ export default function NewsDigest() {
   return (
     <div className="card">
       <h3 style={{ marginTop: 0 }}>News</h3>
+
+      {!summaryLoading && summary && (
+        <div style={{
+          padding: "12px 14px",
+          marginBottom: 16,
+          borderLeft: "3px solid var(--accent)",
+          backgroundColor: "rgba(0,167,209,0.06)",
+          borderRadius: "0 6px 6px 0",
+          fontSize: 14,
+          lineHeight: 1.6,
+        }}>
+          <div style={{ fontSize: 11, color: "var(--accent)", textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+            Key Insights
+          </div>
+          {summary}
+        </div>
+      )}
+      {summaryLoading && (
+        <div style={{ padding: "10px 0", color: "var(--muted)", fontSize: 14, marginBottom: 12 }}>
+          Generating key insights...
+        </div>
+      )}
 
       {gulf.length > 0 && (
         <>
