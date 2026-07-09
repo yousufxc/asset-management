@@ -25,9 +25,10 @@ import {
   computeNetEquity,
 } from "@/lib/core/mortgage";
 import type { MortgagePaymentInput } from "@/lib/core/mortgage";
-import { shouldSellAlert } from "@/lib/core/commodity-analytics";
+import { shouldSellAlert, applyLiveSpotPrices } from "@/lib/core/commodity-analytics";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import { computeRecommendations } from "@/lib/core/recommendations";
+import { fetchSpotPrices, toSpotMap } from "@/lib/integrations/metals";
 import AssetPieChart, { type Slice } from "./AssetPieChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
@@ -39,7 +40,7 @@ function safeList<T>(fn: () => T[]): T[] {
   try { return fn(); } catch (e) { console.error("dashboard: list query failed", e); return []; }
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
   const properties = safeList(listProperties);
   const accounts = safeList(listCashAccounts);
   const commodities = safeList(listCommodities);
@@ -70,6 +71,18 @@ export default function DashboardPage() {
   const filteredCommodities = showCommodities ? commodities : [];
   const filteredLands = showLands ? lands : [];
   const filteredInstallments = showProperties ? installments : [];
+
+  // ── Live spot re-pricing (read time) ──────────────────────────────────
+  // Commodity valuations use live spot at page load, not the stored snapshot.
+  // A failed feed degrades gracefully to stored prices (see applyLiveSpotPrices).
+  const spot = showCommodities
+    ? await fetchSpotPrices()
+    : { prices: [], asOf: new Date().toISOString() };
+  const spotMap = toSpotMap(spot);
+  const livePriced = applyLiveSpotPrices(filteredCommodities, spotMap);
+  const pricedCommodities = livePriced.map((x) => x.commodity);
+  const anyLivePricing = livePriced.some((x) => x.source === "live");
+  const spotAsOf = new Date(spot.asOf);
 
   const filteredPropertyIds = new Set(filteredProperties.map((p) => p.id));
   const filteredLandIds = new Set(filteredLands.map((l) => l.id));
@@ -154,7 +167,7 @@ export default function DashboardPage() {
     (sum, a) => sum + a.current_balance_fils,
     0,
   );
-  const commodityTotalFilsAgg = filteredCommodities.reduce(
+  const commodityTotalFilsAgg = pricedCommodities.reduce(
     (sum, c) =>
       sum +
       commodityTotalFils({
@@ -413,6 +426,68 @@ export default function DashboardPage() {
         </div></AnimateOnScroll>
       )}
 
+      {/* ─── COMMODITY VALUATION SHOW-YOUR-WORK (live spot) ─────────────── */}
+      {showCommodities && pricedCommodities.length > 0 && (
+        <AnimateOnScroll><div className="card">
+          <details className="work">
+            <summary>Show commodity valuation ({anyLivePricing ? "live spot" : "stored prices"})</summary>
+            <div className="work-body">
+              {anyLivePricing ? (
+                <p className="muted" style={{ fontSize: 12 }}>
+                  Live spot as of {spotAsOf.toLocaleString("en-AE", { dateStyle: "medium", timeStyle: "short" })}.
+                  Prices are recomputed from spot at page load; holdings marked “stored” fell back to the last saved price
+                  (spot unavailable, or metal type “other”).
+                </p>
+              ) : (
+                <p className="muted" style={{ fontSize: 12 }}>
+                  Live spot feed unavailable — showing last saved prices.
+                </p>
+              )}
+              {spot.prices.length > 0 && (
+                <p className="muted" style={{ fontSize: 12 }}>
+                  <strong>Spot used:</strong>{" "}
+                  {spot.prices.map((p) => `${p.metal} AED ${p.pricePerGramAed.toFixed(2)}/g`).join(" · ")}
+                </p>
+              )}
+              <table style={{ width: "100%", fontSize: 13 }}>
+                <thead>
+                  <tr>
+                    <th>Metal</th>
+                    <th>Amount</th>
+                    <th>Price / unit</th>
+                    <th>Source</th>
+                    <th>Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {livePriced.map(({ commodity: c, source }) => {
+                    const value = commodityTotalFils({
+                      weight: c.weight,
+                      pricePerUnitFils: c.current_price_per_unit_fils,
+                    }).totalFils;
+                    return (
+                      <tr key={c.id}>
+                        <td>{c.metal_type.charAt(0).toUpperCase()}{c.metal_type.slice(1)}</td>
+                        <td>{c.weight} {c.weight_unit}</td>
+                        <td>{formatAed(c.current_price_per_unit_fils)}/{c.weight_unit}</td>
+                        <td>
+                          <span className="pill upcoming" style={{ fontSize: 10 }}>
+                            {source === "live" ? "live spot" : "stored"}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight: 600 }}>{formatAed(value)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <hr />
+              <p><strong>Total commodities:</strong> {formatAed(commodityTotalFilsAgg)}</p>
+            </div>
+          </details>
+        </div></AnimateOnScroll>
+      )}
+
       {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
       <div className="row" style={{ justifyContent: "center" }}>
         {showProperties && (
@@ -447,7 +522,7 @@ export default function DashboardPage() {
 
       {/* ─── SELL ALERTS — commodities at or above target price ─────────── */}
       {showCommodities && (() => {
-        const sellAlerts = filteredCommodities.filter(shouldSellAlert);
+        const sellAlerts = pricedCommodities.filter(shouldSellAlert);
         if (sellAlerts.length === 0) return null;
         return (
           <AnimateOnScroll><div
@@ -589,7 +664,7 @@ export default function DashboardPage() {
           asOf: todayIso,
           properties: filteredProperties,
           cashAccounts: filteredAccounts,
-          commodities: filteredCommodities,
+          commodities: pricedCommodities,
           installments: filteredInstallments,
           liquidCashFils: liquidFils,
           runwayInput: {

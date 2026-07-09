@@ -13,6 +13,9 @@
  * "show your work" lineage object so the UI can satisfy rule 2.1.
  */
 
+import { GRAMS_PER_UNIT, aedToFils } from "@/lib/core/units";
+import type { WeightUnit } from "@/lib/types";
+
 export interface CommodityValueInput {
   /** The amount held, in weight_unit (e.g. 100 grams). */
   weight: number;
@@ -38,6 +41,22 @@ export function commodityTotalFils(input: CommodityValueInput): CommodityValue {
     weight: input.weight,
     pricePerUnitFils: input.pricePerUnitFils,
   };
+}
+
+/**
+ * Convert a live spot price expressed in AED per gram into the per-weight-unit
+ * price in integer fils — matching how commodity current prices are stored
+ * (price for ONE weight_unit, in fils).
+ *
+ *   pricePerUnitFils = round( (AED/gram × grams_per_unit) × 100 )
+ *
+ * e.g. gold at 300 AED/gram, held in kg → 300 × 1000 = 300,000 AED/kg → 30,000,000 fils.
+ */
+export function spotPricePerUnitFils(pricePerGramAed: number, weightUnit: WeightUnit): number {
+  if (!Number.isFinite(pricePerGramAed)) {
+    throw new Error(`spotPricePerUnitFils: not a finite number: ${pricePerGramAed}`);
+  }
+  return aedToFils(pricePerGramAed * GRAMS_PER_UNIT[weightUnit]);
 }
 
 // ---------------------------------------------------------------------------
