@@ -103,17 +103,15 @@ export function monthsElapsed(startDateIso: string, asOfIso: string): number {
 }
 
 /** Compute the loan end date as an ISO date string.
- *  Adds termMonths to the start date. */
+ *  Adds termMonths to the start date, clamping to month-end. */
 export function computeLoanEndDate(startDateIso: string, termMonths: number): string {
-  const d = new Date(`${startDateIso}T00:00:00Z`);
-  if (isNaN(d.getTime())) throw new Error(`computeLoanEndDate: invalid start date "${startDateIso}"`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDateIso)) {
+    throw new Error(`computeLoanEndDate: invalid start date "${startDateIso}"`);
+  }
   if (!Number.isInteger(termMonths) || termMonths <= 0) {
     throw new Error(`computeLoanEndDate: term must be positive integer, got ${termMonths}`);
   }
-
-  const end = new Date(d);
-  end.setUTCMonth(end.getUTCMonth() + termMonths);
-  return end.toISOString().slice(0, 10);
+  return addMonthsIsoLocal(startDateIso, termMonths);
 }
 
 // ─── Cash-flow projection ───────────────────────────────────────────────────
@@ -177,12 +175,16 @@ export function generateMortgagePayments(
   return payments;
 }
 
-/** Add `months` months to an ISO date string. Internal helper. */
+/** Add `months` months to an ISO date string, clamping to month-end.
+ *  Avoids JS setUTCMonth overflow (Jan 31 + 1 month = Feb 28, not Mar 3). */
 function addMonthsIsoLocal(iso: string, months: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  if (isNaN(d.getTime())) throw new Error(`addMonthsIsoLocal: invalid date "${iso}"`);
-  d.setUTCMonth(d.getUTCMonth() + months);
-  return d.toISOString().slice(0, 10);
+  const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
+  const idx = (m - 1) + months;
+  const ty = y + Math.floor(idx / 12);
+  const tm = ((idx % 12) + 12) % 12; // 0–11
+  const lastDay = new Date(Date.UTC(ty, tm + 1, 0)).getUTCDate();
+  const td = Math.min(d, lastDay);
+  return `${String(ty).padStart(4, "0")}-${String(tm + 1).padStart(2, "0")}-${String(td).padStart(2, "0")}`;
 }
 
 // ─── Net equity ─────────────────────────────────────────────────────────────

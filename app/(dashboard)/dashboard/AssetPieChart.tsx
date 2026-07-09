@@ -10,7 +10,7 @@ export interface Slice {
   value: number;
 }
 
-const COLORS = ["#f0a020", "#38c172", "#4f9cf9"];
+const COLORS = ["#f0a020", "#38c172", "#4f9cf9", "#8b5cf6"];
 
 function CustomTooltip({
   active,

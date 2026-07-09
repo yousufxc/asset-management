@@ -15,7 +15,7 @@ import {
 } from "@/lib/db/queries";
 import { getSettingInt, getSetting } from "@/lib/db/settings";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
-import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
+import { computeRunway, checkLiquidityWarning, generateRentalInflows, addMonthsIso } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
 import {
   computeOutstandingBalance,
@@ -34,12 +34,6 @@ import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 import RecommendedMoves from "./RecommendedMoves";
 
 export const dynamic = "force-dynamic";
-
-function addMonths(iso: string, n: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCMonth(d.getUTCMonth() + n);
-  return d.toISOString().slice(0, 10);
-}
 
 export default function DashboardPage() {
   const properties = listProperties();
@@ -207,7 +201,7 @@ export default function DashboardPage() {
   ];
 
   // Compute initial latestDate (12 months out, extended by installments)
-  let latestDate = addMonths(todayIso, 12);
+  let latestDate = addMonthsIso(todayIso, 12);
   for (const liab of liabilities) {
     if (liab.dueDate > latestDate) latestDate = liab.dueDate;
   }
@@ -244,7 +238,12 @@ export default function DashboardPage() {
   );
 
   // ── Read runway horizon from settings ──────────────────────────────────
-  const runwayHorizonDays = getSettingInt("runwayHorizonDays");
+  let runwayHorizonDays = 90;
+  try {
+    runwayHorizonDays = getSettingInt("runwayHorizonDays");
+  } catch {
+    // fallback to default 90 days if setting is corrupt
+  }
 
   // ── Compute runway ──────────────────────────────────────────────────────
   const runway = computeRunway({
