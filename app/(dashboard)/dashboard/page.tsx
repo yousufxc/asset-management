@@ -10,11 +10,21 @@ import {
   listCommodities,
   listAllInstallments,
   listLands,
+  listMortgages,
+  listLandMortgages,
 } from "@/lib/db/queries";
 import { getSettingInt, getSetting } from "@/lib/db/settings";
-import { formatAed, formatIsoToUae, filsToAed } from "@/lib/core/units";
+import { formatAed, formatIsoToUae } from "@/lib/core/units";
 import { computeRunway, checkLiquidityWarning, generateRentalInflows } from "@/lib/core/runway";
 import type { Liability, Inflow, RentalPropertyInput } from "@/lib/core/runway";
+import {
+  computeOutstandingBalance,
+  monthsElapsed,
+  computeLoanEndDate,
+  generateMortgagePayments,
+  computeNetEquity,
+} from "@/lib/core/mortgage";
+import type { MortgagePaymentInput } from "@/lib/core/mortgage";
 import { shouldSellAlert } from "@/lib/core/commodity-analytics";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import { computeRecommendations } from "@/lib/core/recommendations";
@@ -37,6 +47,8 @@ export default function DashboardPage() {
   const commodities = listCommodities();
   const lands = listLands();
   const installments = listAllInstallments();
+  const mortgages = listMortgages();
+  const landMortgages = listLandMortgages();
 
   // ── Asset selection filtering ──────────────────────────────────────────
   let selected: Set<string> = new Set(["properties", "commodities", "cash", "lands"]);
@@ -61,10 +73,77 @@ export default function DashboardPage() {
   const filteredLands = showLands ? lands : [];
   const filteredInstallments = showProperties ? installments : [];
 
-  const propertyTotalFils = filteredProperties.reduce(
-    (sum, p) => sum + (p.current_value_fils ?? 0),
-    0,
-  );
+  const filteredPropertyIds = new Set(filteredProperties.map((p) => p.id));
+  const filteredLandIds = new Set(filteredLands.map((l) => l.id));
+  const filteredMortgages = showProperties
+    ? mortgages.filter((m) => filteredPropertyIds.has(m.property_id))
+    : [];
+  const filteredLandMortgages = showLands
+    ? landMortgages.filter((m) => filteredLandIds.has(m.land_id))
+    : [];
+
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10);
+
+  const propertyMortgageMap = new Map(filteredMortgages.map((m) => [m.property_id, m]));
+  const landMortgageMap = new Map(filteredLandMortgages.map((m) => [m.land_id, m]));
+
+  // ── Net equity per property ────────────────────────────────────────────
+  type MortgagedAssetDetail = {
+    name: string;
+    currentValueFils: number;
+    outstandingBalanceFils: number;
+    netEquityFils: number;
+  };
+  const propertyDetails: MortgagedAssetDetail[] = [];
+  let propertyNetFils = 0;
+
+  for (const p of filteredProperties) {
+    const value = p.current_value_fils ?? 0;
+    const m = propertyMortgageMap.get(p.id);
+    if (m) {
+      const elapsed = monthsElapsed(m.loan_start_date, todayIso);
+      const outstanding = computeOutstandingBalance(
+        m.loan_amount_fils, m.interest_rate_pct, m.loan_term_months, elapsed,
+      );
+      const net = computeNetEquity(value, outstanding);
+      propertyDetails.push({
+        name: p.name,
+        currentValueFils: value,
+        outstandingBalanceFils: outstanding,
+        netEquityFils: net,
+      });
+      propertyNetFils += net;
+    } else {
+      propertyNetFils += value;
+    }
+  }
+
+  // ── Net equity per land ───────────────────────────────────────────────
+  const landDetails: MortgagedAssetDetail[] = [];
+  let landNetFils = 0;
+
+  for (const l of filteredLands) {
+    const value = l.current_value_fils ?? 0;
+    const m = landMortgageMap.get(l.id);
+    if (m) {
+      const elapsed = monthsElapsed(m.loan_start_date, todayIso);
+      const outstanding = computeOutstandingBalance(
+        m.loan_amount_fils, m.interest_rate_pct, m.loan_term_months, elapsed,
+      );
+      const net = computeNetEquity(value, outstanding);
+      landDetails.push({
+        name: l.name,
+        currentValueFils: value,
+        outstandingBalanceFils: outstanding,
+        netEquityFils: net,
+      });
+      landNetFils += net;
+    } else {
+      landNetFils += value;
+    }
+  }
+
   const cashTotalFils = filteredAccounts.reduce(
     (sum, a) => sum + a.current_balance_fils,
     0,
@@ -78,18 +157,16 @@ export default function DashboardPage() {
       }).totalFils,
     0,
   );
-  const landTotalFils = filteredLands.reduce(
-    (sum, l) => sum + (l.current_value_fils ?? 0),
-    0,
-  );
+
+  const totalMortgageDebtFils =
+    propertyDetails.reduce((s, d) => s + d.outstandingBalanceFils, 0) +
+    landDetails.reduce((s, d) => s + d.outstandingBalanceFils, 0);
+
   const chartData: Slice[] = [];
-  if (showProperties) chartData.push({ name: "Property", value: propertyTotalFils });
+  if (showProperties) chartData.push({ name: "Property", value: Math.max(0, propertyNetFils) });
   if (showCash) chartData.push({ name: "Saving Accounts", value: cashTotalFils });
   if (showCommodities) chartData.push({ name: "Commodities", value: commodityTotalFilsAgg });
-  if (showLands) chartData.push({ name: "Land", value: landTotalFils });
-
-  const today = new Date();
-  const todayIso = today.toISOString().slice(0, 10);
+  if (showLands) chartData.push({ name: "Land", value: Math.max(0, landNetFils) });
 
   // ── Liquid cash (all cash counts as liquid — owner decision 2026-06-04) ───
   const liquidAccounts = filteredAccounts;
@@ -106,6 +183,53 @@ export default function DashboardPage() {
       kind: "installment" as const,
     }));
 
+  // ── Mortgage outflows (monthly payments as recurring dated liabilities) ──
+  const propertyNameMap = new Map(filteredProperties.map((p) => [p.id, p.name]));
+  const landNameMap = new Map(filteredLands.map((l) => [l.id, l.name]));
+
+  const mortgagePaymentInputs: MortgagePaymentInput[] = [
+    ...filteredMortgages.map((m) => ({
+      id: m.id,
+      label: `Mortgage: ${m.lender_name} (${propertyNameMap.get(m.property_id) ?? `Property #${m.property_id}`})`,
+      loanAmountFils: m.loan_amount_fils,
+      annualRatePct: m.interest_rate_pct,
+      termMonths: m.loan_term_months,
+      loanStartDate: m.loan_start_date,
+    })),
+    ...filteredLandMortgages.map((m) => ({
+      id: m.id + 10_000_000, // offset to avoid collision with property mortgage IDs
+      label: `Mortgage: ${m.lender_name} (${landNameMap.get(m.land_id) ?? `Land #${m.land_id}`})`,
+      loanAmountFils: m.loan_amount_fils,
+      annualRatePct: m.interest_rate_pct,
+      termMonths: m.loan_term_months,
+      loanStartDate: m.loan_start_date,
+    })),
+  ];
+
+  // Compute initial latestDate (12 months out, extended by installments)
+  let latestDate = addMonths(todayIso, 12);
+  for (const liab of liabilities) {
+    if (liab.dueDate > latestDate) latestDate = liab.dueDate;
+  }
+
+  // Extend latestDate to fully cover mortgage horizons
+  for (const mi of mortgagePaymentInputs) {
+    const endDate = computeLoanEndDate(mi.loanStartDate, mi.termMonths);
+    if (endDate > latestDate) latestDate = endDate;
+  }
+
+  const mortgagePayments = generateMortgagePayments(mortgagePaymentInputs, todayIso, latestDate);
+
+  const mortgageLiabilities: Liability[] = mortgagePayments.map((mp) => ({
+    id: mp.id,
+    label: mp.label,
+    dueDate: mp.dueDate,
+    amountFils: mp.amountFils,
+    kind: "mortgage" as const,
+  }));
+
+  const allLiabilities = [...liabilities, ...mortgageLiabilities];
+
   // ── Rental inflows (real cheques-per-year timing) ───────────────────────
   const rentalProperties = filteredProperties.filter(
     (p) => p.is_rental === 1 && (
@@ -113,12 +237,6 @@ export default function DashboardPage() {
       (p.short_term_annual_rent_fils && p.short_term_annual_rent_fils > 0)
     ),
   );
-
-  // Find latest liability date for generating enough rent events
-  let latestDate = addMonths(todayIso, 12); // at least 12 months
-  for (const liab of liabilities) {
-    if (liab.dueDate > latestDate) latestDate = liab.dueDate;
-  }
 
   const inflows: Inflow[] = generateRentalInflows(
     filteredProperties as RentalPropertyInput[],
@@ -132,14 +250,14 @@ export default function DashboardPage() {
   const runway = computeRunway({
     asOf: todayIso,
     liquidCashFils: liquidFils,
-    liabilities,
+    liabilities: allLiabilities,
     inflows,
     horizonDays: runwayHorizonDays,
   });
   const warning = checkLiquidityWarning({
     asOf: todayIso,
     liquidCashFils: liquidFils,
-    liabilities,
+    liabilities: allLiabilities,
     inflows,
     horizonDays: runwayHorizonDays,
   });
@@ -178,9 +296,21 @@ export default function DashboardPage() {
                 {liquidAccounts.length} account(s)
               </p>
               <p>
-                <strong>Liabilities (unpaid):</strong> {liabilities.length} item(s) totaling{" "}
-                {formatAed(liabilities.reduce((s, l) => s + l.amountFils, 0))}
+                <strong>Liabilities (unpaid):</strong> {allLiabilities.length} item(s) totaling{" "}
+                {formatAed(allLiabilities.reduce((s, l) => s + l.amountFils, 0))}
               </p>
+              {liabilities.length > 0 && (
+                <p style={{ marginLeft: 16 }}>
+                  · Installments: {liabilities.length} totaling{" "}
+                  {formatAed(liabilities.reduce((s, l) => s + l.amountFils, 0))}
+                </p>
+              )}
+              {mortgageLiabilities.length > 0 && (
+                <p style={{ marginLeft: 16 }}>
+                  · Mortgage payments: {mortgageLiabilities.length} totaling{" "}
+                  {formatAed(mortgageLiabilities.reduce((s, l) => s + l.amountFils, 0))}
+                </p>
+              )}
               {inflows.length > 0 && (
                 <p>
                   <strong>Expected inflows:</strong> {formatAed(inflows.reduce((s, i) => s + i.amountFils, 0))}{" "}
@@ -195,6 +325,77 @@ export default function DashboardPage() {
       {/* ─── PORTFOLIO ALLOCATION PIE CHART ─────────────────────────────── */}
       {chartData.length > 0 && (
         <AnimateChartOnScroll><AssetPieChart data={chartData} /></AnimateChartOnScroll>
+      )}
+
+      {/* ─── NET WORTH SHOW-YOUR-WORK ────────────────────────────────────── */}
+      {(propertyDetails.length > 0 || landDetails.length > 0) && (
+        <AnimateOnScroll><div className="card">
+          <details className="work">
+            <summary>Show net worth breakdown (mortgage-adjusted)</summary>
+            <div className="work-body">
+              {propertyDetails.length > 0 && (
+                <>
+                  <p><strong>Properties (net equity):</strong></p>
+                  <table style={{ width: "100%", fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th>Property</th>
+                        <th>Current value</th>
+                        <th>Outstanding mortgage</th>
+                        <th>Net equity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {propertyDetails.map((d, i) => (
+                        <tr key={i}>
+                          <td>{d.name}</td>
+                          <td>{formatAed(d.currentValueFils)}</td>
+                          <td style={{ color: "var(--bad)" }}>−{formatAed(d.outstandingBalanceFils)}</td>
+                          <td style={{ fontWeight: 600, color: d.netEquityFils < 0 ? "var(--bad)" : undefined }}>
+                            {formatAed(d.netEquityFils)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+              {landDetails.length > 0 && (
+                <>
+                  <p style={{ marginTop: 12 }}><strong>Land (net equity):</strong></p>
+                  <table style={{ width: "100%", fontSize: 13 }}>
+                    <thead>
+                      <tr>
+                        <th>Land</th>
+                        <th>Current value</th>
+                        <th>Outstanding mortgage</th>
+                        <th>Net equity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {landDetails.map((d, i) => (
+                        <tr key={i}>
+                          <td>{d.name}</td>
+                          <td>{formatAed(d.currentValueFils)}</td>
+                          <td style={{ color: "var(--bad)" }}>−{formatAed(d.outstandingBalanceFils)}</td>
+                          <td style={{ fontWeight: 600, color: d.netEquityFils < 0 ? "var(--bad)" : undefined }}>
+                            {formatAed(d.netEquityFils)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
+              )}
+              <hr />
+              <p><strong>Total mortgage debt:</strong> <span style={{ color: "var(--bad)" }}>{formatAed(totalMortgageDebtFils)}</span></p>
+              <p className="muted" style={{ fontSize: 12 }}>
+                Pie slices show net equity clamped to 0 (no negative slices).<br />
+                Property net equity: {formatAed(propertyNetFils)} · Land net equity: {formatAed(landNetFils)}.
+              </p>
+            </div>
+          </details>
+        </div></AnimateOnScroll>
       )}
 
       {/* ─── ASSET COUNTS ─────────────────────────────────────────────── */}
@@ -351,7 +552,7 @@ export default function DashboardPage() {
             <p className="muted">
               <strong>Inputs:</strong> Liquid cash: {formatAed(liquidFils)} across{" "}
               {liquidAccounts.length} account(s) · {liabilities.length} unpaid
-              installment(s) ·               {rentalProperties.length} rental property
+              installment(s){mortgageLiabilities.length > 0 ? ` · ${mortgageLiabilities.length} mortgage payment(s)` : ""} · {rentalProperties.length} rental property
               {rentalProperties.length === 1 ? "" : "ies"} generating{" "}
               {inflows.length} rent cheque event(s).
             </p>
@@ -371,7 +572,7 @@ export default function DashboardPage() {
           runwayInput: {
             asOf: todayIso,
             liquidCashFils: liquidFils,
-            liabilities,
+            liabilities: allLiabilities,
             inflows,
             horizonDays: runwayHorizonDays,
           },
@@ -379,7 +580,7 @@ export default function DashboardPage() {
         runwayInput={{
           asOf: todayIso,
           liquidCashFils: liquidFils,
-          liabilities,
+          liabilities: allLiabilities,
           inflows,
           horizonDays: runwayHorizonDays,
         }}

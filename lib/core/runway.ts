@@ -16,7 +16,7 @@ export interface Liability {
   label: string;
   dueDate: string; // ISO
   amountFils: number;
-  kind: "installment" | "other";
+  kind: "installment" | "other" | "mortgage";
 }
 
 export interface Inflow {
@@ -350,5 +350,7 @@ function daysBetween(startIso: string, endIso: string): number {
 }
 
 function formatLabel(liab: Liability): string {
-  return liab.kind === "installment" ? "installment" : "liability";
+  if (liab.kind === "installment") return "installment";
+  if (liab.kind === "mortgage") return "mortgage";
+  return "liability";
 }

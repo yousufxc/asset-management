@@ -115,3 +115,82 @@ export function computeLoanEndDate(startDateIso: string, termMonths: number): st
   end.setUTCMonth(end.getUTCMonth() + termMonths);
   return end.toISOString().slice(0, 10);
 }
+
+// ─── Cash-flow projection ───────────────────────────────────────────────────
+
+export interface MortgagePaymentInput {
+  id: number;
+  label: string;
+  loanAmountFils: number;
+  annualRatePct: number;
+  termMonths: number;
+  loanStartDate: string; // ISO
+}
+
+export interface MortgagePayment {
+  id: number;
+  label: string;
+  dueDate: string; // ISO
+  amountFils: number;
+  kind: "mortgage";
+}
+
+/**
+ * Generate dated mortgage payment outflows for runway projection.
+ * Pure function — no DB, no network.
+ *
+ * For each mortgage, payments are due monthly starting one month after
+ * loan_start_date. Only payments in (asOf, until] are included.
+ */
+export function generateMortgagePayments(
+  mortgages: MortgagePaymentInput[],
+  asOfIso: string,
+  untilIso: string,
+): MortgagePayment[] {
+  const payments: MortgagePayment[] = [];
+
+  for (const m of mortgages) {
+    if (
+      !Number.isFinite(m.loanAmountFils) || m.loanAmountFils < 0 ||
+      !Number.isFinite(m.annualRatePct) || m.annualRatePct < 0 ||
+      !Number.isInteger(m.termMonths) || m.termMonths <= 0
+    ) continue;
+
+    const monthlyFils = computeMonthlyPayment(m.loanAmountFils, m.annualRatePct, m.termMonths);
+
+    for (let k = 1; k <= m.termMonths; k++) {
+      const dueDate = addMonthsIsoLocal(m.loanStartDate, k);
+
+      if (dueDate > asOfIso && dueDate <= untilIso) {
+        payments.push({
+          id: m.id * 10_000 + k,
+          label: m.label,
+          dueDate,
+          amountFils: monthlyFils,
+          kind: "mortgage",
+        });
+      }
+    }
+  }
+
+  payments.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  return payments;
+}
+
+/** Add `months` months to an ISO date string. Internal helper. */
+function addMonthsIsoLocal(iso: string, months: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (isNaN(d.getTime())) throw new Error(`addMonthsIsoLocal: invalid date "${iso}"`);
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d.toISOString().slice(0, 10);
+}
+
+// ─── Net equity ─────────────────────────────────────────────────────────────
+
+/**
+ * Compute net equity = current value − outstanding mortgage balance.
+ * Pure function — both args in fils. No clamping (caller decides display rules).
+ */
+export function computeNetEquity(currentValueFils: number, outstandingBalanceFils: number): number {
+  return currentValueFils - outstandingBalanceFils;
+}

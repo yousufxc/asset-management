@@ -841,3 +841,15 @@ export function updateLandMortgage(id: number, data: LandMortgageUpdate): LandMo
 export function deleteLandMortgage(id: number): void {
   getDb().prepare(`DELETE FROM land_mortgages WHERE id = ?`).run(id);
 }
+
+export function listMortgages(): Mortgage[] {
+  return getDb()
+    .prepare(`SELECT * FROM mortgages ORDER BY created_at DESC`)
+    .all() as unknown as Mortgage[];
+}
+
+export function listLandMortgages(): LandMortgage[] {
+  return getDb()
+    .prepare(`SELECT * FROM land_mortgages ORDER BY created_at DESC`)
+    .all() as unknown as LandMortgage[];
+}
