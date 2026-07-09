@@ -96,18 +96,22 @@ export default function DashboardPage() {
     const value = p.current_value_fils ?? 0;
     const m = propertyMortgageMap.get(p.id);
     if (m) {
-      const elapsed = monthsElapsed(m.loan_start_date, todayIso);
-      const outstanding = computeOutstandingBalance(
-        m.loan_amount_fils, m.interest_rate_pct, m.loan_term_months, elapsed,
-      );
-      const net = computeNetEquity(value, outstanding);
-      propertyDetails.push({
-        name: p.name,
-        currentValueFils: value,
-        outstandingBalanceFils: outstanding,
-        netEquityFils: net,
-      });
-      propertyNetFils += net;
+      try {
+        const elapsed = monthsElapsed(m.loan_start_date, todayIso);
+        const outstanding = computeOutstandingBalance(
+          m.loan_amount_fils, m.interest_rate_pct, m.loan_term_months, elapsed,
+        );
+        const net = computeNetEquity(value, outstanding);
+        propertyDetails.push({
+          name: p.name,
+          currentValueFils: value,
+          outstandingBalanceFils: outstanding,
+          netEquityFils: net,
+        });
+        propertyNetFils += net;
+      } catch {
+        propertyNetFils += value;
+      }
     } else {
       propertyNetFils += value;
     }
@@ -121,18 +125,22 @@ export default function DashboardPage() {
     const value = l.current_value_fils ?? 0;
     const m = landMortgageMap.get(l.id);
     if (m) {
-      const elapsed = monthsElapsed(m.loan_start_date, todayIso);
-      const outstanding = computeOutstandingBalance(
-        m.loan_amount_fils, m.interest_rate_pct, m.loan_term_months, elapsed,
-      );
-      const net = computeNetEquity(value, outstanding);
-      landDetails.push({
-        name: l.name,
-        currentValueFils: value,
-        outstandingBalanceFils: outstanding,
-        netEquityFils: net,
-      });
-      landNetFils += net;
+      try {
+        const elapsed = monthsElapsed(m.loan_start_date, todayIso);
+        const outstanding = computeOutstandingBalance(
+          m.loan_amount_fils, m.interest_rate_pct, m.loan_term_months, elapsed,
+        );
+        const net = computeNetEquity(value, outstanding);
+        landDetails.push({
+          name: l.name,
+          currentValueFils: value,
+          outstandingBalanceFils: outstanding,
+          netEquityFils: net,
+        });
+        landNetFils += net;
+      } catch {
+        landNetFils += value;
+      }
     } else {
       landNetFils += value;
     }
@@ -208,8 +216,12 @@ export default function DashboardPage() {
 
   // Extend latestDate to fully cover mortgage horizons
   for (const mi of mortgagePaymentInputs) {
-    const endDate = computeLoanEndDate(mi.loanStartDate, mi.termMonths);
-    if (endDate > latestDate) latestDate = endDate;
+    try {
+      const endDate = computeLoanEndDate(mi.loanStartDate, mi.termMonths);
+      if (endDate > latestDate) latestDate = endDate;
+    } catch {
+      // skip bad mortgage — handled by generateMortgagePayments input validation
+    }
   }
 
   const mortgagePayments = generateMortgagePayments(mortgagePaymentInputs, todayIso, latestDate);

@@ -150,11 +150,12 @@ export function generateMortgagePayments(
   for (const m of mortgages) {
     if (
       !Number.isFinite(m.loanAmountFils) || m.loanAmountFils < 0 ||
-      !Number.isFinite(m.annualRatePct) || m.annualRatePct < 0 ||
+      !Number.isFinite(m.annualRatePct) || m.annualRatePct < 0 || m.annualRatePct > 100 ||
       !Number.isInteger(m.termMonths) || m.termMonths <= 0
     ) continue;
 
     const monthlyFils = computeMonthlyPayment(m.loanAmountFils, m.annualRatePct, m.termMonths);
+    if (!Number.isFinite(monthlyFils)) continue;
 
     for (let k = 1; k <= m.termMonths; k++) {
       const dueDate = addMonthsIsoLocal(m.loanStartDate, k);
@@ -194,5 +195,8 @@ function addMonthsIsoLocal(iso: string, months: number): string {
  * Pure function — both args in fils. No clamping (caller decides display rules).
  */
 export function computeNetEquity(currentValueFils: number, outstandingBalanceFils: number): number {
+  if (!Number.isFinite(currentValueFils) || !Number.isFinite(outstandingBalanceFils)) {
+    throw new Error("computeNetEquity: inputs must be finite numbers");
+  }
   return currentValueFils - outstandingBalanceFils;
 }
