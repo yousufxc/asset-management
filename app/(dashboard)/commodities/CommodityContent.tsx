@@ -32,9 +32,17 @@ type SortCol = "amount" | "date_purchased" | "bought_price" | "value_bought" | "
 export default function CommodityContent({
   commodities,
   selectedCommodity,
+  selectedLivePriceFils = null,
+  spotAsOf = null,
+  spotPrices = [],
+  priceSourceById = {},
 }: {
   commodities: Commodity[];
   selectedCommodity: Commodity | null;
+  selectedLivePriceFils?: number | null;
+  spotAsOf?: string | null;
+  spotPrices?: { metal: string; pricePerGramAed: number }[];
+  priceSourceById?: Record<number, "live" | "stored">;
 }) {
   const router = useRouter();
   const [metalTypeFilter, setMetalTypeFilter] = useState<Set<string>>(new Set(ALL_METAL_TYPES));
@@ -234,6 +242,21 @@ export default function CommodityContent({
               {exporting ? "Exporting..." : "Export"}
             </button>
           </div>
+          {commodities.length > 0 && (
+            <p className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+              {spotAsOf ? (
+                <>
+                  Current price, value and P/L use <strong>live spot as of {spotAsOf}</strong>
+                  {spotPrices.length > 0 && (
+                    <> — {spotPrices.map((p) => `${p.metal} AED ${p.pricePerGramAed.toFixed(2)}/g`).join(" · ")}</>
+                  )}
+                  . Holdings tagged “saved” (metal type “Other”, or spot unavailable) use the last entered price.
+                </>
+              ) : (
+                <>Live spot feed unavailable — showing last saved prices.</>
+              )}
+            </p>
+          )}
           {sorted.length === 0 ? (
             <p className="muted">
               {commodities.length === 0
@@ -369,9 +392,21 @@ export default function CommodityContent({
                           )}
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>
-                          {c.current_price_per_unit_fils > 0
-                            ? `${formatAed(c.current_price_per_unit_fils)}/${c.weight_unit}`
-                            : "—"}
+                          {c.current_price_per_unit_fils > 0 ? (
+                            <>
+                              {formatAed(c.current_price_per_unit_fils)}/{c.weight_unit}
+                              <span
+                                style={{ fontSize: 10, color: "var(--muted)", marginLeft: 6 }}
+                                title={priceSourceById[c.id] === "live"
+                                  ? "Live spot price"
+                                  : "Last saved price (no live spot for this holding)"}
+                              >
+                                {priceSourceById[c.id] === "live" ? "live" : "saved"}
+                              </span>
+                            </>
+                          ) : (
+                            "—"
+                          )}
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>
                           {c.current_price_per_unit_fils > 0
@@ -412,6 +447,8 @@ export default function CommodityContent({
             <CommodityDetailPanel
               key={selectedCommodity.id}
               commodity={selectedCommodity}
+              livePriceFils={selectedLivePriceFils}
+              liveAsOf={spotAsOf}
             />
           </div>
         )}

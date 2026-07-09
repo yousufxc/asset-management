@@ -37,7 +37,17 @@ function formatIsoDisplay(iso: string): string {
 
 const today = new Date().toLocaleDateString("en-CA");
 
-export default function CommodityDetailPanel({ commodity }: { commodity: Commodity }) {
+export default function CommodityDetailPanel({
+  commodity,
+  livePriceFils = null,
+  liveAsOf = null,
+}: {
+  commodity: Commodity;
+  /** Live spot price per unit (fils) for read-only display; null = no live spot. */
+  livePriceFils?: number | null;
+  /** Preformatted "as of" label for the live price. */
+  liveAsOf?: string | null;
+}) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,7 +186,12 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
     router.refresh();
   }
 
-  const renderReadOnly = () => (
+  const renderReadOnly = () => {
+    // Prefer live spot for the current-price display; fall back to the stored
+    // snapshot. Editing still operates on the stored `commodity` (see handleSave).
+    const isLive = livePriceFils != null && livePriceFils > 0;
+    const displayCurrentFils = isLive ? livePriceFils! : commodity.current_price_per_unit_fils;
+    return (
     <>
       <div className="detail-row">
         <span className="detail-label">Type</span>
@@ -194,18 +209,25 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
         <span className="detail-label">Date of purchase</span>
         <span>{formatIsoDisplay(commodity.purchase_date)}</span>
       </div>
-      {commodity.current_price_per_unit_fils > 0 ? (
+      {displayCurrentFils > 0 ? (
         <>
           <div className="detail-row">
             <span className="detail-label">Current price</span>
-            <span>{formatAed(commodity.current_price_per_unit_fils)}/{perUnit}</span>
+            <span>
+              {formatAed(displayCurrentFils)}/{perUnit}
+              {isLive && (
+                <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>(live spot)</span>
+              )}
+            </span>
           </div>
           <div className="detail-row">
             <span className="detail-label">Date of current price</span>
             <span>
-              {commodity.current_price_date
-                ? formatIsoDisplay(commodity.current_price_date)
-                : "—"}
+              {isLive
+                ? `Live spot${liveAsOf ? ` — ${liveAsOf}` : ""}`
+                : commodity.current_price_date
+                  ? formatIsoDisplay(commodity.current_price_date)
+                  : "—"}
             </span>
           </div>
         </>
@@ -220,10 +242,10 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
           <span className="detail-label">Target sell price</span>
           <span style={{
             fontWeight: 600,
-            color: commodity.current_price_per_unit_fils >= commodity.target_sell_price_per_unit_fils ? "var(--good)" : "var(--text)",
+            color: displayCurrentFils >= commodity.target_sell_price_per_unit_fils ? "var(--good)" : "var(--text)",
           }}>
             {formatAed(commodity.target_sell_price_per_unit_fils)}/{perUnit}
-            {commodity.current_price_per_unit_fils >= commodity.target_sell_price_per_unit_fils && (
+            {displayCurrentFils >= commodity.target_sell_price_per_unit_fils && (
               <span style={{ marginLeft: 8, fontSize: 12, color: "var(--good)" }}> Target reached</span>
             )}
           </span>
@@ -249,7 +271,8 @@ export default function CommodityDetailPanel({ commodity }: { commodity: Commodi
         </div>
       )}
     </>
-  );
+    );
+  };
 
   const renderEditForm = () => (
     <form onSubmit={handleSave} className="detail-edit-form">
