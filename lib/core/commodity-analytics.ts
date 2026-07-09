@@ -4,7 +4,44 @@
 
 import type { Commodity } from "@/lib/types";
 import { toGrams } from "@/lib/core/units";
-import { commodityTotalFils } from "@/lib/core/valuation";
+import { commodityTotalFils, spotPricePerUnitFils } from "@/lib/core/valuation";
+
+/** A commodity re-priced against live spot, with lineage for show-your-work. */
+export interface LivePricedCommodity {
+  /** The commodity, with current_price_per_unit_fils overridden to live where available. */
+  commodity: Commodity;
+  /** "live" when the current price came from spot; "stored" when it fell back to the DB snapshot. */
+  source: "live" | "stored";
+  /** The live per-unit price in fils, or null when no spot was applied. */
+  livePriceFils: number | null;
+}
+
+/**
+ * Re-price commodities against live spot at READ TIME. For each holding whose
+ * metal has a spot price (everything except "other"), the current price per
+ * unit is recomputed from AED/gram spot; otherwise the stored snapshot is kept.
+ *
+ * Pure: takes a spot map (metal_type -> AED per gram), returns new objects and
+ * never mutates the inputs. Missing/zero/non-finite spot falls back to stored,
+ * so a failed price feed degrades gracefully to the last saved values.
+ */
+export function applyLiveSpotPrices(
+  commodities: Commodity[],
+  spotPerGramByMetal: Record<string, number>,
+): LivePricedCommodity[] {
+  return commodities.map((c) => {
+    const spot = spotPerGramByMetal[c.metal_type];
+    if (c.metal_type !== "other" && typeof spot === "number" && Number.isFinite(spot) && spot > 0) {
+      const livePriceFils = spotPricePerUnitFils(spot, c.weight_unit);
+      return {
+        commodity: { ...c, current_price_per_unit_fils: livePriceFils },
+        source: "live" as const,
+        livePriceFils,
+      };
+    }
+    return { commodity: c, source: "stored" as const, livePriceFils: null };
+  });
+}
 
 export interface EnrichedCommodity {
   commodity: Commodity;
