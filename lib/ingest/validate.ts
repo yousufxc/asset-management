@@ -248,7 +248,25 @@ export const TitleDeedExtractSchema = z.object({
   developer: z.string().optional().nullable(),
   size_sqft: z.number().positive().optional().nullable(),
   purchase_price_aed: z.number().nonnegative().finite().optional().nullable(),
-  purchased_at: z.string().optional().nullable(),
+  // Normalise the model's date to ISO with our tested parser rather than
+  // trusting the LLM's DD/MM→ISO conversion (§2.2 — DD/MM vs MM/DD is exactly
+  // the kind of silent date bug this project guards against). The form field is
+  // type="date" and only accepts ISO, so an un-normalised "12/05/2023" would be
+  // silently dropped. Unparseable → null so one bad date doesn't void the whole
+  // extraction; the form is reviewed and the final PropertyInput submit
+  // re-validates with noFutureDate.
+  purchased_at: z
+    .string()
+    .optional()
+    .nullable()
+    .transform((v) => {
+      if (v == null || v.trim() === "") return null;
+      try {
+        return parseDateToIso(v);
+      } catch {
+        return null;
+      }
+    }),
 });
 export type TitleDeedExtract = z.infer<typeof TitleDeedExtractSchema>;
 
