@@ -99,15 +99,15 @@ function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[]): 
       pctVal(annROI),
       p.notes ?? "",
     ]);
-    fmtMoney(row.getCell(9));
-    fmtMoney(row.getCell(10));
-    fmtDate(row.getCell(11));
-    fmtPct(row.getCell(12));
-    fmtMoney(row.getCell(15));
-    fmtMoney(row.getCell(16));
-    fmtPct(row.getCell(17));
-    fmtPct(row.getCell(18));
-    fmtPct(row.getCell(19));
+    fmtMoney(row.getCell(10)); // Purchase Price (AED)
+    fmtMoney(row.getCell(11)); // Current Value (AED)
+    fmtDate(row.getCell(12));  // Valuation Date
+    fmtPct(row.getCell(13));   // Capital Appreciation
+    fmtMoney(row.getCell(16)); // Gross Annual Rent (AED)
+    fmtMoney(row.getCell(17)); // Net Annual Rent (AED)
+    fmtPct(row.getCell(18));   // Rental Yield
+    fmtPct(row.getCell(19));   // Total ROI
+    fmtPct(row.getCell(20));   // Annualized ROI
   }
   ws.getColumn(1).width = 28;
   ws.getColumn(cols.length).width = 30;
