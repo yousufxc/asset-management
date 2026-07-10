@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { TitleDeedExtractSchema } from "@/lib/ingest/validate";
 import { buildDeedExtractionPrompt } from "@/lib/ingest/deed-prompt";
 import { getSetting } from "@/lib/db/settings";
+import { pdfToTextWithOcr } from "@/lib/ingest/pdf-ocr";
 import Anthropic from "@anthropic-ai/sdk";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
@@ -41,20 +42,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  let deedText: string;
+  let deedText = "";
+  const buffer = Buffer.from(await file.arrayBuffer());
+
   try {
-    const buffer = Buffer.from(await file.arrayBuffer());
     deedText = await pdfToText(buffer);
   } catch {
-    return NextResponse.json(
-      { error: "Failed to read PDF. The file may be corrupted or contain no readable text." },
-      { status: 400 },
-    );
+    // native extraction failed, try OCR
+  }
+
+  if (!deedText || deedText.trim().length === 0) {
+    try {
+      deedText = await pdfToTextWithOcr(buffer);
+    } catch {
+      // OCR also failed
+    }
   }
 
   if (!deedText || deedText.trim().length === 0) {
     return NextResponse.json(
-      { error: "This PDF contains no readable text. It may be a scanned image — please enter the property details manually." },
+      { error: "Failed to read PDF. The file may be corrupted, contain no readable text, or be a scanned image that could not be OCR'd." },
       { status: 400 },
     );
   }

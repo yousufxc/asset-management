@@ -26,3 +26,6 @@ tsconfig.tsbuildinfo
 # Uploaded source documents (private financial PDFs)
 uploads/
 *.pdf
+
+# Tesseract OCR language data (downloaded at runtime)
+*.traineddata
