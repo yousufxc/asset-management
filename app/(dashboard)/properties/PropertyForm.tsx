@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { parseDateToIso } from "@/lib/core/units";
 import { numeralOnly } from "./numeralOnly";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import type { TitleDeedExtract } from "@/lib/ingest/validate";
 
 function RentalFields({ rentalType, setRentalType }: { rentalType: string; setRentalType: (v: string) => void }) {
   const [cheques, setCheques] = useState(1);
@@ -186,6 +187,51 @@ export default function PropertyForm() {
   const [instPercentages, setInstPercentages] = useState<Record<number, string>>({});
   const instKey = useRef(0);
   const today = new Date().toISOString().split("T")[0];
+  const formRef = useRef<HTMLFormElement>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState<string | null>(null);
+  const [extractedData, setExtractedData] = useState<TitleDeedExtract | null>(null);
+
+  useEffect(() => {
+    if (!extractedData || !formRef.current) return;
+    const form = formRef.current;
+    const fieldValues: Array<[string, string | number]> = [];
+    if (extractedData.name != null) fieldValues.push(["name", extractedData.name]);
+    if (extractedData.property_type != null) fieldValues.push(["property_type", extractedData.property_type]);
+    if (extractedData.bedrooms != null) fieldValues.push(["bedrooms", extractedData.bedrooms]);
+    if (extractedData.city != null) fieldValues.push(["city", extractedData.city]);
+    if (extractedData.area != null) fieldValues.push(["area", extractedData.area]);
+    if (extractedData.developer != null) fieldValues.push(["developer", extractedData.developer]);
+    if (extractedData.size_sqft != null) fieldValues.push(["size_sqft", extractedData.size_sqft]);
+    if (extractedData.purchase_price_aed != null) fieldValues.push(["purchase_price_aed", extractedData.purchase_price_aed]);
+    if (extractedData.purchased_at != null) fieldValues.push(["purchased_at", extractedData.purchased_at]);
+    for (const [name, value] of fieldValues) {
+      const el = form.elements.namedItem(name);
+      if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) {
+        el.value = String(value);
+      }
+    }
+    if (extractedData.subcategory != null) setSubcategory(extractedData.subcategory);
+    if (extractedData.purchase_price_aed != null) setPurchasePrice(String(extractedData.purchase_price_aed));
+  }, [extractedData]);
+
+  async function handleFileUpload(file: File) {
+    setExtractError(null);
+    setExtractedData(null);
+    setExtracting(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch("/api/properties/ingest", { method: "POST", body: fd });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      setExtractError(data?.error || "Upload failed");
+      setExtracting(false);
+      return;
+    }
+    const { extracted } = await res.json();
+    setExtractedData(extracted);
+    setExtracting(false);
+  }
 
   function addInstallment() {
     setInstallments((prev) => [...prev, { key: instKey.current++ }]);
@@ -370,8 +416,61 @@ export default function PropertyForm() {
 
   return (
     <AnimateOnScroll><div className="card">
-      <form onSubmit={onSubmit}>
+      <form ref={formRef} onSubmit={onSubmit}>
         <h3 style={{ marginTop: 0 }}>Add property</h3>
+        <div style={{
+          border: "1px dashed var(--border)",
+          borderRadius: 8,
+          padding: extractedData ? "10px 14px" : "16px 14px",
+          marginBottom: 16,
+          background: extractedData ? "var(--panel-2)" : "var(--panel)",
+          transition: "background 0.2s, border-color 0.2s",
+        }}>
+          {extractedData ? (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, color: "var(--text)" }}>
+                Extracted: <strong>{extractedData.name ?? "Unnamed property"}</strong>
+                {extractedData.city && `, ${extractedData.city}`}
+                {extractedData.size_sqft && ` · ${extractedData.size_sqft} sqft`}
+                {extractedData.purchase_price_aed && ` · AED ${Number(extractedData.purchase_price_aed).toLocaleString("en-AE")}`}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setExtractedData(null);
+                  setExtractError(null);
+                }}
+                style={{ marginTop: 0, padding: "4px 10px", fontSize: 12, background: "transparent", color: "var(--muted)" }}
+              >
+                Clear
+              </button>
+            </div>
+          ) : (
+            <>
+              <label style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6, display: "block" }}>
+                Upload title deed (PDF) to auto-fill property details
+              </label>
+              <input
+                type="file"
+                accept="application/pdf"
+                disabled={extracting}
+                style={{ fontSize: 13 }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleFileUpload(file);
+                }}
+              />
+              {extracting && (
+                <span style={{ display: "block", marginTop: 8, fontSize: 13, color: "var(--muted)" }}>
+                  Extracting property details from title deed...
+                </span>
+              )}
+            </>
+          )}
+          {extractError && (
+            <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--bad)" }}>{extractError}</p>
+          )}
+        </div>
         <div className="row">
           <div style={{ flex: 2, minWidth: 220 }}>
             <label>Name *</label>

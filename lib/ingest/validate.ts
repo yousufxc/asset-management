@@ -233,6 +233,26 @@ export const CommodityUpdateSchema = z.object({
 export type CommodityUpdate = z.infer<typeof CommodityUpdateSchema>;
 
 // ---------------------------------------------------------------------------
+// TITLE DEED EXTRACTION — Claude output from a DLD title deed PDF.
+// Every field is optional+nullable: the model returns null for anything it
+// cannot find on the deed. Field names match PropertyForm input names so the
+// frontend maps 1:1.
+// ---------------------------------------------------------------------------
+export const TitleDeedExtractSchema = z.object({
+  name: z.string().optional().nullable(),
+  subcategory: z.enum(["off_plan", "existing"]).optional().nullable(),
+  property_type: z.enum(["apartment", "penthouse", "townhouse", "villa", "farm", "commercial"]).optional().nullable(),
+  bedrooms: z.enum(["Studio", "1BR", "2BR", "3BR", "4BR", "5BR", "+5BR"]).optional().nullable(),
+  city: z.string().optional().nullable(),
+  area: z.string().optional().nullable(),
+  developer: z.string().optional().nullable(),
+  size_sqft: z.number().positive().optional().nullable(),
+  purchase_price_aed: z.number().nonnegative().finite().optional().nullable(),
+  purchased_at: z.string().optional().nullable(),
+});
+export type TitleDeedExtract = z.infer<typeof TitleDeedExtractSchema>;
+
+// ---------------------------------------------------------------------------
 // INSTALLMENT UPDATE (partial — fields allowed in PATCH)
 // ---------------------------------------------------------------------------
 export const InstallmentUpdateSchema = z.object({
