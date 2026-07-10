@@ -192,6 +192,26 @@ describe("pricePerSqftFils", () => {
   it("returns null when size is zero", () => {
     expect(pricePerSqftFils(mkProperty({ current_value_fils: 2_000_000, size_sqft: 0 }))).toBeNull();
   });
+
+  it("normalises sqm to sqft before dividing (100 sqm = 1076.39 sqft)", () => {
+    // value 10,763,900 fils / (100 × 10.7639) sqft = exactly 10,000 fils/sqft.
+    const p = mkProperty({ current_value_fils: 10_763_900, size_sqft: 100, size_unit: "sqm" });
+    expect(pricePerSqftFils(p)).toBe(10_000);
+  });
+
+  it("treats the same numeric size very differently for sqm vs sqft", () => {
+    const value = 10_763_900;
+    const sqm = pricePerSqftFils(mkProperty({ current_value_fils: value, size_sqft: 100, size_unit: "sqm" }));
+    const sqft = pricePerSqftFils(mkProperty({ current_value_fils: value, size_sqft: 100, size_unit: "sqft" }));
+    expect(sqm).toBe(10_000);
+    expect(sqft).toBe(107_639); // 10,763,900 / 100
+  });
+
+  it("defaults to sqft when size_unit is absent (legacy rows)", () => {
+    const p = mkProperty({ current_value_fils: 2_000_000, size_sqft: 1000 });
+    expect(p.size_unit).toBeUndefined();
+    expect(pricePerSqftFils(p)).toBe(2000); // treated as sqft, not converted
+  });
 });
 
 // ---------------------------------------------------------------------------
