@@ -64,7 +64,7 @@ function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[]): 
   const ws = wb.addWorksheet("Properties Overview");
   const cols = [
     "Name", "Type", "Subcategory", "Area", "Bedrooms", "City", "Developer",
-    "Size (sqft)", "Purchase Price (AED)", "Current Value (AED)", "Valuation Date",
+    "Size (sqft)", "Size Unit", "Purchase Price (AED)", "Current Value (AED)", "Valuation Date",
     "Capital Appreciation", "Is Rental", "Rental Type", "Gross Annual Rent (AED)",
     "Net Annual Rent (AED)", "Rental Yield", "Total ROI", "Annualized ROI", "Notes",
   ];
@@ -85,6 +85,7 @@ function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[]): 
       p.subcategory === "off_plan" ? "Off-plan" : "Existing",
       p.area ?? "", p.bedrooms ?? "", p.city ?? "", p.developer ?? "",
       p.size_sqft ?? "",
+      p.size_unit ?? "sqft",
       aedVal(p.purchase_price_fils),
       aedVal(p.current_value_fils),
       dateVal(p.valued_at),
@@ -109,7 +110,7 @@ function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[]): 
     fmtPct(row.getCell(19));
   }
   ws.getColumn(1).width = 28;
-  ws.getColumn(20).width = 30;
+  ws.getColumn(cols.length).width = 30;
   for (let i = 2; i <= cols.length; i++) {
     const col = ws.getColumn(i);
     if (col) col.width = Math.max(12, (cols[i - 1]?.length ?? 10));

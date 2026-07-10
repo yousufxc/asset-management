@@ -202,6 +202,7 @@ describe("settings DB operations", () => {
     const prop = q.insertProperty({
       name: "After Reset",
       subcategory: "existing",
+      size_unit: "sqft",
       is_rental: false,
     });
     expect(prop.id).toBeGreaterThan(0);

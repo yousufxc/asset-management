@@ -43,14 +43,14 @@ export function insertProperty(input: PropertyInput): Property {
   const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO properties
-      (name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
+      (name, subcategory, property_type, bedrooms, city, area, developer, size_sqft, size_unit,
        annual_service_charge_fils, purchase_price_fils, purchased_at,
        current_value_fils, valued_at, is_rental, rental_type, annual_rent_fils, rent_cheques_per_year,
        rent_date_1, rent_date_2, rent_date_3, rent_date_4,
        pm_company_name, pm_commission_pct, short_term_annual_rent_fils,
        short_term_return_frequency, short_term_rent_deposit_date, contract_start_date, notes)
     VALUES
-      (@name, @subcategory, @property_type, @bedrooms, @city, @area, @developer, @size_sqft,
+      (@name, @subcategory, @property_type, @bedrooms, @city, @area, @developer, @size_sqft, @size_unit,
        @annual_service_charge_fils, @purchase_price_fils, @purchased_at,
        @current_value_fils, @valued_at, @is_rental, @rental_type, @annual_rent_fils, @rent_cheques_per_year,
        @rent_date_1, @rent_date_2, @rent_date_3, @rent_date_4,
@@ -66,6 +66,7 @@ export function insertProperty(input: PropertyInput): Property {
     area: input.area ?? null,
     developer: input.developer ?? null,
     size_sqft: input.size_sqft ?? null,
+    size_unit: input.size_unit ?? "sqft",
     annual_service_charge_fils: aedOrNull(input.annual_service_charge_aed),
     purchase_price_fils: aedOrNull(input.purchase_price_aed),
     purchased_at: dateOrNull(input.purchased_at),
@@ -116,6 +117,7 @@ export function updateProperty(id: number, data: PropertyUpdate): Property | und
   if (data.area !== undefined) { sets.push("area = @area"); params.area = data.area; }
   if (data.developer !== undefined) { sets.push("developer = @developer"); params.developer = data.developer; }
   if (data.size_sqft !== undefined) { sets.push("size_sqft = @size_sqft"); params.size_sqft = data.size_sqft; }
+  if (data.size_unit !== undefined) { sets.push("size_unit = @size_unit"); params.size_unit = data.size_unit; }
   if (data.annual_service_charge_aed !== undefined) { sets.push("annual_service_charge_fils = @annual_service_charge_fils"); params.annual_service_charge_fils = aedOrNull(data.annual_service_charge_aed); }
   if (data.purchase_price_aed !== undefined) { sets.push("purchase_price_fils = @purchase_price_fils"); params.purchase_price_fils = aedOrNull(data.purchase_price_aed); }
   if (data.purchased_at !== undefined) { sets.push("purchased_at = @purchased_at"); params.purchased_at = dateOrNull(data.purchased_at); }

@@ -29,6 +29,7 @@ describe("property + installment write path", () => {
     const prop = q.insertProperty({
       name: "Marina Tower 1204",
       subcategory: "off_plan",
+      size_unit: "sqft",
       current_value_aed: 2_500_000,
       is_rental: false,
     });

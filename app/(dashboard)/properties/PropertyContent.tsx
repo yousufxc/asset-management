@@ -382,6 +382,7 @@ export default function PropertyContent({
                     </div>
                   </th>
                   <th style={{ minWidth: 100, whiteSpace: "nowrap" }}>Area</th>
+                  <th style={{ minWidth: 100, whiteSpace: "nowrap" }}>Size</th>
                   <th {...thSortProps("bought_for")} style={{ minWidth: 120, whiteSpace: "nowrap", cursor: "pointer", userSelect: "none" }}>Bought for{sortArrow("bought_for")}</th>
                   <th {...thSortProps("current_value")} style={{ minWidth: 120, whiteSpace: "nowrap", cursor: "pointer", userSelect: "none" }}>Current value{sortArrow("current_value")}</th>
                   <th style={{ minWidth: 140, whiteSpace: "nowrap" }}>Valuation freshness</th>
@@ -417,6 +418,7 @@ export default function PropertyContent({
                         {p.is_rental ? " · rental" : ""}
                       </td>
                       <td>{p.area ?? "—"}</td>
+                      <td>{p.size_sqft != null ? `${p.size_sqft} ${p.size_unit ?? "sqft"}` : "—"}</td>
                       <td style={{ whiteSpace: "nowrap" }}>{p.purchase_price_fils != null ? formatAed(p.purchase_price_fils) : "—"}</td>
                       <td style={{ whiteSpace: "nowrap" }}>{p.current_value_fils != null ? formatAed(p.current_value_fils) : "—"}</td>
                       <td className="muted" style={{ whiteSpace: "nowrap" }}>{daysSince(p.valued_at)}</td>

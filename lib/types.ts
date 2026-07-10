@@ -18,6 +18,7 @@ export type LandType = "residential" | "commercial" | "agricultural" | "industri
 export type RentalDepositStatus = "pending" | "deposited";
 export type EndReason = "cancelled" | "vacant" | "renewed";
 
+export type SizeUnit = "sqft" | "sqm";
 export type RateType = "fixed" | "variable";
 export type WatchlistType = "property" | "commodity";
 
@@ -48,6 +49,7 @@ export interface Property {
   area: string | null;
   developer: string | null;
   size_sqft: number | null;
+  size_unit?: SizeUnit;
   annual_service_charge_fils: number | null;
   purchase_price_fils: number | null;
   purchased_at: string | null;

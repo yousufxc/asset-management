@@ -28,7 +28,7 @@ export async function GET() {
   const overview = wb.addWorksheet("Properties Overview");
   const overviewCols = [
     "Name", "Type", "Subcategory", "Area", "Bedrooms", "City", "Developer",
-    "Size (sqft)", "Purchase Price (AED)", "Current Value (AED)", "Valuation Date",
+    "Size (sqft)", "Size Unit", "Purchase Price (AED)", "Current Value (AED)", "Valuation Date",
     "Capital Appreciation", "Is Rental", "Rental Type", "Gross Annual Rent (AED)",
     "Service Charge (AED)", "PM Commission %", "Net Annual Rent (AED)",
     "Rental Yield", "Total ROI", "Annualized ROI", "Notes",
@@ -55,6 +55,7 @@ export async function GET() {
       p.city ?? "",
       p.developer ?? "",
       p.size_sqft ?? "",
+      p.size_unit ?? "sqft",
       aedVal(p.purchase_price_fils),
       aedVal(p.current_value_fils),
       dateVal(p.valued_at),
@@ -71,20 +72,20 @@ export async function GET() {
       p.notes ?? "",
     ]);
 
-    fmtMoney(row.getCell(9));
     fmtMoney(row.getCell(10));
-    fmtDate(row.getCell(11));
-    fmtPct(row.getCell(12));
-    fmtMoney(row.getCell(15));
+    fmtMoney(row.getCell(11));
+    fmtDate(row.getCell(12));
+    fmtPct(row.getCell(13));
     fmtMoney(row.getCell(16));
-    fmtMoney(row.getCell(18));
-    fmtPct(row.getCell(19));
+    fmtMoney(row.getCell(17));
+    fmtMoney(row.getCell(19));
     fmtPct(row.getCell(20));
     fmtPct(row.getCell(21));
+    fmtPct(row.getCell(22));
   }
 
   overview.getColumn(1).width = 28;
-  overview.getColumn(22).width = 30;
+  overview.getColumn(23).width = 30;
   for (let i = 2; i <= overviewCols.length; i++) {
     const col = overview.getColumn(i);
     if (col) col.width = Math.max(12, (overviewCols[i - 1]?.length ?? 10));
@@ -112,6 +113,7 @@ export async function GET() {
       ["Area", p.area ?? ""],
       ["Developer", p.developer ?? ""],
       ["Size (sqft)", p.size_sqft?.toString() ?? ""],
+      ["Size Unit", p.size_unit ?? "sqft"],
       ["Purchase Date", formatIsoDateToUae(p.purchased_at)],
       ["Purchase Price", p.purchase_price_fils != null ? (p.purchase_price_fils / 100).toFixed(2) : ""],
       ["Current Value", p.current_value_fils != null ? (p.current_value_fils / 100).toFixed(2) : ""],

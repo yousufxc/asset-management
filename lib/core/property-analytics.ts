@@ -63,16 +63,20 @@ export function rentalYieldPct(p: Property): number | null {
   return (net / purchase) * 100;
 }
 
+const SQM_TO_SQFT = 10.7639;
+
 /**
- * Price per sqft in fils.
- * current_value_fils / size_sqft.
+ * Price per sqft in fils — always returns the metric normalized to sqft
+ * regardless of the property's size_unit, so comparisons are consistent.
+ * current_value_fils / (size_sqft * conversion).
  * Returns null if either value is missing or size is zero.
  */
 export function pricePerSqftFils(p: Property): number | null {
   const value = p.current_value_fils;
   const size = p.size_sqft;
   if (value === null || size === null || size <= 0) return null;
-  return Math.round(value / size);
+  const sqftSize = p.size_unit === "sqm" ? size * SQM_TO_SQFT : size;
+  return Math.round(value / sqftSize);
 }
 
 /**

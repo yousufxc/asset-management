@@ -88,6 +88,7 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
   const [mortgage, setMortgage] = useState<Mortgage | null>(null);
   const [editIsMortgage, setEditIsMortgage] = useState(false);
   const [editMortgageRateType, setEditMortgageRateType] = useState<string>("fixed");
+  const [editSizeUnit, setEditSizeUnit] = useState<"sqft" | "sqm">(property.size_unit ?? "sqft");
 
   useEffect(() => {
     let cancelled = false;
@@ -198,6 +199,9 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
 
     const sizeSqft = numOrNull("size_sqft");
     if (sizeSqft !== (property.size_sqft ?? null)) payload.size_sqft = sizeSqft;
+
+    const sizeUnitVal = String(fd.get("size_unit") ?? "sqft") as "sqft" | "sqm";
+    if (sizeUnitVal !== (property.size_unit ?? "sqft")) payload.size_unit = sizeUnitVal;
 
     const serviceCharge = numOrNull("annual_service_charge_aed");
     const existingCharge = property.annual_service_charge_fils != null ? filsToAed(property.annual_service_charge_fils) : null;
@@ -507,7 +511,7 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
         <span>{property.developer ?? "—"}</span>
       </div>
       <div className="detail-row">
-        <span className="detail-label">Size (sqft)</span>
+        <span className="detail-label">Size ({property.size_unit ?? "sqft"})</span>
         <span>{property.size_sqft ?? "—"}</span>
       </div>
       <div className="detail-row">
@@ -839,8 +843,28 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
           <input name="developer" defaultValue={property.developer ?? ""} placeholder="Emaar" />
         </div>
         <div style={{ flex: 1, minWidth: 120 }}>
-          <label>Size (sqft)</label>
+          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span>Size</span>
+            <button
+              type="button"
+              onClick={() => setEditSizeUnit((u) => (u === "sqft" ? "sqm" : "sqft"))}
+              style={{
+                margin: 0,
+                fontSize: 11,
+                padding: "1px 8px",
+                background: "var(--panel-2)",
+                color: "var(--text)",
+                border: "1px solid var(--border)",
+                borderRadius: 4,
+                cursor: "pointer",
+              }}
+              title="Toggle between sqft and sqm"
+            >
+              {editSizeUnit === "sqft" ? "sqft" : "sqm"}
+            </button>
+          </label>
           <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} defaultValue={property.size_sqft ?? ""} placeholder="Enter size of property" />
+          <input type="hidden" name="size_unit" value={editSizeUnit} />
         </div>
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Annual Service Charge (AED)</label>

@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS properties (
   city                TEXT,                              -- e.g. Dubai, Abu Dhabi
   area                TEXT,                              -- DLD community/area, used for AVM later
   developer           TEXT,                              -- off-plan developer
-  size_sqft           REAL,                              -- for AVM: median price/sqft * size
+  size_sqft           REAL,                              -- raw numeric size (unit stored in size_unit)
+  size_unit           TEXT    NOT NULL DEFAULT 'sqft' CHECK (size_unit IN ('sqft', 'sqm')),
   annual_service_charge_fils INTEGER CHECK (annual_service_charge_fils IS NULL OR annual_service_charge_fils >= 0),
    purchase_price_fils INTEGER CHECK (purchase_price_fils IS NULL OR purchase_price_fils >= 0),
    purchased_at       TEXT,                              -- ISO date of purchase
@@ -233,13 +234,14 @@ ALTER TABLE properties ADD COLUMN pm_commission_pct          REAL CHECK (pm_comm
 ALTER TABLE properties ADD COLUMN short_term_annual_rent_fils INTEGER CHECK (short_term_annual_rent_fils IS NULL OR short_term_annual_rent_fils >= 0);
 ALTER TABLE properties ADD COLUMN short_term_return_frequency TEXT CHECK (short_term_return_frequency IS NULL OR short_term_return_frequency IN ('monthly', 'quarterly'));
 ALTER TABLE properties ADD COLUMN short_term_rent_deposit_date TEXT;
+ALTER TABLE properties ADD COLUMN size_unit TEXT NOT NULL DEFAULT 'sqft' CHECK (size_unit IN ('sqft', 'sqm'));
 ALTER TABLE cash_accounts ADD COLUMN fixed_deposit_start_date TEXT;
 ALTER TABLE properties ADD COLUMN contract_start_date TEXT;
 ALTER TABLE commodities ADD COLUMN target_sell_price_per_unit_fils INTEGER CHECK (target_sell_price_per_unit_fils IS NULL OR target_sell_price_per_unit_fils >= 0);
 
 DROP VIEW IF EXISTS v_properties;
 CREATE VIEW IF NOT EXISTS v_properties AS
-  SELECT id, name, subcategory, property_type, bedrooms, city, area, developer, size_sqft,
+  SELECT id, name, subcategory, property_type, bedrooms, city, area, developer, size_sqft, size_unit,
          annual_service_charge_fils, purchase_price_fils, purchased_at, current_value_fils, valued_at,
          is_rental, rental_type, annual_rent_fils, rent_cheques_per_year,
          rent_date_1, rent_date_2, rent_date_3, rent_date_4,

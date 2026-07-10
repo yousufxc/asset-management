@@ -185,6 +185,7 @@ export default function PropertyForm() {
   const [installments, setInstallments] = useState<{ key: number }[]>([]);
   const [purchasePrice, setPurchasePrice] = useState("");
   const [instPercentages, setInstPercentages] = useState<Record<number, string>>({});
+  const [sizeUnit, setSizeUnit] = useState<"sqft" | "sqm">("sqft");
   const instKey = useRef(0);
   const today = new Date().toISOString().split("T")[0];
   const formRef = useRef<HTMLFormElement>(null);
@@ -266,6 +267,7 @@ export default function PropertyForm() {
       area: strOrNull("area"),
       developer: strOrNull("developer"),
       size_sqft: numOrNull("size_sqft"),
+      size_unit: strOrNull("size_unit") ?? "sqft",
       annual_service_charge_aed: numOrNull("annual_service_charge_aed"),
       purchase_price_aed: numOrNull("purchase_price_aed"),
       purchased_at: strOrNull("purchased_at"),
@@ -531,8 +533,28 @@ export default function PropertyForm() {
             <input name="developer" placeholder="Emaar" />
           </div>
           <div style={{ flex: 1, minWidth: 120 }}>
-            <label>Size (sqft)</label>
+            <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span>Size</span>
+              <button
+                type="button"
+                onClick={() => setSizeUnit((u) => (u === "sqft" ? "sqm" : "sqft"))}
+                style={{
+                  margin: 0,
+                  fontSize: 11,
+                  padding: "1px 8px",
+                  background: "var(--panel-2)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                }}
+                title="Toggle between sqft and sqm"
+              >
+                {sizeUnit === "sqft" ? "sqft" : "sqm"}
+              </button>
+            </label>
             <input name="size_sqft" type="number" step="any" onKeyDown={numeralOnly} placeholder="Enter size of property" />
+            <input type="hidden" name="size_unit" value={sizeUnit} />
           </div>
           <div style={{ flex: 1, minWidth: 160 }}>
             <label>Annual Service Charge (AED)</label>
