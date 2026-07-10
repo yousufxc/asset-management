@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
   if (!deedText || deedText.trim().length === 0) {
     try {
       deedText = await pdfToTextWithOcr(buffer);
-    } catch {
-      // OCR also failed
+    } catch (e) {
+      console.error("ingest: OCR fallback threw:", e);
     }
   }
 
