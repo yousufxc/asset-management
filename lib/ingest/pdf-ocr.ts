@@ -3,16 +3,14 @@ import { createCanvas } from "canvas";
 import { createWorker, Worker } from "tesseract.js";
 
 export async function pdfToTextWithOcr(buffer: Buffer): Promise<string> {
-  let data: Uint8Array;
-  try {
-    data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength);
-  } catch {
-    return "";
-  }
+  // Copy into a standalone Uint8Array — passing a view into Node's shared
+  // Buffer pool risks pdfjs detaching/transferring the underlying ArrayBuffer.
+  const data = new Uint8Array(buffer);
 
+  const loadingTask = getDocument({ data });
   let doc;
   try {
-    doc = await getDocument({ data }).promise;
+    doc = await loadingTask.promise;
   } catch {
     return "";
   }
@@ -43,6 +41,13 @@ export async function pdfToTextWithOcr(buffer: Buffer): Promise<string> {
   } finally {
     if (worker) {
       await worker.terminate();
+    }
+    // Release pdfjs resources (matters in the long-running server). destroy()
+    // on the loading task tears down the document and its worker.
+    try {
+      await loadingTask.destroy();
+    } catch {
+      // best-effort cleanup
     }
   }
 
