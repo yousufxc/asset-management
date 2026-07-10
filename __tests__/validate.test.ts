@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   InstallmentInputSchema,
   PropertyInputSchema,
+  TitleDeedExtractSchema,
 } from "@/lib/ingest/validate";
 
 describe("dateString validation accepts both ISO and UAE formats", () => {
@@ -108,5 +109,63 @@ describe("noFutureDate: purchased_at / valued_at cannot be in the future", () =>
       purchased_at: "01/01/2020",
     });
     expect(r.success).toBe(true);
+  });
+});
+
+describe("TitleDeedExtractSchema: Claude output gate + date normalisation", () => {
+  it("normalises a UAE DD/MM/YYYY deed date to ISO (§2.2)", () => {
+    // 07/03/2026 is 7 March, NOT 3 July — the ISO output must reflect that.
+    const r = TitleDeedExtractSchema.safeParse({ purchased_at: "07/03/2026" });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.purchased_at).toBe("2026-03-07");
+  });
+
+  it("passes an already-ISO date through unchanged", () => {
+    const r = TitleDeedExtractSchema.safeParse({ purchased_at: "2023-11-30" });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.purchased_at).toBe("2023-11-30");
+  });
+
+  it("drops an unparseable date to null instead of failing the whole extraction", () => {
+    const r = TitleDeedExtractSchema.safeParse({
+      name: "Marina Tower 1204",
+      purchased_at: "not a date",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) {
+      expect(r.data.purchased_at).toBeNull();
+      expect(r.data.name).toBe("Marina Tower 1204"); // other fields survive
+    }
+  });
+
+  it("treats null / missing date as null", () => {
+    const rNull = TitleDeedExtractSchema.safeParse({ purchased_at: null });
+    const rMissing = TitleDeedExtractSchema.safeParse({ name: "X" });
+    expect(rNull.success && rNull.data.purchased_at).toBeNull();
+    expect(rMissing.success && rMissing.data.purchased_at).toBeNull();
+  });
+
+  it("rejects hallucinated out-of-enum values and negative prices", () => {
+    expect(TitleDeedExtractSchema.safeParse({ property_type: "castle" }).success).toBe(false);
+    expect(TitleDeedExtractSchema.safeParse({ subcategory: "maybe" }).success).toBe(false);
+    expect(TitleDeedExtractSchema.safeParse({ purchase_price_aed: -5000 }).success).toBe(false);
+    expect(TitleDeedExtractSchema.safeParse({ size_sqft: 0 }).success).toBe(false);
+  });
+
+  it("accepts a full valid extraction", () => {
+    const r = TitleDeedExtractSchema.safeParse({
+      name: "Marina Tower 1204",
+      subcategory: "existing",
+      property_type: "apartment",
+      bedrooms: "1BR",
+      city: "Dubai",
+      area: "Dubai Marina",
+      developer: "Emaar",
+      size_sqft: 1200,
+      purchase_price_aed: 1200000,
+      purchased_at: "15/06/2023",
+    });
+    expect(r.success).toBe(true);
+    if (r.success) expect(r.data.purchased_at).toBe("2023-06-15");
   });
 });
