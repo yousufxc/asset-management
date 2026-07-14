@@ -72,7 +72,9 @@ export default function PropertyContent({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [exporting, setExporting] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [shouldScroll, setShouldScroll] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -86,8 +88,16 @@ export default function PropertyContent({
   }, [filterOpen]);
 
   function handleSelect(id: number) {
+    setShouldScroll(true);
     router.push(`/properties?selected=${id}`);
   }
+
+  useEffect(() => {
+    if (shouldScroll && selectedProperty && detailRef.current) {
+      detailRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      setShouldScroll(false);
+    }
+  }, [shouldScroll, selectedProperty]);
 
   const isAllSelected = typeFilter.size === ALL_PROPERTY_TYPES.length;
 
@@ -460,7 +470,7 @@ export default function PropertyContent({
       </div></AnimateOnScroll>
 
       {selectedProperty && (
-        <div style={{ marginTop: 18 }}>
+        <div ref={detailRef} style={{ marginTop: 18 }}>
           <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} installments={installments.filter((i) => i.property_id === selectedProperty.id).sort((a, b) => a.due_date.localeCompare(b.due_date))} deposits={deposits.filter((d) => d.property_id === selectedProperty.id)} history={history.filter((h) => h.property_id === selectedProperty.id)} />
         </div>
       )}

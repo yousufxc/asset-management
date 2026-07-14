@@ -55,7 +55,6 @@ function aedInputOrEmpty(fils: number | null): string {
 export default function PropertyDetailPanel({ property, installments, deposits, history }: { property: Property; installments: Installment[]; deposits: RentalDeposit[]; history: RentalHistory[] }) {
   const router = useRouter();
   const todayIso = new Date().toISOString().slice(0, 10);
-  const hasPendingInsts = installments.some((i) => i.status !== "paid" && i.paid_date === null);
   const [editing, setEditing] = useState(false);
   const [renewMode, setRenewMode] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -480,235 +479,340 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
     const contractDays = daysUntilContractExpiry(property, todayIso);
     const snapshotROI = totalROIPct(property);
     const annualizedROI = annualizedROIPct(property, todayIso);
+    const hasPendingInsts = installments.some((i) => i.status !== "paid" && i.paid_date === null);
     return (
     <>
-      <div className="detail-row">
-        <span className="detail-label">Name</span>
-        <span>{property.name}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Category</span>
-        <span>{property.subcategory === "off_plan" ? "Off-plan" : "Existing"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Property type</span>
-        <span>{property.property_type ? TYPE_LABEL[property.property_type] : "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label"># of Bedrooms</span>
-        <span>{property.bedrooms ? BEDROOMS_LABEL[property.bedrooms] : "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">City</span>
-        <span>{property.city ?? "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Area</span>
-        <span>{property.area ?? "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Developer</span>
-        <span>{property.developer ?? "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Size ({property.size_unit ?? "sqft"})</span>
-        <span>{property.size_sqft ?? "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Annual Service Charge</span>
-        <span>{formatAedValue(property.annual_service_charge_fils)}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Purchase price</span>
-        <span>{formatAedValue(property.purchase_price_fils)}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Date of purchase</span>
-        <span>{formatIsoDisplay(property.purchased_at)}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Current value</span>
-        <span>{formatAedValue(property.current_value_fils)}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Valued on</span>
-        <span>{formatIsoDisplay(property.valued_at)}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Price per Sqft</span>
-        <span>{sqftFils !== null ? formatAed(sqftFils) : "—"}</span>
-      </div>
-      <div className="detail-row">
-        <span className="detail-label">Rental Yield</span>
-        <span>{ryPct !== null ? `${ryPct.toFixed(1)}%` : "—"}</span>
-      </div>
-      {equity !== null && (
-        <div className="detail-row">
-          <span className="detail-label">Equity</span>
-          <span style={{ fontWeight: 600, color: equity >= 0 ? "var(--good)" : "var(--bad)" }}>
-            {formatAed(equity)}
-          </span>
-        </div>
-      )}
-      {property.purchase_price_fils != null && property.current_value_fils != null && property.purchase_price_fils > 0 && (
-        <>
+      <details className="work" style={{ marginTop: 12 }}>
+        <summary>Property Details</summary>
+        <div className="work-body">
           <div className="detail-row">
-            <span className="detail-label">Total ROI (snapshot)</span>
-            <span>{snapshotROI !== null ? `${snapshotROI >= 0 ? "+" : ""}${snapshotROI.toFixed(1)}%` : "—"}</span>
+            <span className="detail-label">Name</span>
+            <span>{property.name}</span>
           </div>
           <div className="detail-row">
-            <span className="detail-label">Total ROI (annualized)</span>
-            <span>{annualizedROI !== null ? `${annualizedROI >= 0 ? "+" : ""}${annualizedROI.toFixed(1)}%` : "—"}</span>
+            <span className="detail-label">Category</span>
+            <span>{property.subcategory === "off_plan" ? "Off-plan" : "Existing"}</span>
           </div>
-        </>
-      )}
-      {instProgress !== null && (
-        <div className="detail-row">
-          <span className="detail-label">Instalment Progress</span>
-          <span style={{ flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ flex: 1, height: 10, background: "var(--panel-2)", borderRadius: 5, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${Math.min(instProgress, 100)}%`, background: "var(--accent)", borderRadius: 5, transition: "width 0.3s" }} />
-              </div>
-              <span style={{ fontSize: 12, whiteSpace: "nowrap" }}>{instProgress.toFixed(1)}%</span>
+          <div className="detail-row">
+            <span className="detail-label">Property type</span>
+            <span>{property.property_type ? TYPE_LABEL[property.property_type] : "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label"># of Bedrooms</span>
+            <span>{property.bedrooms ? BEDROOMS_LABEL[property.bedrooms] : "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">City</span>
+            <span>{property.city ?? "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Area</span>
+            <span>{property.area ?? "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Developer</span>
+            <span>{property.developer ?? "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Size ({property.size_unit ?? "sqft"})</span>
+            <span>{property.size_sqft ?? "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Annual Service Charge</span>
+            <span>{formatAedValue(property.annual_service_charge_fils)}</span>
+          </div>
+          {property.notes && (
+            <div className="detail-row">
+              <span className="detail-label">Notes</span>
+              <span style={{ whiteSpace: "pre-wrap" }}>{property.notes}</span>
             </div>
-          </span>
+          )}
         </div>
-      )}
-      {contractDays !== null && (
-        <div className="detail-row">
-          <span className="detail-label">Contract</span>
-          <span style={{ color: contractDays <= 60 ? "var(--warn)" : "var(--text)" }}>
-            {contractDays <= 0
-              ? "Expired"
-              : contractDays <= 60
-                ? `Expires in ${contractDays} days`
-                : `${contractDays} days remaining`}
-          </span>
-        </div>
-      )}
-       {property.is_rental ? (
-        <>
+      </details>
+
+      <details className="work" style={{ marginTop: 12 }}>
+        <summary>Financial Metrics</summary>
+        <div className="work-body">
           <div className="detail-row">
-            <span className="detail-label">Rental type</span>
-            <span>{property.rental_type === "short_term" ? "Short-term" : "Long-term"}</span>
+            <span className="detail-label">Purchase price</span>
+            <span>{formatAedValue(property.purchase_price_fils)}</span>
           </div>
           <div className="detail-row">
-            <span className="detail-label">Contract start</span>
-            <span>{formatIsoDisplay(property.contract_start_date)}</span>
+            <span className="detail-label">Date of purchase</span>
+            <span>{formatIsoDisplay(property.purchased_at)}</span>
           </div>
-          {((property.rental_type ?? "long_term") === "long_term") ? (
+          <div className="detail-row">
+            <span className="detail-label">Current value</span>
+            <span>{formatAedValue(property.current_value_fils)}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Valued on</span>
+            <span>{formatIsoDisplay(property.valued_at)}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Price per Sqft</span>
+            <span>{sqftFils !== null ? formatAed(sqftFils) : "—"}</span>
+          </div>
+          <div className="detail-row">
+            <span className="detail-label">Rental Yield</span>
+            <span>{ryPct !== null ? `${ryPct.toFixed(1)}%` : "—"}</span>
+          </div>
+          {equity !== null && (
+            <div className="detail-row">
+              <span className="detail-label">Equity</span>
+              <span style={{ fontWeight: 600, color: equity >= 0 ? "var(--good)" : "var(--bad)" }}>
+                {formatAed(equity)}
+              </span>
+            </div>
+          )}
+          {property.purchase_price_fils != null && property.current_value_fils != null && property.purchase_price_fils > 0 && (
             <>
               <div className="detail-row">
-                <span className="detail-label">Yearly rent</span>
-                <span>{formatAedValue(property.annual_rent_fils)}</span>
+                <span className="detail-label">Total ROI (snapshot)</span>
+                <span>{snapshotROI !== null ? `${snapshotROI >= 0 ? "+" : ""}${snapshotROI.toFixed(1)}%` : "—"}</span>
               </div>
               <div className="detail-row">
-                <span className="detail-label">Cheques per year</span>
-                <span>{property.rent_cheques_per_year}</span>
-              </div>
-              {Array.from({ length: property.rent_cheques_per_year ?? 0 }, (_, i) => {
-                const key = `rent_date_${i + 1}` as keyof Property;
-                const date = property[key] as string | null;
-                return (
-                  <div className="detail-row" key={i}>
-                    <span className="detail-label">Cheque {i + 1} date</span>
-                    <span>{formatIsoDisplay(date)}</span>
-                  </div>
-                );
-              })}
-            </>
-          ) : (
-            <>
-              <div className="detail-row">
-                <span className="detail-label">PM company</span>
-                <span>{property.pm_company_name ?? "—"}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Commission (%)</span>
-                <span>{property.pm_commission_pct != null ? `${property.pm_commission_pct}%` : "—"}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Expected annual rent</span>
-                <span>{formatAedValue(property.short_term_annual_rent_fils)}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Return frequency</span>
-                <span>{property.short_term_return_frequency ? `${property.short_term_return_frequency.charAt(0).toUpperCase()}${property.short_term_return_frequency.slice(1)}` : "—"}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Final deposit date</span>
-                <span>{formatIsoDisplay(property.short_term_rent_deposit_date)}</span>
+                <span className="detail-label">Total ROI (annualized)</span>
+                <span>{annualizedROI !== null ? `${annualizedROI >= 0 ? "+" : ""}${annualizedROI.toFixed(1)}%` : "—"}</span>
               </div>
             </>
           )}
-        </>
-      ) : (
-        <div className="detail-row">
-          <span className="detail-label">Rental</span>
-          <span>Not rented</span>
+          {instProgress !== null && (
+            <div className="detail-row">
+              <span className="detail-label">Instalment Progress</span>
+              <span style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, height: 10, background: "var(--panel-2)", borderRadius: 5, overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${Math.min(instProgress, 100)}%`, background: "var(--accent)", borderRadius: 5, transition: "width 0.3s" }} />
+                  </div>
+                  <span style={{ fontSize: 12, whiteSpace: "nowrap" }}>{instProgress.toFixed(1)}%</span>
+                </div>
+              </span>
+            </div>
+          )}
         </div>
-      )}
-      {mortgage ? (
-        (() => {
-          const monthlyPayment = computeMonthlyPayment(mortgage.loan_amount_fils, mortgage.interest_rate_pct, mortgage.loan_term_months);
-          const elapsed = monthsElapsed(mortgage.loan_start_date, todayIso);
-          const outstanding = computeOutstandingBalance(mortgage.loan_amount_fils, mortgage.interest_rate_pct, mortgage.loan_term_months, elapsed);
-          const endDate = computeLoanEndDate(mortgage.loan_start_date, mortgage.loan_term_months);
-          return (
+      </details>
+
+      <details className="work" style={{ marginTop: 12 }}>
+        <summary>Rental Details</summary>
+        <div className="work-body">
+          {property.is_rental ? (
             <>
               <div className="detail-row">
-                <span className="detail-label">Mortgage</span>
-                <span style={{ fontWeight: 600 }}>{mortgage.lender_name}</span>
+                <span className="detail-label">Rental type</span>
+                <span>{property.rental_type === "short_term" ? "Short-term" : "Long-term"}</span>
               </div>
               <div className="detail-row">
-                <span className="detail-label">Loan amount</span>
-                <span>{formatAedValue(mortgage.loan_amount_fils)}</span>
+                <span className="detail-label">Contract start</span>
+                <span>{formatIsoDisplay(property.contract_start_date)}</span>
               </div>
-              <div className="detail-row">
-                <span className="detail-label">Interest rate</span>
-                <span>{mortgage.interest_rate_pct}% ({mortgage.rate_type})</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Monthly payment</span>
-                <span>{formatAedValue(monthlyPayment)}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Outstanding balance</span>
-                <span>{formatAedValue(outstanding)}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Loan period</span>
-                <span>{formatIsoDisplay(mortgage.loan_start_date)} — {formatIsoToUae(endDate)} ({mortgage.loan_term_months / 12} years)</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Payments made</span>
-                <span>{elapsed} of {mortgage.loan_term_months}</span>
-              </div>
-              {mortgage.notes && (
+              {contractDays !== null && (
                 <div className="detail-row">
-                  <span className="detail-label">Mortgage notes</span>
-                  <span style={{ whiteSpace: "pre-wrap" }}>{mortgage.notes}</span>
+                  <span className="detail-label">Contract</span>
+                  <span style={{ color: contractDays <= 60 ? "var(--warn)" : "var(--text)" }}>
+                    {contractDays <= 0
+                      ? "Expired"
+                      : contractDays <= 60
+                        ? `Expires in ${contractDays} days`
+                        : `${contractDays} days remaining`}
+                  </span>
+                </div>
+              )}
+              {((property.rental_type ?? "long_term") === "long_term") ? (
+                <>
+                  <div className="detail-row">
+                    <span className="detail-label">Yearly rent</span>
+                    <span>{formatAedValue(property.annual_rent_fils)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Cheques per year</span>
+                    <span>{property.rent_cheques_per_year}</span>
+                  </div>
+                  {Array.from({ length: property.rent_cheques_per_year ?? 0 }, (_, i) => {
+                    const key = `rent_date_${i + 1}` as keyof Property;
+                    const date = property[key] as string | null;
+                    return (
+                      <div className="detail-row" key={i}>
+                        <span className="detail-label">Cheque {i + 1} date</span>
+                        <span>{formatIsoDisplay(date)}</span>
+                      </div>
+                    );
+                  })}
+                </>
+              ) : (
+                <>
+                  <div className="detail-row">
+                    <span className="detail-label">PM company</span>
+                    <span>{property.pm_company_name ?? "—"}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Commission (%)</span>
+                    <span>{property.pm_commission_pct != null ? `${property.pm_commission_pct}%` : "—"}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Expected annual rent</span>
+                    <span>{formatAedValue(property.short_term_annual_rent_fils)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Return frequency</span>
+                    <span>{property.short_term_return_frequency ? `${property.short_term_return_frequency.charAt(0).toUpperCase()}${property.short_term_return_frequency.slice(1)}` : "—"}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Final deposit date</span>
+                    <span>{formatIsoDisplay(property.short_term_rent_deposit_date)}</span>
+                  </div>
+                </>
+              )}
+              <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button type="button" onClick={handleRenewContract} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px" }}>
+                  Renew Contract
+                </button>
+                <button type="button" onClick={handleCancelContract} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px", background: "var(--warn)", color: "#fff" }}>
+                  Cancel Contract
+                </button>
+                <button type="button" onClick={handleMarkVacant} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px", background: "var(--panel-2)", color: "var(--text)" }}>
+                  Mark as Vacant
+                </button>
+              </div>
+              <button type="button" onClick={() => setShowHistory(!showHistory)} style={{ marginTop: 8, fontSize: 12, background: "var(--panel-2)", color: "var(--text)", padding: "6px 12px" }}>
+                {showHistory ? "Hide Rental History" : "View Rental History"}
+              </button>
+              {showHistory && (
+                <div style={{ marginTop: 12 }}>
+                  {history.length === 0 ? (
+                    <p className="muted">No rental history.</p>
+                  ) : (
+                    <div style={{ overflowX: "auto" }}>
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Rental Value</th>
+                            <th>Contract Period</th>
+                            <th>Cheques</th>
+                            <th>Type</th>
+                            <th>End Reason</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history.map((h) => (
+                            <tr key={h.id}>
+                              <td style={{ whiteSpace: "nowrap" }}>{formatAed(h.annual_rent_fils ?? h.short_term_annual_rent_fils ?? 0)}</td>
+                              <td style={{ whiteSpace: "nowrap" }}>{formatIsoToUae(h.contract_start_date)} — {h.contract_end_date ? formatIsoToUae(h.contract_end_date) : "Active"}</td>
+                              <td>{h.rent_cheques_per_year ?? "—"}</td>
+                              <td>{h.rental_type === "short_term" ? "Short-term" : "Long-term"}</td>
+                              <td>{h.end_reason ?? "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </>
-          );
-        })()
-      ) : (
-        <div className="detail-row">
-          <span className="detail-label">Mortgage</span>
-          <span>No mortgage</span>
+          ) : (
+            <div className="detail-row">
+              <span className="detail-label">Rental</span>
+              <span>Not rented</span>
+            </div>
+          )}
         </div>
-      )}
-      {property.notes && (
-        <div className="detail-row">
-          <span className="detail-label">Notes</span>
-          <span style={{ whiteSpace: "pre-wrap" }}>{property.notes}</span>
+      </details>
+
+      <details className="work" style={{ marginTop: 12 }}>
+        <summary>Mortgage</summary>
+        <div className="work-body">
+          {mortgage ? (
+            (() => {
+              const monthlyPayment = computeMonthlyPayment(mortgage.loan_amount_fils, mortgage.interest_rate_pct, mortgage.loan_term_months);
+              const elapsed = monthsElapsed(mortgage.loan_start_date, todayIso);
+              const outstanding = computeOutstandingBalance(mortgage.loan_amount_fils, mortgage.interest_rate_pct, mortgage.loan_term_months, elapsed);
+              const endDate = computeLoanEndDate(mortgage.loan_start_date, mortgage.loan_term_months);
+              return (
+                <>
+                  <div className="detail-row">
+                    <span className="detail-label">Lender</span>
+                    <span style={{ fontWeight: 600 }}>{mortgage.lender_name}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Loan amount</span>
+                    <span>{formatAedValue(mortgage.loan_amount_fils)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Interest rate</span>
+                    <span>{mortgage.interest_rate_pct}% ({mortgage.rate_type})</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Monthly payment</span>
+                    <span>{formatAedValue(monthlyPayment)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Outstanding balance</span>
+                    <span>{formatAedValue(outstanding)}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Loan period</span>
+                    <span>{formatIsoDisplay(mortgage.loan_start_date)} — {formatIsoToUae(endDate)} ({mortgage.loan_term_months / 12} years)</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Payments made</span>
+                    <span>{elapsed} of {mortgage.loan_term_months}</span>
+                  </div>
+                  {mortgage.notes && (
+                    <div className="detail-row">
+                      <span className="detail-label">Mortgage notes</span>
+                      <span style={{ whiteSpace: "pre-wrap" }}>{mortgage.notes}</span>
+                    </div>
+                  )}
+                </>
+              );
+            })()
+          ) : (
+            <div className="detail-row">
+              <span className="detail-label">Mortgage</span>
+              <span>No mortgage</span>
+            </div>
+          )}
         </div>
+      </details>
+
+      {installments.length > 0 && (
+        <details className="work" style={{ marginTop: 12 }}>
+          <summary>Installments ({installments.length})</summary>
+          <div className="work-body">
+            {hasPendingInsts && (
+              <div style={{ marginBottom: 12 }}>
+                <h4 style={{ margin: "0 0 8px" }}>Instalment Timeline</h4>
+                <AnimateChartOnScroll><InstallmentTimelineChart installments={installments} /></AnimateChartOnScroll>
+              </div>
+            )}
+            <details className="work" style={{ marginTop: 0 }}>
+              <summary>{installments.length} installment(s) — show schedule</summary>
+              <div className="work-body">
+                {installments.map((i) => {
+                  const live = installmentStatus(i, todayIso);
+                  return (
+                    <div key={i.id} style={{ marginBottom: 8 }}>
+                      {formatIsoToUae(i.due_date)} — {formatAed(i.amount_fils)}{" "}
+                      <span className={`pill ${live}`}>{live}</span>
+                      {i.milestone_label ? ` · ${i.milestone_label}` : ""}
+                      {live !== "paid" ? (
+                        <MarkPaidButton installmentId={i.id} />
+                      ) : (
+                        <MarkUnpaidButton installmentId={i.id} />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
+          </div>
+        </details>
       )}
+
       {property.is_rental && deposits.length > 0 && (
         <details className="work" style={{ marginTop: 12 }}>
-          <summary>{deposits.length} rental deposit(s) — show schedule</summary>
+          <summary>Deposits ({deposits.length})</summary>
           <div className="work-body">
             {deposits.map((d) => {
               const liveStatus = depositStatus(d, todayIso);
@@ -731,54 +835,6 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
             })}
           </div>
         </details>
-      )}
-      {property.is_rental && (
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button type="button" onClick={handleRenewContract} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px" }}>
-            Renew Contract
-          </button>
-          <button type="button" onClick={handleCancelContract} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px", background: "var(--warn)", color: "#fff" }}>
-            Cancel Contract
-          </button>
-          <button type="button" onClick={handleMarkVacant} style={{ marginTop: 0, fontSize: 12, padding: "6px 12px", background: "var(--panel-2)", color: "var(--text)" }}>
-            Mark as Vacant
-          </button>
-        </div>
-      )}
-      <button type="button" onClick={() => setShowHistory(!showHistory)} style={{ marginTop: 8, fontSize: 12, background: "var(--panel-2)", color: "var(--text)", padding: "6px 12px" }}>
-        {showHistory ? "Hide Rental History" : "View Rental History"}
-      </button>
-      {showHistory && (
-        <div style={{ marginTop: 12 }}>
-          {history.length === 0 ? (
-            <p className="muted">No rental history.</p>
-          ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Rental Value</th>
-                    <th>Contract Period</th>
-                    <th>Cheques</th>
-                    <th>Type</th>
-                    <th>End Reason</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((h) => (
-                    <tr key={h.id}>
-                      <td style={{ whiteSpace: "nowrap" }}>{formatAed(h.annual_rent_fils ?? h.short_term_annual_rent_fils ?? 0)}</td>
-                      <td style={{ whiteSpace: "nowrap" }}>{formatIsoToUae(h.contract_start_date)} — {h.contract_end_date ? formatIsoToUae(h.contract_end_date) : "Active"}</td>
-                      <td>{h.rent_cheques_per_year ?? "—"}</td>
-                      <td>{h.rental_type === "short_term" ? "Short-term" : "Long-term"}</td>
-                      <td>{h.end_reason ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
       )}
     </>
   ); }; 
@@ -1218,36 +1274,6 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
         </button>
       </div>
       {editing ? renderEditForm() : renderReadOnly()}
-      {!editing && installments.length > 0 && (
-        <>
-          {hasPendingInsts && (
-            <div style={{ marginTop: 20, marginBottom: 8 }}>
-              <h4 style={{ margin: "0 0 8px" }}>Instalment Timeline</h4>
-              <AnimateChartOnScroll><InstallmentTimelineChart installments={installments} /></AnimateChartOnScroll>
-            </div>
-          )}
-          <details className="work" style={{ marginTop: 12 }}>
-            <summary>{installments.length} installment(s) — show schedule</summary>
-            <div className="work-body">
-              {installments.map((i) => {
-                const live = installmentStatus(i, todayIso);
-                return (
-                  <div key={i.id} style={{ marginBottom: 8 }}>
-                    {formatIsoToUae(i.due_date)} — {formatAed(i.amount_fils)}{" "}
-                    <span className={`pill ${live}`}>{live}</span>
-                    {i.milestone_label ? ` · ${i.milestone_label}` : ""}
-                    {live !== "paid" ? (
-                      <MarkPaidButton installmentId={i.id} />
-                    ) : (
-                      <MarkUnpaidButton installmentId={i.id} />
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </details>
-        </>
-      )}
       {!editing && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
           <button
