@@ -335,13 +335,6 @@ export function checkLiquidityWarning(
 
 // ─── Pure date helpers (deterministic, no Date.now()) ─────────────────────
 
-/** Add `days` days to an ISO date string, returning a new ISO date string. */
-function addDays(iso: string, days: number): string {
-  const d = new Date(`${iso}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
 /** Count calendar days from startIso to endIso (inclusive of start, exclusive of end). */
 function daysBetween(startIso: string, endIso: string): number {
   const start = new Date(`${startIso}T00:00:00Z`);

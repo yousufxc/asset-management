@@ -19,7 +19,6 @@ import type {
   CashAccountUpdate,
   CommodityInput,
   CommodityUpdate,
-  RentalDepositUpdate,
   WatchlistInput,
   LandInput,
   LandUpdate,

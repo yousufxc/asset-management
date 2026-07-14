@@ -1,6 +1,6 @@
 "use client";
 
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import type { CashAccount } from "@/lib/types";
 import { splitFixedVsRegular } from "@/lib/core/cash-analytics";
 import { formatAed } from "@/lib/core/units";

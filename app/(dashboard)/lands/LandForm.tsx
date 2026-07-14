@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation";
 import { numeralOnly } from "./numeralOnly";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 
+const LAND_TYPE_LABEL: Record<string, string> = {
+  residential: "Residential",
+  commercial: "Commercial",
+  agricultural: "Agricultural",
+  industrial: "Industrial",
+  mixed_use: "Mixed Use",
+  other: "Other",
+};
+
+const today = new Date().toLocaleDateString("en-CA");
+
 function MortgageFields({ rateType, setRateType }: { rateType: string; setRateType: (v: string) => void }) {
   return (
     <div style={{ border: "1px solid var(--border)", borderRadius: 8, padding: 12, marginTop: 12 }}>
@@ -53,17 +64,6 @@ function MortgageFields({ rateType, setRateType }: { rateType: string; setRateTy
     </div>
   );
 }
-
-const LAND_TYPE_LABEL: Record<string, string> = {
-  residential: "Residential",
-  commercial: "Commercial",
-  agricultural: "Agricultural",
-  industrial: "Industrial",
-  mixed_use: "Mixed Use",
-  other: "Other",
-};
-
-const today = new Date().toLocaleDateString("en-CA");
 
 export default function LandForm() {
   const router = useRouter();

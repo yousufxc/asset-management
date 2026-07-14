@@ -17,6 +17,19 @@ import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 import ConfirmModal from "@/app/components/ConfirmModal";
 
+const dropdownBtnStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  textAlign: "left",
+  border: "none",
+  background: "transparent",
+  color: "inherit",
+  fontSize: 13,
+  cursor: "pointer",
+  padding: "4px 12px",
+  margin: 0,
+};
+
 const METAL_LABEL: Record<string, string> = {
   gold: "Gold",
   silver: "Silver",
@@ -468,16 +481,3 @@ export default function CommodityContent({
     </>
   );
 }
-
-const dropdownBtnStyle: React.CSSProperties = {
-  display: "block",
-  width: "100%",
-  textAlign: "left",
-  border: "none",
-  background: "transparent",
-  color: "inherit",
-  fontSize: 13,
-  cursor: "pointer",
-  padding: "4px 12px",
-  margin: 0,
-};

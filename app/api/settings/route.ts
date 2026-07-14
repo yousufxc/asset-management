@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAllSettings, getSetting, setSetting } from "@/lib/db/settings";
+import { getAllSettings, setSetting } from "@/lib/db/settings";
 
 const SettingsUpdateSchema = z.object({
   key: z.string().min(1),

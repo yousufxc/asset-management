@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import type { Property } from "@/lib/types";
-import { formatAed, filsToAed } from "@/lib/core/units";
+import { formatAed } from "@/lib/core/units";
 
 const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
 
