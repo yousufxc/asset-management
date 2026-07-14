@@ -123,7 +123,6 @@ export interface TimelinePoint {
 
 export function cumulativeInstallmentSchedule(
   installments: Installment[],
-  asOfIso: string,
 ): TimelinePoint[] {
   const upcoming = installments
     .filter((inst) => inst.status !== "paid" && inst.paid_date === null)

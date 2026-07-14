@@ -69,6 +69,6 @@ export interface LiquidationInput {
   haircutFraction?: number;
 }
 
-export function liquidationValueFils(_input: LiquidationInput): number {
+export function liquidationValueFils(): number {
   throw new Error("liquidationValueFils: not implemented (Phase 2)");
 }

@@ -5,6 +5,6 @@
  * paid source autonomously.
  */
 
-export async function estimatePropertyValueFils(_area: string, _sizeSqft: number): Promise<number> {
+export async function estimatePropertyValueFils(): Promise<number> {
   throw new Error("estimatePropertyValueFils: not implemented (Phase 3)");
 }

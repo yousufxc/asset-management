@@ -19,8 +19,6 @@ export default function CommodityWeightByMetalChart({ enriched }: { enriched: En
     metalType: a.metalType,
   }));
 
-  const maxGrams = Math.max(...data.map((d) => d.grams));
-
   return (
     <ResponsiveContainer width="100%" height={Math.max(200, data.length * 48)}>
       <BarChart data={data} layout="vertical" margin={{ left: 65, right: 20, top: 5, bottom: 5 }}>

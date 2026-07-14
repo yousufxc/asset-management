@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import type { Installment, Property } from "@/lib/types";
+import type { Installment } from "@/lib/types";
 import { cumulativeInstallmentSchedule } from "@/lib/core/property-analytics";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
 
@@ -11,11 +11,10 @@ const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", 
 interface Props { installments: Installment[] }
 
 export default function InstallmentTimelineChart({ installments }: Props) {
-  const today = new Date().toISOString().slice(0, 10);
   const data = useMemo(() => {
-    return cumulativeInstallmentSchedule(installments, today)
+    return cumulativeInstallmentSchedule(installments)
       .map((p) => ({ date: formatIsoToUae(p.dueDate), cumulative: p.cumulativeFils }));
-  }, [installments, today]);
+  }, [installments]);
 
   if (data.length === 0) return <p className="muted">No upcoming installments to chart.</p>;
 

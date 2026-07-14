@@ -110,7 +110,7 @@ export function computeRecommendations(
   input: RecommendationInput,
 ): Recommendation[] {
   const recs: Recommendation[] = [];
-  const { asOf, properties, cashAccounts, commodities, installments, liquidCashFils, runwayInput } = input;
+  const { asOf, properties, cashAccounts, commodities, installments, runwayInput } = input;
 
   const runway = computeRunway(runwayInput);
   const hasShortfall = runway.withinHorizon;
@@ -134,7 +134,6 @@ export function computeRecommendations(
   if (hasShortfall) {
     for (const c of validCommodities) {
       const totalFils = commodityValueMap.get(c.id)!;
-      const marginPct = computeMarginPct(c);
 
       // a) Minimal — cover only the first unpaid installment
       const firstInst = unpaid[0];

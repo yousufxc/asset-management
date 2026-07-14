@@ -282,7 +282,7 @@ describe("cumulativeInstallmentSchedule", () => {
       mkInstallment({ id: 2, due_date: "2026-06-01", amount_fils: 200_000, status: "upcoming" }),
       mkInstallment({ id: 3, due_date: "2025-01-01", amount_fils: 50_000, status: "paid", paid_date: "2025-01-01" }),
     ];
-    const schedule = cumulativeInstallmentSchedule(installments, "2026-01-01");
+    const schedule = cumulativeInstallmentSchedule(installments);
     expect(schedule).toHaveLength(2);
     expect(schedule[0]).toEqual({ dueDate: "2026-03-01", amountFils: 100_000, cumulativeFils: 100_000 });
     expect(schedule[1]).toEqual({ dueDate: "2026-06-01", amountFils: 200_000, cumulativeFils: 300_000 });
@@ -292,7 +292,7 @@ describe("cumulativeInstallmentSchedule", () => {
     const installments: Installment[] = [
       mkInstallment({ id: 1, status: "paid", paid_date: "2025-01-01" }),
     ];
-    expect(cumulativeInstallmentSchedule(installments, "2026-01-01")).toHaveLength(0);
+    expect(cumulativeInstallmentSchedule(installments)).toHaveLength(0);
   });
 });
 

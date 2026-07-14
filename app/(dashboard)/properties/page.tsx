@@ -6,7 +6,7 @@
 
 import PropertyContent from "./PropertyContent";
 import { listProperties, listAllInstallments, listAllRentalDeposits, listAllRentalHistory } from "@/lib/db/queries";
-import type { Property, RentalDeposit, RentalHistory } from "@/lib/types";
+import type { Property } from "@/lib/types";
 
 // Always read fresh from SQLite (no static caching of financial data).
 export const dynamic = "force-dynamic";

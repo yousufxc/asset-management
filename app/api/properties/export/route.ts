@@ -3,7 +3,7 @@ import ExcelJS from "exceljs";
 import { listProperties, listAllInstallments, listAllRentalHistory, listAllRentalDeposits } from "@/lib/db/queries";
 import {
   addTitleRow, styleHeaderRow, styleSectionTitle,
-  aedVal, dateVal, pctVal, str, bool, safeSheetName,
+  aedVal, dateVal, pctVal, bool, safeSheetName,
   fmtMoney, fmtDate, fmtPct, formatIsoDateToUae,
 } from "@/lib/core/excel-utils";
 import { appreciationPct, netAnnualRentFils, rentalYieldPct, totalROIPct, annualizedROIPct, effectiveAnnualRentFils } from "@/lib/core/property-analytics";

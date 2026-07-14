@@ -44,7 +44,12 @@ export async function PATCH(
     const result = markInstallmentPaid(id, data.paid_date, data.paid_amount_aed);
     if (result) {
       // If other fields were also set (e.g. notes), apply them on top
-      const { status: _, paid_date: __, paid_amount_aed: ___, ...rest } = data;
+      const rest: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(data)) {
+        if (k !== "status" && k !== "paid_date" && k !== "paid_amount_aed") {
+          rest[k] = v;
+        }
+      }
       const hasOtherFields = Object.values(rest).some((v) => v !== undefined);
       if (hasOtherFields) {
         const updated = updateInstallment(id, {
