@@ -26,8 +26,10 @@ import type {
   MortgageUpdate,
   LandMortgageInput,
   LandMortgageUpdate,
+  PropertyMaintenanceInput,
+  PropertyMaintenanceUpdate,
 } from "@/lib/ingest/validate";
-import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem, Land, Mortgage, LandMortgage } from "@/lib/types";
+import type { Property, Installment, CashAccount, Commodity, RentalHistory, RentalDeposit, WatchlistItem, Land, Mortgage, LandMortgage, PropertyMaintenance } from "@/lib/types";
 import type { EndReason } from "@/lib/types";
 import type { DepositScheduleEntry } from "@/lib/core/rental-deposits";
 
@@ -853,4 +855,68 @@ export function listLandMortgages(): LandMortgage[] {
   return getDb()
     .prepare(`SELECT * FROM land_mortgages ORDER BY created_at DESC`)
     .all() as unknown as LandMortgage[];
+}
+
+// PROPERTY MAINTENANCE ---------------------------------------------------------
+
+export function insertPropertyMaintenance(input: PropertyMaintenanceInput): PropertyMaintenance {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO property_maintenance (property_id, amount_fils, maintenance_date, notes)
+    VALUES (@property_id, @amount_fils, @maintenance_date, @notes)
+  `);
+  const info = stmt.run({
+    property_id: input.property_id,
+    amount_fils: aedToFils(input.amount_aed),
+    maintenance_date: dateOrNull(input.maintenance_date)!,
+    notes: input.notes ?? null,
+  });
+  return getDb()
+    .prepare(`SELECT * FROM property_maintenance WHERE id = ?`)
+    .get(Number(info.lastInsertRowid)) as unknown as PropertyMaintenance;
+}
+
+export function getPropertyMaintenance(id: number): PropertyMaintenance | undefined {
+  return getDb()
+    .prepare(`SELECT * FROM property_maintenance WHERE id = ?`)
+    .get(id) as unknown as PropertyMaintenance | undefined;
+}
+
+export function listMaintenanceForProperty(propertyId: number): PropertyMaintenance[] {
+  return getDb()
+    .prepare(`SELECT * FROM property_maintenance WHERE property_id = ? ORDER BY maintenance_date DESC`)
+    .all(propertyId) as unknown as PropertyMaintenance[];
+}
+
+export function listAllMaintenance(): PropertyMaintenance[] {
+  return getDb()
+    .prepare(`SELECT * FROM property_maintenance ORDER BY maintenance_date DESC`)
+    .all() as unknown as PropertyMaintenance[];
+}
+
+export function updatePropertyMaintenance(id: number, data: PropertyMaintenanceUpdate): PropertyMaintenance | undefined {
+  const db = getDb();
+  const sets: string[] = [];
+  const params: Record<string, SQLInputValue> = { id };
+
+  if (data.amount_aed !== undefined) { sets.push("amount_fils = @amount_fils"); params.amount_fils = aedToFils(data.amount_aed); }
+  if (data.maintenance_date !== undefined) { sets.push("maintenance_date = @maintenance_date"); params.maintenance_date = dateOrNull(data.maintenance_date); }
+  if (data.notes !== undefined) { sets.push("notes = @notes"); params.notes = data.notes; }
+
+  if (sets.length === 0) return getPropertyMaintenance(id);
+
+  sets.push("updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')");
+  db.prepare(`UPDATE property_maintenance SET ${sets.join(", ")} WHERE id = @id`).run(params);
+  return getPropertyMaintenance(id);
+}
+
+export function deletePropertyMaintenance(id: number): void {
+  getDb().prepare(`DELETE FROM property_maintenance WHERE id = ?`).run(id);
+}
+
+export function totalMaintenanceForPropertyFils(propertyId: number): number {
+  const row = getDb()
+    .prepare(`SELECT COALESCE(SUM(amount_fils), 0) AS total FROM property_maintenance WHERE property_id = ?`)
+    .get(propertyId) as { total: number } | undefined;
+  return row?.total ?? 0;
 }

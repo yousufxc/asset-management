@@ -11,8 +11,10 @@ import {
   cumulativeInstallmentSchedule,
   totalROIPct,
   annualizedROIPct,
+  totalMaintenanceFils,
+  yearlyMaintenanceBuckets,
 } from "@/lib/core/property-analytics";
-import type { Property, Installment } from "@/lib/types";
+import type { Property, Installment, PropertyMaintenance } from "@/lib/types";
 
 function mkProperty(overrides: Partial<Property> = {}): Property {
   return {
@@ -405,5 +407,129 @@ describe("annualizedROIPct", () => {
     // Snapshot: (200k + 160k) / 1M * 100 = 36%
     expect(annualizedROIPct(p, asOf)).toBeCloseTo(25.54, 1);
     expect(totalROIPct(p)).toBeCloseTo(36, 2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Maintenance tests
+// ---------------------------------------------------------------------------
+function mkMaintenance(overrides: Partial<PropertyMaintenance> = {}): PropertyMaintenance {
+  return {
+    id: 1,
+    property_id: 1,
+    amount_fils: 50_000,
+    maintenance_date: "2025-06-15",
+    notes: null,
+    created_at: "2025-06-15T00:00:00Z",
+    updated_at: "2025-06-15T00:00:00Z",
+    ...overrides,
+  };
+}
+
+describe("totalMaintenanceFils", () => {
+  it("returns 0 for empty array", () => {
+    expect(totalMaintenanceFils([])).toBe(0);
+  });
+
+  it("sums all maintenance entries", () => {
+    const entries = [
+      mkMaintenance({ amount_fils: 50_000 }),
+      mkMaintenance({ id: 2, amount_fils: 30_000 }),
+      mkMaintenance({ id: 3, amount_fils: 20_000 }),
+    ];
+    expect(totalMaintenanceFils(entries)).toBe(100_000);
+  });
+});
+
+describe("yearlyMaintenanceBuckets", () => {
+  it("returns empty for no entries", () => {
+    expect(yearlyMaintenanceBuckets([])).toEqual([]);
+  });
+
+  it("groups entries by year", () => {
+    const entries = [
+      mkMaintenance({ maintenance_date: "2024-03-01", amount_fils: 10_000 }),
+      mkMaintenance({ id: 2, maintenance_date: "2024-08-15", amount_fils: 20_000 }),
+      mkMaintenance({ id: 3, maintenance_date: "2025-01-10", amount_fils: 30_000 }),
+      mkMaintenance({ id: 4, maintenance_date: "2025-06-20", amount_fils: 40_000 }),
+    ];
+    const buckets = yearlyMaintenanceBuckets(entries);
+    expect(buckets).toHaveLength(2);
+    const y2024 = buckets.find((b) => b.year === "2024")!;
+    const y2025 = buckets.find((b) => b.year === "2025")!;
+    expect(y2024.totalFils).toBe(30_000);
+    expect(y2024.count).toBe(2);
+    expect(y2025.totalFils).toBe(70_000);
+    expect(y2025.count).toBe(2);
+  });
+
+  it("returns buckets sorted by year", () => {
+    const entries = [
+      mkMaintenance({ maintenance_date: "2025-01-01", amount_fils: 1 }),
+      mkMaintenance({ id: 2, maintenance_date: "2023-01-01", amount_fils: 2 }),
+    ];
+    const buckets = yearlyMaintenanceBuckets(entries);
+    expect(buckets[0]!.year).toBe("2023");
+    expect(buckets[1]!.year).toBe("2025");
+  });
+});
+
+describe("totalROIPct with maintenance", () => {
+  it("deducts maintenance from total ROI", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      is_rental: 1,
+      rental_type: "long_term",
+      annual_rent_fils: 100_000,
+    });
+    // No maintenance: ((200k + 100k) / 1M) * 100 = 30%
+    expect(totalROIPct(p, [])).toBeCloseTo(30, 2);
+    // With 50k maintenance: ((200k + 100k - 50k) / 1M) * 100 = 25%
+    expect(totalROIPct(p, [mkMaintenance({ amount_fils: 50_000 })])).toBeCloseTo(25, 2);
+  });
+
+  it("returns null when purchase price is missing", () => {
+    const p = mkProperty({ purchase_price_fils: null });
+    expect(totalROIPct(p)).toBeNull();
+  });
+
+  it("works without maintenance parameter (backward compat)", () => {
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      is_rental: 1,
+      annual_rent_fils: 100_000,
+    });
+    expect(totalROIPct(p)).toBeCloseTo(30, 2);
+  });
+});
+
+describe("annualizedROIPct with maintenance", () => {
+  it("deducts maintenance from annualized ROI", () => {
+    const asOf = "2026-01-15";
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      purchased_at: "2024-01-01",
+      is_rental: 1,
+      rental_type: "long_term",
+      annual_rent_fils: 100_000,
+    });
+    const without = annualizedROIPct(p, asOf, []);
+    const withMaint = annualizedROIPct(p, asOf, [mkMaintenance({ amount_fils: 100_000 })]);
+    expect(withMaint).not.toBeNull();
+    expect(without).not.toBeNull();
+    expect(withMaint!).toBeLessThan(without!);
+  });
+
+  it("works without maintenance parameter (backward compat)", () => {
+    const asOf = "2026-01-15";
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      purchased_at: "2024-01-01",
+    });
+    expect(annualizedROIPct(p, asOf)).not.toBeNull();
   });
 });

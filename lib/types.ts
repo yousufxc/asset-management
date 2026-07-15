@@ -185,6 +185,16 @@ export interface LandMortgage {
   updated_at: string;
 }
 
+export interface PropertyMaintenance {
+  id: number;
+  property_id: number;
+  amount_fils: number;
+  maintenance_date: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Land {
   id: number;
   name: string;

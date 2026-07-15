@@ -239,6 +239,21 @@ ALTER TABLE cash_accounts ADD COLUMN fixed_deposit_start_date TEXT;
 ALTER TABLE properties ADD COLUMN contract_start_date TEXT;
 ALTER TABLE commodities ADD COLUMN target_sell_price_per_unit_fils INTEGER CHECK (target_sell_price_per_unit_fils IS NULL OR target_sell_price_per_unit_fils >= 0);
 
+-- ----------------------------------------------------------------------------
+-- PROPERTY MAINTENANCE — per-property maintenance expense log.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS property_maintenance (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  property_id      INTEGER NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
+  amount_fils      INTEGER NOT NULL CHECK (amount_fils >= 0),
+  maintenance_date TEXT    NOT NULL,                    -- ISO 'YYYY-MM-DD'
+  notes            TEXT,
+  created_at       TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+  updated_at       TEXT    NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+CREATE INDEX IF NOT EXISTS idx_property_maintenance_property ON property_maintenance(property_id);
+CREATE INDEX IF NOT EXISTS idx_property_maintenance_date    ON property_maintenance(maintenance_date);
+
 DROP VIEW IF EXISTS v_properties;
 CREATE VIEW IF NOT EXISTS v_properties AS
   SELECT id, name, subcategory, property_type, bedrooms, city, area, developer, size_sqft, size_unit,
@@ -358,3 +373,8 @@ CREATE VIEW IF NOT EXISTS v_land_mortgages AS
   SELECT id, land_id, loan_amount_fils, interest_rate_pct, rate_type,
          loan_start_date, loan_term_months, lender_name
   FROM land_mortgages;
+
+DROP VIEW IF EXISTS v_property_maintenance;
+CREATE VIEW IF NOT EXISTS v_property_maintenance AS
+  SELECT id, property_id, amount_fils, maintenance_date, notes
+  FROM property_maintenance;
