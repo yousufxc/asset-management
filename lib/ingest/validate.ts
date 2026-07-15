@@ -28,8 +28,12 @@ const dateString = z
 const noFutureDate = dateString.refine(
   (v) => {
     try {
-      const today = new Date().toISOString().slice(0, 10);
-      return parseDateToIso(v) <= today;
+      const d = parseDateToIso(v);
+      const now = new Date();
+      const tomorrowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
+        .toISOString()
+        .slice(0, 10);
+      return d < tomorrowUtc;
     } catch {
       return false;
     }
@@ -234,7 +238,6 @@ export const CommodityInputSchema = z.object({
   bought_price_per_unit_aed: aedAmount,
   target_sell_price_per_unit_aed: aedAmount.optional().nullable(),
   purchase_date: noFutureDate,
-  current_price_date: noFutureDate.optional().nullable(),
   notes: z.string().optional().nullable(),
 });
 export type CommodityInput = z.infer<typeof CommodityInputSchema>;

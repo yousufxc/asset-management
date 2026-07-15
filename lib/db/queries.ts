@@ -357,7 +357,7 @@ export function insertCommodity(input: CommodityInput): Commodity {
     bought_price_per_unit_fils: aedToFils(input.bought_price_per_unit_aed),
     target_sell_price_per_unit_fils: aedOrNull(input.target_sell_price_per_unit_aed),
     purchase_date: dateOrNull(input.purchase_date)!,
-    current_price_date: dateOrNull(input.current_price_date),
+    current_price_date: new Date().toISOString().slice(0, 10),
     notes: input.notes ?? null,
   });
   return getDb()
