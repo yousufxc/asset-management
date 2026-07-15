@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db/client";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { Property, CashAccount, Commodity, Installment, Land } from "@/lib/types";
+import type { Property, CashAccount, Commodity, Installment, Land, PropertyMaintenance } from "@/lib/types";
 
 const DEFAULTS: Record<string, string> = {
   runwayHorizonDays: "90",
@@ -62,6 +62,7 @@ export interface AllDataExport {
   commodities: Commodity[];
   lands: Land[];
   installments: Installment[];
+  maintenance: PropertyMaintenance[];
   settings: Record<string, string>;
 }
 
@@ -90,6 +91,15 @@ export function getAllData(): AllDataExport {
     installments: db
       .prepare("SELECT * FROM installments ORDER BY id")
       .all() as unknown as Installment[],
+    maintenance: (() => {
+      try {
+        return db
+          .prepare("SELECT * FROM property_maintenance ORDER BY id")
+          .all() as unknown as PropertyMaintenance[];
+      } catch {
+        return [] as PropertyMaintenance[];
+      }
+    })(),
     settings: Object.fromEntries(
       Object.entries(getAllSettings()).filter(([k]) => !SECRET_SETTING_KEYS.has(k)),
     ),
@@ -113,6 +123,7 @@ export function exportToDisk(): string {
 
 const DATA_TABLES = [
   "installments",
+  "property_maintenance",
   "transactions",
   "statements",
   "properties",
@@ -137,7 +148,7 @@ export function resetAllData(): void {
 
 export function getTableCounts(): Record<string, number> {
   const db = getDb();
-  const tables = ["properties", "cash_accounts", "commodities", "lands", "installments"];
+  const tables = ["properties", "cash_accounts", "commodities", "lands", "installments", "property_maintenance"];
   const result: Record<string, number> = {};
   for (const table of tables) {
     try {
