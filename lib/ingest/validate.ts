@@ -110,6 +110,24 @@ export const PropertyUpdateSchema = z.object({
 export type PropertyUpdate = z.infer<typeof PropertyUpdateSchema>;
 
 // ---------------------------------------------------------------------------
+// PROPERTY MAINTENANCE
+// ---------------------------------------------------------------------------
+export const PropertyMaintenanceInputSchema = z.object({
+  property_id: z.number().int().positive(),
+  amount_aed: aedAmount,
+  maintenance_date: noFutureDate,
+  notes: z.string().optional().nullable(),
+});
+export type PropertyMaintenanceInput = z.infer<typeof PropertyMaintenanceInputSchema>;
+
+export const PropertyMaintenanceUpdateSchema = z.object({
+  amount_aed: aedAmount.optional(),
+  maintenance_date: noFutureDate.optional(),
+  notes: z.string().optional().nullable(),
+});
+export type PropertyMaintenanceUpdate = z.infer<typeof PropertyMaintenanceUpdateSchema>;
+
+// ---------------------------------------------------------------------------
 // MORTGAGE
 // ---------------------------------------------------------------------------
 export const MortgageInputSchema = z.object({

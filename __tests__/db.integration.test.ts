@@ -64,3 +64,60 @@ describe("transaction dedup at the DB level (rule 2.2)", () => {
     ); // cosmetic variant still a duplicate
   });
 });
+
+describe("property maintenance", () => {
+  it("inserts, reads, updates, and deletes a maintenance entry", async () => {
+    const q = await import("@/lib/db/queries");
+
+    const prop = q.insertProperty({
+      name: "Test Property",
+      subcategory: "existing",
+      size_unit: "sqft",
+      is_rental: false,
+    });
+
+    const entry = q.insertPropertyMaintenance({
+      property_id: prop.id,
+      amount_aed: 500,
+      maintenance_date: "2025-06-15",
+      notes: "Plumbing repair",
+    });
+    expect(entry.amount_fils).toBe(50_000);
+    expect(entry.maintenance_date).toBe("2025-06-15");
+    expect(entry.notes).toBe("Plumbing repair");
+
+    const list = q.listMaintenanceForProperty(prop.id);
+    expect(list).toHaveLength(1);
+    expect(list[0]!.amount_fils).toBe(50_000);
+
+    const updated = q.updatePropertyMaintenance(entry.id, { amount_aed: 750 });
+    expect(updated!.amount_fils).toBe(75_000);
+
+    const total = q.totalMaintenanceForPropertyFils(prop.id);
+    expect(total).toBe(75_000);
+
+    q.deletePropertyMaintenance(entry.id);
+    expect(q.listMaintenanceForProperty(prop.id)).toHaveLength(0);
+  });
+
+  it("cascade deletes maintenance when property is removed", async () => {
+    const q = await import("@/lib/db/queries");
+
+    const prop = q.insertProperty({
+      name: "Cascade Test",
+      subcategory: "existing",
+      size_unit: "sqft",
+      is_rental: false,
+    });
+
+    q.insertPropertyMaintenance({
+      property_id: prop.id,
+      amount_aed: 100,
+      maintenance_date: "2025-01-01",
+    });
+
+    q.deleteProperty(prop.id);
+    const all = q.listAllMaintenance();
+    expect(all.filter((m) => m.property_id === prop.id)).toHaveLength(0);
+  });
+});

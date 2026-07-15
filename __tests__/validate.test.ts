@@ -3,6 +3,8 @@ import {
   InstallmentInputSchema,
   PropertyInputSchema,
   TitleDeedExtractSchema,
+  PropertyMaintenanceInputSchema,
+  PropertyMaintenanceUpdateSchema,
 } from "@/lib/ingest/validate";
 
 describe("dateString validation accepts both ISO and UAE formats", () => {
@@ -167,5 +169,70 @@ describe("TitleDeedExtractSchema: Claude output gate + date normalisation", () =
     });
     expect(r.success).toBe(true);
     if (r.success) expect(r.data.purchased_at).toBe("2023-06-15");
+  });
+});
+
+describe("PropertyMaintenanceInputSchema", () => {
+  it("accepts valid input", () => {
+    const r = PropertyMaintenanceInputSchema.safeParse({
+      property_id: 1,
+      amount_aed: 500,
+      maintenance_date: "2025-06-15",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts date in UAE format", () => {
+    const r = PropertyMaintenanceInputSchema.safeParse({
+      property_id: 1,
+      amount_aed: 500,
+      maintenance_date: "15/06/2025",
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it("rejects future date", () => {
+    const r = PropertyMaintenanceInputSchema.safeParse({
+      property_id: 1,
+      amount_aed: 500,
+      maintenance_date: "2099-01-01",
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("rejects negative amount", () => {
+    const r = PropertyMaintenanceInputSchema.safeParse({
+      property_id: 1,
+      amount_aed: -100,
+      maintenance_date: "2025-06-15",
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it("accepts optional notes", () => {
+    const r = PropertyMaintenanceInputSchema.safeParse({
+      property_id: 1,
+      amount_aed: 500,
+      maintenance_date: "2025-06-15",
+      notes: "AC repair",
+    });
+    expect(r.success).toBe(true);
+  });
+});
+
+describe("PropertyMaintenanceUpdateSchema", () => {
+  it("accepts partial update with just amount", () => {
+    const r = PropertyMaintenanceUpdateSchema.safeParse({ amount_aed: 1000 });
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts empty object (no changes)", () => {
+    const r = PropertyMaintenanceUpdateSchema.safeParse({});
+    expect(r.success).toBe(true);
+  });
+
+  it("accepts notes set to null", () => {
+    const r = PropertyMaintenanceUpdateSchema.safeParse({ notes: null });
+    expect(r.success).toBe(true);
   });
 });

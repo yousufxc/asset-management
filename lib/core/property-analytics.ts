@@ -5,7 +5,7 @@
  * NaN or Infinity. All money types are integer fils — never AED in logic.
  */
 
-import type { Property, Installment } from "@/lib/types";
+import type { Property, Installment, PropertyMaintenance } from "@/lib/types";
 
 // ---------------------------------------------------------------------------
 // Rent helpers
@@ -279,27 +279,57 @@ export function projectCashFlow(
 // ROI metrics
 // ---------------------------------------------------------------------------
 
+/** Sum of all maintenance expenses for a property. */
+export function totalMaintenanceFils(maintenance: PropertyMaintenance[]): number {
+  return maintenance.reduce((sum, m) => sum + m.amount_fils, 0);
+}
+
+/** Build yearly maintenance buckets for charting. */
+export interface YearlyMaintenanceBucket {
+  year: string;
+  totalFils: number;
+  count: number;
+}
+
+export function yearlyMaintenanceBuckets(maintenance: PropertyMaintenance[]): YearlyMaintenanceBucket[] {
+  const map = new Map<string, { totalFils: number; count: number }>();
+  for (const m of maintenance) {
+    const year = m.maintenance_date.slice(0, 4);
+    const entry = map.get(year) ?? { totalFils: 0, count: 0 };
+    entry.totalFils += m.amount_fils;
+    entry.count += 1;
+    map.set(year, entry);
+  }
+  const buckets: YearlyMaintenanceBucket[] = [];
+  for (const [year, data] of map) {
+    buckets.push({ year, totalFils: data.totalFils, count: data.count });
+  }
+  buckets.sort((a, b) => a.year.localeCompare(b.year));
+  return buckets;
+}
+
 /**
- * Total ROI snapshot: capital appreciation + this year's net rental income as a
- * percentage of purchase price. Uses netAnnualRentFils (defaults to 0 when
+ * Total ROI snapshot: capital appreciation + this year's net rental income - maintenance
+ * as a percentage of purchase price. Uses netAnnualRentFils (defaults to 0 when
  * property is not rented). Returns null when purchase price or current value
  * is missing/zero.
  */
-export function totalROIPct(p: Property): number | null {
+export function totalROIPct(p: Property, maintenance?: PropertyMaintenance[]): number | null {
   const purchase = p.purchase_price_fils;
   const current = p.current_value_fils;
   if (purchase === null || current === null || purchase <= 0) return null;
   const netRent = netAnnualRentFils(p) ?? 0;
-  return ((current - purchase + netRent) / purchase) * 100;
+  const maintenanceFils = maintenance ? totalMaintenanceFils(maintenance) : 0;
+  return ((current - purchase + netRent - maintenanceFils) / purchase) * 100;
 }
 
 /**
- * Annualized ROI: time-weighted capital appreciation plus rental yield.
+ * Annualized ROI: time-weighted capital appreciation plus rental yield minus maintenance.
  * Requires purchased_at to compute holding period. Falls back to totalROIPct
  * when purchased_at is missing. Returns null when purchase price or current
  * value is missing/zero.
  */
-export function annualizedROIPct(p: Property, asOfIso: string): number | null {
+export function annualizedROIPct(p: Property, asOfIso: string, maintenance?: PropertyMaintenance[]): number | null {
   const purchase = p.purchase_price_fils;
   const current = p.current_value_fils;
   if (purchase === null || current === null || purchase <= 0) return null;
@@ -310,7 +340,9 @@ export function annualizedROIPct(p: Property, asOfIso: string): number | null {
   const annualizedAppreciation = (Math.pow(current / purchase, 1 / yearsHeld) - 1) * 100;
   const netRent = netAnnualRentFils(p) ?? 0;
   const yieldPct = purchase > 0 ? (netRent / purchase) * 100 : 0;
-  return annualizedAppreciation + yieldPct;
+  const maintenanceFils = maintenance ? totalMaintenanceFils(maintenance) : 0;
+  const maintenancePct = purchase > 0 ? (maintenanceFils / purchase) * 100 : 0;
+  return annualizedAppreciation + yieldPct - maintenancePct;
 }
 
 // ---------------------------------------------------------------------------

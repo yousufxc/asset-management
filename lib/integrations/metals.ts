@@ -13,6 +13,7 @@
 export interface SpotPrice {
   metal: string;
   pricePerGramAed: number;
+  pricePerOunceAed: number;
 }
 
 export interface SpotPriceResult {
@@ -82,7 +83,8 @@ export async function fetchSpotPrices(): Promise<SpotPriceResult> {
       const priceUsdPerOz = metalResults[i];
       if (priceUsdPerOz == null) continue;
       const pricePerGramAed = Math.round((priceUsdPerOz / GRAMS_PER_TROY_OZ) * aedPerUsd * 100) / 100;
-      prices.push({ metal: METALS[i]!.metal, pricePerGramAed });
+      const pricePerOunceAed = Math.round(priceUsdPerOz * aedPerUsd * 100) / 100;
+      prices.push({ metal: METALS[i]!.metal, pricePerGramAed, pricePerOunceAed });
     }
 
     const result: SpotPriceResult = {

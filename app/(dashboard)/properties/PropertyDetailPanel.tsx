@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Property, Installment, RentalDeposit, RentalHistory, Mortgage } from "@/lib/types";
+import type { Property, Installment, RentalDeposit, RentalHistory, Mortgage, PropertyMaintenance } from "@/lib/types";
 import { filsToAed, formatIsoToUae, formatAed, parseDateToIso } from "@/lib/core/units";
-import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry, totalROIPct, annualizedROIPct } from "@/lib/core/property-analytics";
+import { pricePerSqftFils, rentalYieldPct, equityFils, instalmentProgressPct, daysUntilContractExpiry, totalROIPct, annualizedROIPct, totalMaintenanceFils } from "@/lib/core/property-analytics";
 import { installmentStatus } from "@/lib/core/installments";
 import { depositStatus } from "@/lib/core/rental-deposits";
 import { computeMonthlyPayment, computeOutstandingBalance, computeLoanEndDate, monthsElapsed } from "@/lib/core/mortgage";
@@ -14,6 +14,7 @@ import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
 import { MarkDepositedButton, MarkPendingButton } from "./DepositActions";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
+import PropertyMaintenanceChart from "./charts/PropertyMaintenanceChart";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -52,7 +53,7 @@ function aedInputOrEmpty(fils: number | null): string {
 }
 
 
-export default function PropertyDetailPanel({ property, installments, deposits, history }: { property: Property; installments: Installment[]; deposits: RentalDeposit[]; history: RentalHistory[] }) {
+export default function PropertyDetailPanel({ property, installments, deposits, history, maintenance }: { property: Property; installments: Installment[]; deposits: RentalDeposit[]; history: RentalHistory[]; maintenance: PropertyMaintenance[] }) {
   const router = useRouter();
   const todayIso = new Date().toISOString().slice(0, 10);
   const [editing, setEditing] = useState(false);
@@ -62,6 +63,8 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
   const [saving, setSaving] = useState(false);
 
   const [removing, setRemoving] = useState(false);
+
+  const [editMaint, setEditMaint] = useState<Record<number, { maintenance_date: string; amount_aed: string; notes: string }>>({});
 
   const [editInsts, setEditInsts] = useState<Record<number, { due_date: string; amount_aed: string; milestone_label: string }>>({});
 
@@ -78,6 +81,20 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
       setEditInsts(map);
     }
   }, [editing, property.subcategory]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (editing) {
+      const map: Record<number, { maintenance_date: string; amount_aed: string; notes: string }> = {};
+      for (const m of maintenance) {
+        map[m.id] = {
+          maintenance_date: m.maintenance_date,
+          amount_aed: m.amount_fils != null ? filsToAed(m.amount_fils).toString() : "",
+          notes: m.notes ?? "",
+        };
+      }
+      setEditMaint(map);
+    }
+  }, [editing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [editSubcategory, setEditSubcategory] = useState<string>(property.subcategory);
   const [editIsRental, setEditIsRental] = useState(!!property.is_rental);
@@ -471,14 +488,73 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
     router.refresh();
   }
 
+  async function handleSaveMaintenance(maintId: number) {
+    const data = editMaint[maintId];
+    if (!data) return;
+    try {
+      parseDateToIso(data.maintenance_date);
+    } catch {
+      setError("Invalid date format for maintenance.");
+      return;
+    }
+    const amount = Number(data.amount_aed);
+    if (!Number.isFinite(amount) || amount < 0) {
+      setError("Invalid amount for maintenance.");
+      return;
+    }
+    const res = await fetch(`/api/maintenance/${maintId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount_aed: amount,
+        maintenance_date: data.maintenance_date,
+        notes: data.notes || null,
+      }),
+    });
+    if (!res.ok) {
+      setError("Failed to save maintenance entry.");
+      return;
+    }
+    setError(null);
+    router.refresh();
+  }
+
+  async function handleDeleteMaintenance(maintId: number) {
+    if (!confirm("Delete this maintenance entry?")) return;
+    const res = await fetch(`/api/maintenance/${maintId}`, { method: "DELETE" });
+    if (!res.ok) {
+      setError("Failed to delete maintenance entry.");
+      return;
+    }
+    router.refresh();
+  }
+
+  async function handleAddMaintenance() {
+    const res = await fetch(`/api/properties/${property.id}/maintenance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        property_id: property.id,
+        amount_aed: 0,
+        maintenance_date: new Date().toISOString().slice(0, 10),
+      }),
+    });
+    if (!res.ok) {
+      setError("Failed to add maintenance entry.");
+      return;
+    }
+    router.refresh();
+  }
+
   const renderReadOnly = () => {
     const sqftFils = pricePerSqftFils(property);
     const ryPct = rentalYieldPct(property);
     const equity = equityFils(property, installments);
     const instProgress = instalmentProgressPct(installments);
     const contractDays = daysUntilContractExpiry(property, todayIso);
-    const snapshotROI = totalROIPct(property);
-    const annualizedROI = annualizedROIPct(property, todayIso);
+    const snapshotROI = totalROIPct(property, maintenance);
+    const annualizedROI = annualizedROIPct(property, todayIso, maintenance);
+    const maintenanceTotal = totalMaintenanceFils(maintenance);
     const hasPendingInsts = installments.some((i) => i.status !== "paid" && i.paid_date === null);
     return (
     <>
@@ -809,6 +885,31 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
           </div>
         </details>
       )}
+
+      <details className="work" style={{ marginTop: 12 }}>
+        <summary>Maintenance ({maintenance.length})</summary>
+        <div className="work-body">
+          {maintenance.length === 0 ? (
+            <p className="muted">No maintenance recorded.</p>
+          ) : (
+            <>
+              <div style={{ marginBottom: 8 }}>
+                <div className="detail-row">
+                  <span className="detail-label">Total Maintenance</span>
+                  <span>{formatAedValue(maintenanceTotal)}</span>
+                </div>
+              </div>
+              <AnimateChartOnScroll><PropertyMaintenanceChart maintenance={maintenance} /></AnimateChartOnScroll>
+              {maintenance.map((m) => (
+                <div key={m.id} style={{ marginBottom: 8 }}>
+                  {formatIsoToUae(m.maintenance_date)} — {formatAed(m.amount_fils)}
+                  {m.notes ? <span className="muted" style={{ fontSize: 12 }}> · {m.notes}</span> : null}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </details>
 
       {property.is_rental && deposits.length > 0 && (
         <details className="work" style={{ marginTop: 12 }}>
@@ -1236,6 +1337,76 @@ export default function PropertyDetailPanel({ property, installments, deposits, 
           </button>
         </>
       )}
+      <h4 style={{ marginTop: 16, marginBottom: 8 }}>Maintenance</h4>
+      {maintenance.length === 0 ? (
+        <p className="muted" style={{ fontSize: 13 }}>No maintenance recorded.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {maintenance.map((m) => {
+            const ed = editMaint[m.id] ?? { maintenance_date: m.maintenance_date, amount_aed: m.amount_fils != null ? filsToAed(m.amount_fils).toString() : "", notes: m.notes ?? "" };
+            return (
+              <div key={m.id} style={{ display: "flex", gap: 8, alignItems: "flex-end", padding: "6px 0", borderBottom: "1px solid var(--border)", flexWrap: "wrap" }}>
+                <div style={{ minWidth: 130 }}>
+                  <label style={{ fontSize: 11, margin: "0 0 2px" }}>Date</label>
+                  <input
+                    type="date"
+                    max={todayIso}
+                    value={ed.maintenance_date}
+                    onChange={(e) => setEditMaint((prev) => ({ ...prev, [m.id]: { ...prev[m.id] ?? ed, maintenance_date: e.target.value } }))}
+                    style={{ fontSize: 12, padding: "4px 6px" }}
+                  />
+                </div>
+                <div style={{ minWidth: 110 }}>
+                  <label style={{ fontSize: 11, margin: "0 0 2px" }}>Amount (AED)</label>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={ed.amount_aed ?? ""}
+                    onKeyDown={numeralOnly}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || /^\d+(\.\d*)?$/.test(val)) {
+                        setEditMaint((prev) => ({ ...prev, [m.id]: { ...prev[m.id] ?? ed, amount_aed: val } }));
+                      }
+                    }}
+                    style={{ fontSize: 12, padding: "4px 6px" }}
+                  />
+                </div>
+                <div style={{ minWidth: 140, flex: 1 }}>
+                  <label style={{ fontSize: 11, margin: "0 0 2px" }}>Notes</label>
+                  <input
+                    type="text"
+                    value={ed.notes ?? ""}
+                    onChange={(e) => setEditMaint((prev) => ({ ...prev, [m.id]: { ...prev[m.id] ?? ed, notes: e.target.value } }))}
+                    style={{ fontSize: 12, padding: "4px 6px" }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSaveMaintenance(m.id)}
+                  style={{ marginTop: 0, fontSize: 11, padding: "4px 10px" }}
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDeleteMaintenance(m.id)}
+                  style={{ marginTop: 0, fontSize: 11, padding: "4px 10px", background: "var(--bad)", color: "#fff" }}
+                >
+                  Del
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={handleAddMaintenance}
+        style={{ marginTop: 8, fontSize: 12, background: "var(--panel-2)", color: "var(--text)", padding: "6px 12px" }}
+      >
+        + Add maintenance
+      </button>
       {error && <p style={{ color: "var(--bad)" }}>{error}</p>}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 14 }}>
         <button

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 interface MetalPrice {
   metal: string;
   pricePerGramAed: number;
+  pricePerOunceAed: number;
 }
 
 const METAL_LABELS: Record<string, string> = {
@@ -33,7 +34,7 @@ export default function MarketTicker() {
   if (loading) {
     return (
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Live Spot Prices</h3>
+        <h3 style={{ marginBottom: 12 }}>Commodities Live Spot Prices</h3>
         <span className="muted">Loading market data...</span>
       </div>
     );
@@ -42,7 +43,7 @@ export default function MarketTicker() {
   if (error || prices.length === 0) {
     return (
       <div className="card">
-        <h3 style={{ marginBottom: 12 }}>Live Spot Prices</h3>
+        <h3 style={{ marginBottom: 12 }}>Commodities Live Spot Prices</h3>
         <span className="muted">Market data temporarily unavailable</span>
       </div>
     );
@@ -50,7 +51,7 @@ export default function MarketTicker() {
 
   return (
     <div className="card">
-      <h3 style={{ marginBottom: 12 }}>Live Spot Prices</h3>
+      <h3 style={{ marginBottom: 12 }}>Commodities Live Spot Prices</h3>
       <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "center" }}>
         {prices.map((p) => (
           <div key={p.metal} style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -58,7 +59,7 @@ export default function MarketTicker() {
               {METAL_LABELS[p.metal] ?? p.metal}
             </span>
             <span style={{ fontWeight: 700, fontSize: 16 }}>
-              AED {p.pricePerGramAed.toFixed(2)}<span className="muted" style={{ fontSize: 12 }}>/g</span>
+              AED {p.pricePerOunceAed.toFixed(2)}<span className="muted" style={{ fontSize: 12 }}>/oz</span>
             </span>
           </div>
         ))}
