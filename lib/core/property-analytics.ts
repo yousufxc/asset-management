@@ -340,8 +340,11 @@ export function annualizedROIPct(p: Property, asOfIso: string, maintenance?: Pro
   const annualizedAppreciation = (Math.pow(current / purchase, 1 / yearsHeld) - 1) * 100;
   const netRent = netAnnualRentFils(p) ?? 0;
   const yieldPct = purchase > 0 ? (netRent / purchase) * 100 : 0;
+  // Maintenance is a lifetime total; spread it across the holding period so the
+  // drag is per-annum, consistent with the annualized appreciation and yield terms.
   const maintenanceFils = maintenance ? totalMaintenanceFils(maintenance) : 0;
-  const maintenancePct = purchase > 0 ? (maintenanceFils / purchase) * 100 : 0;
+  const annualMaintenanceFils = maintenanceFils / yearsHeld;
+  const maintenancePct = purchase > 0 ? (annualMaintenanceFils / purchase) * 100 : 0;
   return annualizedAppreciation + yieldPct - maintenancePct;
 }
 

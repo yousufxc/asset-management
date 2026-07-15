@@ -523,6 +523,22 @@ describe("annualizedROIPct with maintenance", () => {
     expect(withMaint!).toBeLessThan(without!);
   });
 
+  it("annualizes the maintenance drag over the holding period", () => {
+    // Held 2024-01-01 → 2026-01-15 = 745 days = 2.0397 years.
+    // Maintenance 100k on a 1M purchase = 10% lifetime, but the annualized drag
+    // must be spread over the holding period: 10 / 2.0397 ≈ 4.903 points/year.
+    const asOf = "2026-01-15";
+    const p = mkProperty({
+      purchase_price_fils: 1_000_000,
+      current_value_fils: 1_200_000,
+      purchased_at: "2024-01-01",
+    });
+    const without = annualizedROIPct(p, asOf, [])!;
+    const withMaint = annualizedROIPct(p, asOf, [mkMaintenance({ amount_fils: 100_000 })])!;
+    const yearsHeld = 745 / 365.25;
+    expect(without - withMaint).toBeCloseTo((10 / yearsHeld), 4);
+  });
+
   it("works without maintenance parameter (backward compat)", () => {
     const asOf = "2026-01-15";
     const p = mkProperty({
