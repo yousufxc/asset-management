@@ -74,7 +74,6 @@ export default function CommodityForm() {
       bought_price_per_unit_aed: numOrNull("bought_price_per_unit_aed"),
       target_sell_price_per_unit_aed: numOrNull("target_sell_price_per_unit_aed"),
       purchase_date: strOrNull("purchase_date"),
-      current_price_date: today,
       notes: strOrNull("notes"),
     };
 
