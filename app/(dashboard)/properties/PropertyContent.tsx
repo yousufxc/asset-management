@@ -295,7 +295,7 @@ export default function PropertyContent({
             )}
             <AnimateChartOnScroll><CapitalAppreciationChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><AnimateChartOnScroll><PortfolioROIChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><AnimateChartOnScroll><PortfolioROIChart properties={properties} maintenance={maintenance} /></AnimateChartOnScroll></div></AnimateOnScroll>
           <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><AnimateChartOnScroll><PortfolioCompositionChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>

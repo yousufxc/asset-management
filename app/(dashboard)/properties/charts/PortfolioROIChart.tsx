@@ -2,28 +2,39 @@
 
 import { useState, useMemo } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from "recharts";
-import type { Property } from "@/lib/types";
+import type { Property, PropertyMaintenance } from "@/lib/types";
 import { totalROIPct, annualizedROIPct } from "@/lib/core/property-analytics";
 
 const tooltipStyle = { backgroundColor: "#1f232c", border: "1px solid #2a2f3a", borderRadius: 8, padding: "10px 14px", fontSize: 13 };
 
 type ROIMode = "snapshot" | "annualized";
 
-interface Props { properties: Property[] }
+interface Props { properties: Property[]; maintenance: PropertyMaintenance[] }
 
-export default function PortfolioROIChart({ properties }: Props) {
+export default function PortfolioROIChart({ properties, maintenance }: Props) {
   const [mode, setMode] = useState<ROIMode>("snapshot");
   const todayIso = new Date().toISOString().slice(0, 10);
+
+  const maintByProperty = useMemo(() => {
+    const map = new Map<number, PropertyMaintenance[]>();
+    for (const m of maintenance) {
+      const list = map.get(m.property_id) ?? [];
+      list.push(m);
+      map.set(m.property_id, list);
+    }
+    return map;
+  }, [maintenance]);
 
   const data = useMemo(() => {
     return properties
       .map((p) => {
-        const roi = mode === "snapshot" ? totalROIPct(p) : annualizedROIPct(p, todayIso);
+        const maint = maintByProperty.get(p.id) ?? [];
+        const roi = mode === "snapshot" ? totalROIPct(p, maint) : annualizedROIPct(p, todayIso, maint);
         return { name: p.name, roi, purchaseFils: p.purchase_price_fils ?? 0 };
       })
       .filter((d) => d.roi !== null)
       .sort((a, b) => a.roi! - b.roi!);
-  }, [properties, mode, todayIso]);
+  }, [properties, maintByProperty, mode, todayIso]);
 
   const singleProperty = properties.length === 1;
   const chartHeight = Math.max(120, data.length * 34);
