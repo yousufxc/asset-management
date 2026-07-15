@@ -1,10 +1,11 @@
 import { NextResponse, NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { getAllData } from "@/lib/db/settings";
+import { listAllMaintenance } from "@/lib/db/queries";
 import { enrichCommodities } from "@/lib/core/commodity-analytics";
 import { fixedDepositMaturityValueFils } from "@/lib/core/cash-analytics";
 import { appreciationPct, netAnnualRentFils, rentalYieldPct, totalROIPct, annualizedROIPct, effectiveAnnualRentFils } from "@/lib/core/property-analytics";
-import type { Property, CashAccount, Commodity } from "@/lib/types";
+import type { Property, CashAccount, Commodity, PropertyMaintenance } from "@/lib/types";
 import {
   addTitleRow, styleHeaderRow,
   aedVal, dateVal, pctVal, bool, formatIsoDateToUae,
@@ -44,9 +45,20 @@ async function exportXlsx(): Promise<NextResponse> {
     console.error("settings export (xlsx): getAllData failed", e);
     return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
   }
+  const maintByProperty = new Map<number, PropertyMaintenance[]>();
+  try {
+    for (const m of listAllMaintenance()) {
+      const list = maintByProperty.get(m.property_id) ?? [];
+      list.push(m);
+      maintByProperty.set(m.property_id, list);
+    }
+  } catch (e) {
+    console.error("settings export (xlsx): listAllMaintenance failed", e);
+  }
+
   const wb = new ExcelJS.Workbook();
 
-  buildPropertiesOverview(wb, data.properties);
+  buildPropertiesOverview(wb, data.properties, maintByProperty);
   buildCommoditiesSheet(wb, data.commodities);
   buildCashSheet(wb, data.cashAccounts);
 
@@ -60,7 +72,7 @@ async function exportXlsx(): Promise<NextResponse> {
   });
 }
 
-function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[]): void {
+function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[], maintByProperty: Map<number, PropertyMaintenance[]>): void {
   const ws = wb.addWorksheet("Properties Overview");
   const cols = [
     "Name", "Type", "Subcategory", "Area", "Bedrooms", "City", "Developer",
@@ -76,8 +88,9 @@ function buildPropertiesOverview(wb: ExcelJS.Workbook, properties: Property[]): 
     const appr = appreciationPct(p);
     const netRent = netAnnualRentFils(p);
     const yieldPct = rentalYieldPct(p);
-    const totalROI = totalROIPct(p);
-    const annROI = annualizedROIPct(p, TODAY);
+    const maint = maintByProperty.get(p.id) ?? [];
+    const totalROI = totalROIPct(p, maint);
+    const annROI = annualizedROIPct(p, TODAY, maint);
     const grossRent = effectiveAnnualRentFils(p);
 
     const row = ws.addRow([

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import ExcelJS from "exceljs";
-import { listProperties, listAllInstallments, listAllRentalHistory, listAllRentalDeposits } from "@/lib/db/queries";
+import { listProperties, listAllInstallments, listAllRentalHistory, listAllRentalDeposits, listAllMaintenance } from "@/lib/db/queries";
+import type { PropertyMaintenance } from "@/lib/types";
 import {
   addTitleRow, styleHeaderRow, styleSectionTitle,
   aedVal, dateVal, pctVal, bool, safeSheetName,
@@ -11,15 +12,23 @@ import { appreciationPct, netAnnualRentFils, rentalYieldPct, totalROIPct, annual
 const TODAY = new Date().toISOString().slice(0, 10);
 
 export async function GET() {
-  let properties, installments, history, deposits;
+  let properties, installments, history, deposits, maintenance;
   try {
     properties = listProperties();
     installments = listAllInstallments();
     history = listAllRentalHistory();
     deposits = listAllRentalDeposits();
+    maintenance = listAllMaintenance();
   } catch (e) {
     console.error("properties export: DB query failed", e);
     return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
+  }
+
+  const maintByProperty = new Map<number, PropertyMaintenance[]>();
+  for (const m of maintenance) {
+    const list = maintByProperty.get(m.property_id) ?? [];
+    list.push(m);
+    maintByProperty.set(m.property_id, list);
   }
 
   const wb = new ExcelJS.Workbook();
@@ -43,8 +52,9 @@ export async function GET() {
     const netRent = netAnnualRentFils(p);
     const grossRent = effectiveAnnualRentFils(p);
     const yieldPct = rentalYieldPct(p);
-    const totalROI = totalROIPct(p);
-    const annROI = annualizedROIPct(p, TODAY);
+    const maint = maintByProperty.get(p.id) ?? [];
+    const totalROI = totalROIPct(p, maint);
+    const annROI = annualizedROIPct(p, TODAY, maint);
 
     const row = overview.addRow([
       p.name,
@@ -131,7 +141,7 @@ export async function GET() {
         ["Service Charge", p.annual_service_charge_fils != null ? (p.annual_service_charge_fils / 100).toFixed(2) : ""],
         ["Net Annual Rent", netRent != null ? (netRent / 100).toFixed(2) : ""],
         ["Rental Yield", rentalYieldPct(p) != null ? `${rentalYieldPct(p)!.toFixed(2)}%` : ""],
-        ["Total ROI", totalROIPct(p) != null ? `${totalROIPct(p)!.toFixed(2)}%` : ""],
+        ["Total ROI", totalROIPct(p, maintByProperty.get(p.id) ?? []) != null ? `${totalROIPct(p, maintByProperty.get(p.id) ?? [])!.toFixed(2)}%` : ""],
         ["Capital Appreciation", appreciationPct(p) != null ? `${appreciationPct(p)!.toFixed(2)}%` : ""],
       );
     }
