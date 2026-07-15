@@ -1,7 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import ExcelJS from "exceljs";
 import { getAllData } from "@/lib/db/settings";
-import { listAllMaintenance } from "@/lib/db/queries";
 import { enrichCommodities } from "@/lib/core/commodity-analytics";
 import { fixedDepositMaturityValueFils } from "@/lib/core/cash-analytics";
 import { appreciationPct, netAnnualRentFils, rentalYieldPct, totalROIPct, annualizedROIPct, effectiveAnnualRentFils } from "@/lib/core/property-analytics";
@@ -46,14 +45,10 @@ async function exportXlsx(): Promise<NextResponse> {
     return NextResponse.json({ error: "Failed to load data" }, { status: 500 });
   }
   const maintByProperty = new Map<number, PropertyMaintenance[]>();
-  try {
-    for (const m of listAllMaintenance()) {
-      const list = maintByProperty.get(m.property_id) ?? [];
-      list.push(m);
-      maintByProperty.set(m.property_id, list);
-    }
-  } catch (e) {
-    console.error("settings export (xlsx): listAllMaintenance failed", e);
+  for (const m of data.maintenance) {
+    const list = maintByProperty.get(m.property_id) ?? [];
+    list.push(m);
+    maintByProperty.set(m.property_id, list);
   }
 
   const wb = new ExcelJS.Workbook();

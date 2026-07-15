@@ -120,4 +120,35 @@ describe("property maintenance", () => {
     const all = q.listAllMaintenance();
     expect(all.filter((m) => m.property_id === prop.id)).toHaveLength(0);
   });
+
+  it("includes maintenance in the backup export and clears it on reset", async () => {
+    const q = await import("@/lib/db/queries");
+    const { getAllData, resetAllData } = await import("@/lib/db/settings");
+
+    const prop = q.insertProperty({
+      name: "Backup Test",
+      subcategory: "existing",
+      size_unit: "sqft",
+      is_rental: false,
+    });
+    q.insertPropertyMaintenance({
+      property_id: prop.id,
+      amount_aed: 1_200,
+      maintenance_date: "2025-04-10",
+      notes: "Repaint",
+    });
+
+    // Backup must carry the maintenance row (else it is lost on backup/restore).
+    const backup = getAllData();
+    const mine = backup.maintenance.filter((m) => m.property_id === prop.id);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]!.amount_fils).toBe(120_000);
+    expect(mine[0]!.maintenance_date).toBe("2025-04-10");
+
+    // Reset must clear property_maintenance too (foreign_keys are OFF during
+    // reset, so the cascade from properties does not fire — the table must be
+    // wiped explicitly or maintenance rows are orphaned).
+    resetAllData();
+    expect(q.listAllMaintenance()).toHaveLength(0);
+  });
 });
