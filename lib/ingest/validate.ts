@@ -28,12 +28,15 @@ const dateString = z
 const noFutureDate = dateString.refine(
   (v) => {
     try {
-      const d = parseDateToIso(v);
+      // Compare against "today" in LOCAL time, not UTC. This is a local-first
+      // single-user app: the server runs on the same machine as the browser, so
+      // the client (which restricts date pickers with max={local today}) and
+      // this server-side check must agree on the calendar day. A UTC-based
+      // boundary wrongly rejects a valid "today" during the nightly window when
+      // the local date is already ahead of UTC (e.g. UAE 00:00–03:59 = UTC+4).
       const now = new Date();
-      const tomorrowUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1))
-        .toISOString()
-        .slice(0, 10);
-      return d < tomorrowUtc;
+      const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+      return parseDateToIso(v) <= localToday;
     } catch {
       return false;
     }

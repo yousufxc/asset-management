@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   InstallmentInputSchema,
   PropertyInputSchema,
@@ -102,6 +102,35 @@ describe("noFutureDate: purchased_at / valued_at cannot be in the future", () =>
       purchased_at: today,
     });
     expect(r.success).toBe(true);
+  });
+
+  describe("local-date boundary (timezone safety)", () => {
+    afterEach(() => vi.useRealTimers());
+
+    // Freeze "now" to early-morning LOCAL time. In any timezone ahead of UTC
+    // (e.g. UAE, UTC+4) the local calendar day is already ahead of the UTC day,
+    // which is exactly when a UTC-based boundary wrongly rejects "today".
+    it("accepts the local 'today' even in the early-morning-ahead-of-UTC window", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 16, 0, 30, 0)); // local 2026-07-16 00:30
+      const r = PropertyInputSchema.safeParse({
+        name: "X",
+        subcategory: "existing",
+        purchased_at: "2026-07-16",
+      });
+      expect(r.success).toBe(true);
+    });
+
+    it("still rejects the local 'tomorrow'", () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date(2026, 6, 16, 0, 30, 0));
+      const r = PropertyInputSchema.safeParse({
+        name: "X",
+        subcategory: "existing",
+        purchased_at: "2026-07-17",
+      });
+      expect(r.success).toBe(false);
+    });
   });
 
   it("accepts a UAE-format past date too", () => {
