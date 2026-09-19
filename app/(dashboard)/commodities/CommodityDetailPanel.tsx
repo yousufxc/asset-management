@@ -287,30 +287,53 @@ export default function CommodityDetailPanel({
             <option value="other">Other</option>
           </select>
         </div>
-        <div style={{ flex: 1, minWidth: 120 }}>
-          <label>Amount *</label>
-          <input
-            name="weight"
-            type="number"
-            step="any"
-            required
-            defaultValue={commodity.weight}
-            placeholder="Enter quantity amount here"
-            onKeyDown={numeralOnly}
-          />
-        </div>
-        <div style={{ flex: 1, minWidth: 140 }}>
-          <label>Unit *</label>
-          <select
-            name="weight_unit"
-            value={unit}
-            onChange={(e) => setUnit(e.target.value)}
-          >
-            <option value="gram">Gram</option>
-            <option value="kg">Kilogram</option>
-            <option value="troy_oz">Troy ounce</option>
-            <option value="tola">Tola</option>
-          </select>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <label>Unit &amp; Weight *</label>
+          {!unit ? (
+            <select
+              value=""
+              onChange={(e) => setUnit(e.target.value)}
+            >
+              <option value="">Select unit</option>
+              <option value="gram">Gram</option>
+              <option value="kg">Kilogram</option>
+              <option value="troy_oz">Troy ounce</option>
+              <option value="tola">Tola</option>
+            </select>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+              <input
+                name="weight"
+                type="number"
+                step="any"
+                required
+                defaultValue={commodity.weight}
+                placeholder="Enter weight"
+                onKeyDown={numeralOnly}
+                style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0, flex: 1 }}
+              />
+              <span
+                style={{
+                  padding: "7px 10px",
+                  background: "var(--panel-2)",
+                  border: "1px solid var(--border)",
+                  borderLeft: "none",
+                  borderTopRightRadius: 6,
+                  borderBottomRightRadius: 6,
+                  fontSize: 13,
+                  color: "var(--muted)",
+                  whiteSpace: "nowrap",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                title="Click to change unit"
+                onClick={() => setUnit("")}
+              >
+                {UNIT_LABEL[unit] ?? unit} ✕
+              </span>
+              <input type="hidden" name="weight_unit" value={unit} />
+            </div>
+          )}
         </div>
       </div>
       <div className="row">
