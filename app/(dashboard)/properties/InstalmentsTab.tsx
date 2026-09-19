@@ -230,8 +230,9 @@ export default function InstalmentsTab({
                 {rows.map((p, i) => paymentRow(p, i === rows.length - 1))}
               </div>
             );
+            const collapsible = group === "paid" || group === "beyond_90";
             const wrapperStyle: React.CSSProperties = group === "paid" ? { opacity: 0.6 } : {};
-            if (group === "paid") {
+            if (collapsible) {
               return (
                 <details key={group} style={wrapperStyle}>
                   <summary style={{ cursor: "pointer", listStyle: "none" }}>{header}</summary>
