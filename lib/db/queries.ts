@@ -853,6 +853,12 @@ export function listMortgages(): Mortgage[] {
     .all() as unknown as Mortgage[];
 }
 
+export function listAllMortgages(): Mortgage[] {
+  return getDb()
+    .prepare(`SELECT * FROM mortgages ORDER BY loan_start_date`)
+    .all() as unknown as Mortgage[];
+}
+
 export function listLandMortgages(): LandMortgage[] {
   return getDb()
     .prepare(`SELECT * FROM land_mortgages ORDER BY created_at DESC`)

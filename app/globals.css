@@ -362,3 +362,47 @@ tr.selected-row .sticky-name {
   opacity: 1;
   transform: translateY(0);
 }
+
+.tabs-nav {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.tab-btn {
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 8px 14px;
+  margin: 0;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tab-btn:hover {
+  color: var(--text);
+  filter: none;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.kpi-clickable {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s ease;
+}
+
+.kpi-clickable:hover {
+  border-color: var(--accent);
+}
+
+.kpi-clickable.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+}

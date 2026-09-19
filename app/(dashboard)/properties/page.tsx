@@ -5,7 +5,7 @@
  */
 
 import PropertyContent from "./PropertyContent";
-import { listProperties, listAllInstallments, listAllRentalDeposits, listAllRentalHistory, listAllMaintenance } from "@/lib/db/queries";
+import { listProperties, listAllInstallments, listAllRentalDeposits, listAllRentalHistory, listAllMaintenance, listAllMortgages } from "@/lib/db/queries";
 import type { Property } from "@/lib/types";
 
 // Always read fresh from SQLite (no static caching of financial data).
@@ -22,15 +22,18 @@ export default async function PropertiesPage({
   const depositsRaw = listAllRentalDeposits();
   const historyRaw = listAllRentalHistory();
   const maintenanceRaw = listAllMaintenance();
+  const mortgagesRaw = listAllMortgages();
   const properties = JSON.parse(JSON.stringify(propertiesRaw));
   const installments = JSON.parse(JSON.stringify(installmentsRaw));
   const deposits = JSON.parse(JSON.stringify(depositsRaw));
   const history = JSON.parse(JSON.stringify(historyRaw));
   const maintenance = JSON.parse(JSON.stringify(maintenanceRaw));
+  const mortgages = JSON.parse(JSON.stringify(mortgagesRaw));
   const selectedId = params.selected ? Number(params.selected) : null;
   const selectedProperty = selectedId
     ? (properties.find((p: Property) => p.id === selectedId) ?? null)
     : null;
+  const asOfIso = new Date().toISOString().slice(0, 10);
 
   return (
     <PropertyContent
@@ -39,6 +42,8 @@ export default async function PropertiesPage({
       deposits={deposits}
       history={history}
       maintenance={maintenance}
+      mortgages={mortgages}
+      asOfIso={asOfIso}
       selectedProperty={selectedProperty}
     />
   );
