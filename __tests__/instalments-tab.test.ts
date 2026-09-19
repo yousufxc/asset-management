@@ -104,4 +104,28 @@ describe("InstalmentsTab render smoke", () => {
     expect((html.match(/pill upcoming/g) ?? []).length).toBe(8); // 4 instalments + 4 mortgages
     expect((html.match(/pill paid/g) ?? []).length).toBe(9);
   });
+
+  it("paginates long sections to 20 rows with a show-more button", () => {
+    const manyPaid = Array.from({ length: 25 }, (_, i) =>
+      inst({
+        id: 100 + i,
+        due_date: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
+        amount_fils: 10_000,
+        paid_date: `2026-01-${String((i % 28) + 1).padStart(2, "0")}`,
+      }),
+    );
+
+    const html = renderToString(
+      React.createElement(InstalmentsTab, {
+        properties,
+        installments: manyPaid,
+        mortgages: [],
+        asOfIso: "2026-09-20",
+        onSelectProperty: () => {},
+      }),
+    ).replace(/<!-- -->/g, "");
+
+    expect(html).toContain("Show more (5 remaining)");
+    expect((html.match(/Mark unpaid/g) ?? []).length).toBe(20);
+  });
 });

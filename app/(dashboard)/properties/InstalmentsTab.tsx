@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Property, Installment, Mortgage } from "@/lib/types";
 import { formatAed, formatAedShort, formatIsoToUae } from "@/lib/core/units";
 import {
@@ -33,6 +33,17 @@ const typeBadgeStyle: React.CSSProperties = {
 type TypeFilter = "all" | "installment" | "mortgage";
 type StatusFilter = "all" | "overdue" | "upcoming" | "paid";
 
+const PAGE_SIZE = 20;
+
+const DEFAULT_VISIBLE: Record<TimelineGroup, number> = {
+  overdue: PAGE_SIZE,
+  due_this_month: PAGE_SIZE,
+  next_30: PAGE_SIZE,
+  next_60_90: PAGE_SIZE,
+  beyond_90: PAGE_SIZE,
+  paid: PAGE_SIZE,
+};
+
 export default function InstalmentsTab({
   properties,
   installments,
@@ -52,6 +63,7 @@ export default function InstalmentsTab({
   const [kpiFilter, setKpiFilter] = useState<KpiKey | null>(null);
   const [exporting, setExporting] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
+  const [visibleCounts, setVisibleCounts] = useState<Record<TimelineGroup, number>>({ ...DEFAULT_VISIBLE });
 
   const propertyById = useMemo(() => {
     const m = new Map<number, Property>();
@@ -80,6 +92,12 @@ export default function InstalmentsTab({
   }, [dropdownFiltered, kpiFilter, asOfIso]);
 
   const grouped = useMemo(() => groupTimeline(filtered, asOfIso), [filtered, asOfIso]);
+
+  // Pagination restarts whenever the visible payment set changes (filters,
+  // data refresh after mark-paid, etc.).
+  useEffect(() => {
+    setVisibleCounts({ ...DEFAULT_VISIBLE });
+  }, [filtered]);
 
   const filterablePropertyIds = useMemo(() => {
     const ids = new Set(unified.map((p) => p.propertyId));
@@ -288,10 +306,34 @@ export default function InstalmentsTab({
           {TIMELINE_GROUPS.map((group) => {
             const rows = grouped[group];
             if (rows.length === 0) return null;
+            const visible = rows.slice(0, visibleCounts[group]);
+            const remaining = rows.length - visible.length;
             const header = sectionHeader(group, rows);
             const body = (
               <div>
-                {rows.map((p, i) => paymentRow(p, i === rows.length - 1))}
+                {visible.map((p, i) => paymentRow(p, i === visible.length - 1 && remaining === 0))}
+                {remaining > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setVisibleCounts((prev) => ({ ...prev, [group]: prev[group] + PAGE_SIZE }))
+                    }
+                    style={{
+                      display: "block",
+                      width: "100%",
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--muted)",
+                      margin: "8px 0 0",
+                      padding: "6px 12px",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      textAlign: "center",
+                    }}
+                  >
+                    Show more ({remaining} remaining)
+                  </button>
+                )}
               </div>
             );
             const collapsible = group === "paid" || group === "beyond_90";
