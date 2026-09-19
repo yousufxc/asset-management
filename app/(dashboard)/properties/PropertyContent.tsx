@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Property, Installment, RentalDeposit, RentalHistory, PropertyMaintenance } from "@/lib/types";
-import { formatAed } from "@/lib/core/units";
+import { formatAed, formatAedShort } from "@/lib/core/units";
 import { netAnnualRentFils, appreciationPct, rentalYieldPct } from "@/lib/core/property-analytics";
 import PropertyForm from "./PropertyForm";
 import PropertyDetailPanel from "./PropertyDetailPanel";
@@ -39,17 +39,6 @@ function daysSince(iso: string | null): string {
   const then = new Date(`${iso}T00:00:00Z`).getTime();
   const days = Math.floor((Date.now() - then) / 86_400_000);
   return `last valued ${days} day${days === 1 ? "" : "s"} ago`;
-}
-
-function formatAedShort(fils: number): string {
-  const aed = Math.round(fils / 100);
-  if (Math.abs(aed) >= 1_000_000) {
-    return `AED ${(aed / 1_000_000).toFixed(1)}M`;
-  }
-  if (Math.abs(aed) >= 1_000) {
-    return `AED ${(aed / 1_000).toFixed(1)}K`;
-  }
-  return formatAed(fils);
 }
 
 export default function PropertyContent({

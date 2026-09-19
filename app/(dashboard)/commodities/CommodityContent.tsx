@@ -3,8 +3,8 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Commodity } from "@/lib/types";
-import { formatAed, formatIsoToUae } from "@/lib/core/units";
-import { enrichCommodities } from "@/lib/core/commodity-analytics";
+import { formatAed, formatAedShort, formatIsoToUae } from "@/lib/core/units";
+import { enrichCommodities, totalPortfolioValueFils } from "@/lib/core/commodity-analytics";
 import type { EnrichedCommodity } from "@/lib/core/commodity-analytics";
 import CommodityForm from "./CommodityForm";
 import CommodityDetailPanel from "./CommodityDetailPanel";
@@ -79,6 +79,8 @@ export default function CommodityContent({
   }, [filterOpen]);
 
   const enriched = useMemo(() => enrichCommodities(commodities), [commodities]);
+
+  const totalPortfolioValue = useMemo(() => totalPortfolioValueFils(enriched), [enriched]);
 
   const isAllSelected = metalTypeFilter.size === ALL_METAL_TYPES.length;
 
@@ -222,7 +224,12 @@ export default function CommodityContent({
       {commodities.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
           <AnimateOnScroll><div className="card">
-            <h4 style={{ marginTop: 0 }}>Portfolio by Metal</h4>
+            <h4 style={{ marginTop: 0 }}>
+              Portfolio by Metal <InfoIcon title="Portfolio by Metal" text="How your commodities portfolio value splits across metals. The total above is the sum of every holding's current value — live spot prices where available, otherwise the last saved price. Holdings without a current price are excluded." />
+            </h4>
+            {totalPortfolioValue > 0 && (
+              <div className="kpi-total">{formatAedShort(totalPortfolioValue)}</div>
+            )}
             <AnimateChartOnScroll><CommodityMetalCompositionChart enriched={enriched} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">

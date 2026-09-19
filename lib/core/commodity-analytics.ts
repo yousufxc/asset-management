@@ -77,6 +77,16 @@ export function enrichCommodities(commodities: Commodity[]): EnrichedCommodity[]
   return commodities.map(enrichCommodity);
 }
 
+/**
+ * Total current value of the commodities portfolio in fils. Only holdings with
+ * a known current price are counted — the same holdings whose Value column and
+ * composition chart show a number. Holdings without a current price contribute
+ * zero, so a missing price never inflates or double-counts the total.
+ */
+export function totalPortfolioValueFils(enriched: EnrichedCommodity[]): number {
+  return enriched.reduce((sum, e) => sum + (e.hasCurrent ? e.valueFils : 0), 0);
+}
+
 export interface MetalAggregate {
   metalType: string;
   totalValueFils: number;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyLiveSpotPrices, enrichCommodity, totalWeightInUnit } from "@/lib/core/commodity-analytics";
+import { applyLiveSpotPrices, enrichCommodity, enrichCommodities, totalPortfolioValueFils, totalWeightInUnit } from "@/lib/core/commodity-analytics";
 import type { Commodity } from "@/lib/types";
 
 function commodity(over: Partial<Commodity>): Commodity {
@@ -110,5 +110,36 @@ describe("enrichCommodity with piece count", () => {
     // 2 kg per piece × 3 pieces = 6 kg = 6000 g.
     const e = enrichCommodity(commodity({ weight: 2, piece_count: 3, weight_unit: "kg" }));
     expect(e.grams).toBe(6000);
+  });
+});
+
+describe("totalPortfolioValueFils (hand-checked)", () => {
+  it("sums the current value of every priced holding", () => {
+    // 100 g × 20,000 fils/g = 2,000,000 fils; 50 g × 1,000 fils/g = 50,000 fils.
+    const enriched = enrichCommodities([
+      commodity({ id: 1, weight: 100, current_price_per_unit_fils: 20_000 }),
+      commodity({ id: 2, metal_type: "silver", weight: 50, current_price_per_unit_fils: 1_000 }),
+    ]);
+    expect(totalPortfolioValueFils(enriched)).toBe(2_050_000);
+  });
+
+  it("includes piece counts in the total", () => {
+    // 10 g per piece × 5 pieces × 12,000 fils/g = 600,000 fils.
+    const enriched = enrichCommodities([
+      commodity({ weight: 10, piece_count: 5, current_price_per_unit_fils: 12_000 }),
+    ]);
+    expect(totalPortfolioValueFils(enriched)).toBe(600_000);
+  });
+
+  it("excludes holdings with no current price", () => {
+    const enriched = enrichCommodities([
+      commodity({ id: 1, current_price_per_unit_fils: 20_000 }),
+      commodity({ id: 2, current_price_per_unit_fils: 0 }),
+    ]);
+    expect(totalPortfolioValueFils(enriched)).toBe(100 * 20_000);
+  });
+
+  it("returns 0 for an empty portfolio", () => {
+    expect(totalPortfolioValueFils([])).toBe(0);
   });
 });
