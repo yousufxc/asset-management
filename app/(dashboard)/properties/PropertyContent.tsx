@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Property, Installment, RentalDeposit, RentalHistory, PropertyMaintenance } from "@/lib/types";
+import type { Property, Installment, RentalDeposit, RentalHistory, PropertyMaintenance, Mortgage } from "@/lib/types";
 import { formatAed, formatAedShort } from "@/lib/core/units";
 import { netAnnualRentFils, appreciationPct, rentalYieldPct } from "@/lib/core/property-analytics";
 import PropertyForm from "./PropertyForm";
 import PropertyDetailPanel from "./PropertyDetailPanel";
+import InstalmentsTab from "./InstalmentsTab";
 import ValueByPropertyChart from "./charts/ValueByPropertyChart";
 import CapitalAppreciationChart from "./charts/CapitalAppreciationChart";
 import PortfolioCompositionChart from "./charts/PortfolioCompositionChart";
@@ -47,6 +48,8 @@ export default function PropertyContent({
   deposits,
   history,
   maintenance,
+  mortgages,
+  asOfIso,
   selectedProperty,
 }: {
   properties: Property[];
@@ -54,9 +57,13 @@ export default function PropertyContent({
   deposits: RentalDeposit[];
   history: RentalHistory[];
   maintenance: PropertyMaintenance[];
+  mortgages: Mortgage[];
+  asOfIso: string;
   selectedProperty: Property | null;
 }) {
   const router = useRouter();
+
+  const [activeTab, setActiveTab] = useState<"properties" | "installments">("properties");
 
   const [typeFilter, setTypeFilter] = useState<Set<string>>(new Set(ALL_PROPERTY_TYPES));
   const [filterOpen, setFilterOpen] = useState(false);
@@ -265,6 +272,36 @@ export default function PropertyContent({
   return (
     <>
       <h2>Property</h2>
+      <div className="tabs-nav">
+        <button
+          type="button"
+          className={activeTab === "properties" ? "tab-btn active" : "tab-btn"}
+          onClick={() => setActiveTab("properties")}
+        >
+          My Properties
+        </button>
+        <button
+          type="button"
+          className={activeTab === "installments" ? "tab-btn active" : "tab-btn"}
+          onClick={() => setActiveTab("installments")}
+        >
+          Instalments
+        </button>
+      </div>
+
+      {activeTab === "installments" ? (
+        <InstalmentsTab
+          properties={properties}
+          installments={installments}
+          mortgages={mortgages}
+          asOfIso={asOfIso}
+          onSelectProperty={(id) => {
+            setActiveTab("properties");
+            handleSelect(id);
+          }}
+        />
+      ) : (
+      <>
       <PropertyForm />
 
       {properties.length > 0 && (
@@ -497,6 +534,8 @@ export default function PropertyContent({
         <div ref={detailRef} style={{ marginTop: 18 }}>
           <PropertyDetailPanel key={selectedProperty.id} property={selectedProperty} installments={installments.filter((i) => i.property_id === selectedProperty.id).sort((a, b) => a.due_date.localeCompare(b.due_date))} deposits={deposits.filter((d) => d.property_id === selectedProperty.id)} history={history.filter((h) => h.property_id === selectedProperty.id)} maintenance={maintenance.filter((m) => m.property_id === selectedProperty.id)} />
         </div>
+      )}
+      </>
       )}
       {showExportConfirm && (
         <ConfirmModal

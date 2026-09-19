@@ -111,7 +111,7 @@ export function computeLoanEndDate(startDateIso: string, termMonths: number): st
   if (!Number.isInteger(termMonths) || termMonths <= 0) {
     throw new Error(`computeLoanEndDate: term must be positive integer, got ${termMonths}`);
   }
-  return addMonthsIsoLocal(startDateIso, termMonths);
+  return addMonthsIso(startDateIso, termMonths);
 }
 
 // ─── Cash-flow projection ───────────────────────────────────────────────────
@@ -158,7 +158,7 @@ export function generateMortgagePayments(
     if (!Number.isFinite(monthlyFils)) continue;
 
     for (let k = 1; k <= m.termMonths; k++) {
-      const dueDate = addMonthsIsoLocal(m.loanStartDate, k);
+      const dueDate = addMonthsIso(m.loanStartDate, k);
 
       if (dueDate > asOfIso && dueDate <= untilIso) {
         payments.push({
@@ -178,7 +178,7 @@ export function generateMortgagePayments(
 
 /** Add `months` months to an ISO date string, clamping to month-end.
  *  Avoids JS setUTCMonth overflow (Jan 31 + 1 month = Feb 28, not Mar 3). */
-function addMonthsIsoLocal(iso: string, months: number): string {
+export function addMonthsIso(iso: string, months: number): string {
   const [y, m, d] = iso.split("-").map(Number) as [number, number, number];
   const idx = (m - 1) + months;
   const ty = y + Math.floor(idx / 12);
