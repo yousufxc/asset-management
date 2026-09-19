@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { renderToString } from "react-dom/server";
 import * as React from "react";
-import InstalmentsTab from "@/app/(dashboard)/properties/InstalmentsTab";
+import InstalmentsTab, { groupMortgageRuns } from "@/app/(dashboard)/properties/InstalmentsTab";
 import type { Property, Installment, Mortgage } from "@/lib/types";
+import type { UnifiedPayment } from "@/lib/core/instalment-grouping";
 import { formatAed } from "@/lib/core/units";
 
 vi.mock("next/navigation", () => ({
@@ -93,16 +94,23 @@ describe("InstalmentsTab render smoke", () => {
     expect((html.match(/Mark paid/g) ?? []).length).toBe(6);
     expect((html.match(/Mark unpaid/g) ?? []).length).toBe(1);
     expect((html.match(/Instalment<\/span>/g) ?? []).length).toBe(7);
-    expect((html.match(/Mortgage<\/span>/g) ?? []).length).toBe(12);
+    // 4 upcoming mortgage singles + 2 collapsed paid mortgage groups (5+3)
+    expect((html.match(/Mortgage<\/span>/g) ?? []).length).toBe(6);
     expect(html).toContain("Structure 20%");
-    expect((html.match(/Test Bank/g) ?? []).length).toBe(12);
+    // 4 upcoming singles + 2 group lender labels
+    expect((html.match(/Test Bank/g) ?? []).length).toBe(6);
+    // the 8 paid mortgage payments are collapsed into two summary rows
+    expect(html).toContain("5 payments × AED 10,000.00/month — Total: AED 50,000.00");
+    expect(html).toContain("3 payments × AED 10,000.00/month — Total: AED 30,000.00");
+    expect(html).toContain("Show 5");
+    expect(html).toContain("Show 3");
     expect(html).toContain("Marina Tower 1204");
     expect(html).toContain("Villa Palm");
     expect(html).toContain("25/09/2026");
     expect(html).toContain("15/02/2026");
     expect((html.match(/pill overdue/g) ?? []).length).toBe(2);
     expect((html.match(/pill upcoming/g) ?? []).length).toBe(8); // 4 instalments + 4 mortgages
-    expect((html.match(/pill paid/g) ?? []).length).toBe(9);
+    expect((html.match(/pill paid/g) ?? []).length).toBe(1); // only the paid instalment; mortgage groups have no pill
   });
 
   it("paginates long sections to 20 rows with a show-more button", () => {
@@ -127,5 +135,89 @@ describe("InstalmentsTab render smoke", () => {
 
     expect(html).toContain("Show more (5 remaining)");
     expect((html.match(/Mark unpaid/g) ?? []).length).toBe(20);
+  });
+});
+
+describe("groupMortgageRuns (rendering-level mortgage collapsing)", () => {
+  function mPay(key: string, dueDate: string, over: Partial<UnifiedPayment> = {}): UnifiedPayment {
+    return {
+      key,
+      propertyId: 1,
+      dueDate,
+      amountFils: 1_000_000,
+      type: "mortgage",
+      status: "paid",
+      milestoneLabel: null,
+      lenderName: "Test Bank",
+      installmentId: null,
+      ...over,
+    };
+  }
+
+  function iPay(dueDate: string): UnifiedPayment {
+    return {
+      key: `i${dueDate}`,
+      propertyId: 1,
+      dueDate,
+      amountFils: 10_000,
+      type: "installment",
+      status: "paid",
+      milestoneLabel: null,
+      lenderName: null,
+      installmentId: 9,
+    };
+  }
+
+  it("collapses 3+ consecutive payments of the same mortgage into one group", () => {
+    const rows = [mPay("m1-1", "2026-02-15"), mPay("m1-2", "2026-03-15"), mPay("m1-3", "2026-04-15"), mPay("m1-4", "2026-05-15")];
+    const items = groupMortgageRuns(rows);
+    expect(items).toHaveLength(1);
+    expect(items[0]!.kind).toBe("group");
+    if (items[0]!.kind === "group") {
+      expect(items[0]!.count).toBe(4);
+      expect(items[0]!.monthlyFils).toBe(1_000_000);
+      expect(items[0]!.totalFils).toBe(4_000_000);
+      expect(items[0]!.payments).toHaveLength(4);
+    }
+  });
+
+  it("leaves runs of 2 as individual rows", () => {
+    const rows = [mPay("m1-1", "2026-02-15"), mPay("m1-2", "2026-03-15")];
+    const items = groupMortgageRuns(rows);
+    expect(items.every((x) => x.kind === "single")).toBe(true);
+    expect(items).toHaveLength(2);
+  });
+
+  it("an instalment breaks a mortgage run", () => {
+    const rows = [
+      mPay("m1-1", "2026-02-15"),
+      mPay("m1-2", "2026-03-15"),
+      mPay("m1-3", "2026-04-15"),
+      iPay("2026-04-20"),
+      mPay("m1-4", "2026-05-15"),
+      mPay("m1-5", "2026-06-15"),
+    ];
+    const items = groupMortgageRuns(rows);
+    expect(items).toHaveLength(4); // group(3) + instalment + single + single
+    expect(items[0]!.kind).toBe("group");
+    expect(items[1]!.kind).toBe("single");
+    expect(items[2]!.kind).toBe("single");
+    expect(items[3]!.kind).toBe("single");
+  });
+
+  it("does not merge different mortgage ids even with identical details", () => {
+    const rows = [
+      mPay("m1-1", "2026-02-15"), mPay("m1-2", "2026-03-15"), mPay("m1-3", "2026-04-15"),
+      mPay("m2-1", "2026-05-15"), mPay("m2-2", "2026-06-15"), mPay("m2-3", "2026-07-15"),
+    ];
+    const items = groupMortgageRuns(rows);
+    expect(items).toHaveLength(2);
+    expect(items[0]!.kind).toBe("group");
+    expect(items[1]!.kind).toBe("group");
+  });
+
+  it("never collapses instalments", () => {
+    const rows = [iPay("2026-02-01"), iPay("2026-03-01"), iPay("2026-04-01")];
+    expect(groupMortgageRuns(rows).every((x) => x.kind === "single")).toBe(true);
   });
 });

@@ -12,6 +12,7 @@ import {
   KPI_LABEL,
   type KpiKey,
   type TimelineGroup,
+  type UnifiedPayment,
   TIMELINE_GROUPS,
   GROUP_LABEL,
 } from "@/lib/core/instalment-grouping";
@@ -44,6 +45,69 @@ const DEFAULT_VISIBLE: Record<TimelineGroup, number> = {
   paid: PAGE_SIZE,
 };
 
+export type MortgageRunItem =
+  | { kind: "single"; payment: UnifiedPayment }
+  | {
+      kind: "group";
+      groupKey: string;
+      propertyId: number;
+      lenderName: string;
+      count: number;
+      monthlyFils: number;
+      totalFils: number;
+      payments: UnifiedPayment[];
+    };
+
+function mortgageIdOf(p: UnifiedPayment): number | null {
+  const m = /^m(\d+)-/.exec(p.key);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Collapse 3+ consecutive payments of the SAME mortgage (same mortgage id,
+ * property, lender and amount) into a summary item. Instalments are never
+ * collapsed. Rendering-level only — the data model is unchanged.
+ */
+export function groupMortgageRuns(rows: UnifiedPayment[]): MortgageRunItem[] {
+  const items: MortgageRunItem[] = [];
+  let i = 0;
+  while (i < rows.length) {
+    const p = rows[i]!;
+    if (p.type === "mortgage") {
+      const mid = mortgageIdOf(p);
+      let j = i + 1;
+      if (mid !== null) {
+        while (
+          j < rows.length &&
+          rows[j]!.type === "mortgage" &&
+          mortgageIdOf(rows[j]!) === mid &&
+          rows[j]!.propertyId === p.propertyId &&
+          rows[j]!.lenderName === p.lenderName &&
+          rows[j]!.amountFils === p.amountFils
+        ) j++;
+      }
+      if (j - i >= 3) {
+        const run = rows.slice(i, j);
+        items.push({
+          kind: "group",
+          groupKey: `${mid}-${p.propertyId}-${p.lenderName}-${p.amountFils}`,
+          propertyId: p.propertyId,
+          lenderName: p.lenderName ?? "",
+          count: run.length,
+          monthlyFils: p.amountFils,
+          totalFils: run.reduce((s, x) => s + x.amountFils, 0),
+          payments: run,
+        });
+        i = j;
+        continue;
+      }
+    }
+    items.push({ kind: "single", payment: p });
+    i++;
+  }
+  return items;
+}
+
 export default function InstalmentsTab({
   properties,
   installments,
@@ -64,6 +128,7 @@ export default function InstalmentsTab({
   const [exporting, setExporting] = useState(false);
   const [showExportConfirm, setShowExportConfirm] = useState(false);
   const [visibleCounts, setVisibleCounts] = useState<Record<TimelineGroup, number>>({ ...DEFAULT_VISIBLE });
+  const [expandedMortgages, setExpandedMortgages] = useState<Set<string>>(new Set());
 
   const propertyById = useMemo(() => {
     const m = new Map<number, Property>();
@@ -97,6 +162,7 @@ export default function InstalmentsTab({
   // data refresh after mark-paid, etc.).
   useEffect(() => {
     setVisibleCounts({ ...DEFAULT_VISIBLE });
+    setExpandedMortgages(new Set());
   }, [filtered]);
 
   const filterablePropertyIds = useMemo(() => {
@@ -198,6 +264,68 @@ export default function InstalmentsTab({
           p.status === "paid"
             ? <MarkUnpaidButton installmentId={p.installmentId} />
             : <MarkPaidButton installmentId={p.installmentId} />
+        )}
+      </div>
+    );
+  }
+
+  function mortgageSummaryRow(item: Extract<MortgageRunItem, { kind: "group" }>, group: TimelineGroup, isLast: boolean) {
+    const groupKey = `${group}|${item.groupKey}`;
+    const expanded = expandedMortgages.has(groupKey);
+    return (
+      <div
+        key={`g-${groupKey}`}
+        style={{ padding: "8px 0", borderBottom: isLast ? "none" : "1px solid var(--border)" }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <div style={{ flex: 2, minWidth: 160 }}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                onSelectProperty(item.propertyId);
+              }}
+              className="property-link"
+              style={{ fontWeight: 600 }}
+            >
+              {propertyName(item.propertyId)}
+            </a>
+            <div className="muted" style={{ fontSize: 12 }}>{item.lenderName}</div>
+          </div>
+          <span style={typeBadgeStyle}>Mortgage</span>
+          <span className="muted" style={{ minWidth: 88 }}>
+            {formatIsoToUae(item.payments[0]!.dueDate)}–{formatIsoToUae(item.payments[item.payments.length - 1]!.dueDate)}
+          </span>
+          <span style={{ fontWeight: 600 }}>
+            {item.count} payments × {formatAed(item.monthlyFils)}/month — Total: {formatAed(item.totalFils)}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setExpandedMortgages((prev) => {
+                const next = new Set(prev);
+                if (next.has(groupKey)) next.delete(groupKey);
+                else next.add(groupKey);
+                return next;
+              })
+            }
+            style={{
+              background: "transparent",
+              color: "var(--muted)",
+              border: "none",
+              margin: 0,
+              padding: "2px 8px",
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            {expanded ? "Hide" : `Show ${item.count}`}
+          </button>
+        </div>
+        {expanded && (
+          <div style={{ marginTop: 4, paddingLeft: 12, borderLeft: "2px solid var(--border)" }}>
+            {item.payments.map((p, i) => paymentRow(p, i === item.payments.length - 1))}
+          </div>
         )}
       </div>
     );
@@ -306,12 +434,18 @@ export default function InstalmentsTab({
           {TIMELINE_GROUPS.map((group) => {
             const rows = grouped[group];
             if (rows.length === 0) return null;
-            const visible = rows.slice(0, visibleCounts[group]);
-            const remaining = rows.length - visible.length;
+            const items = groupMortgageRuns(rows);
+            const visibleItems = items.slice(0, visibleCounts[group]);
+            const remaining = items.length - visibleItems.length;
             const header = sectionHeader(group, rows);
             const body = (
               <div>
-                {visible.map((p, i) => paymentRow(p, i === visible.length - 1 && remaining === 0))}
+                {visibleItems.map((item, i) => {
+                  const isLast = i === visibleItems.length - 1 && remaining === 0;
+                  return item.kind === "single"
+                    ? paymentRow(item.payment, isLast)
+                    : mortgageSummaryRow(item, group, isLast);
+                })}
                 {remaining > 0 && (
                   <button
                     type="button"
