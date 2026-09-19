@@ -144,7 +144,7 @@ describe("groupTimeline and KPI totals (hand-checked)", () => {
     inst({ id: 2, property_id: 1, due_date: "2026-09-10", amount_fils: 25_000, status: "upcoming" }), // overdue
     inst({ id: 3, property_id: 1, due_date: "2026-09-25", amount_fils: 100_000 }),                   // this month
     inst({ id: 4, property_id: 1, due_date: "2026-10-05", amount_fils: 10_000 }),                     // next 30
-    inst({ id: 5, property_id: 1, due_date: "2026-11-01", amount_fils: 20_000 }),                     // 60–90
+    inst({ id: 5, property_id: 1, due_date: "2026-11-01", amount_fils: 20_000 }),                     // 30–90
     inst({ id: 6, property_id: 1, due_date: "2027-03-01", amount_fils: 500_000 }),                    // beyond 90
     inst({ id: 9, property_id: 1, due_date: "2026-07-01", amount_fils: 30_000, paid_date: "2026-07-01" }), // paid
   ];
@@ -192,7 +192,7 @@ describe("kpiMatches (show-your-work filtering)", () => {
     expect(kpiMatches("overdue", byKey["i5"]!, AS_OF)).toBe(false);
   });
 
-  it("next_90 KPI spans this-month, next 30 and 60–90 but not overdue or beyond", () => {
+  it("next_90 KPI spans this-month, next 30 and 30–90 but not overdue or beyond", () => {
     expect(kpiMatches("next_90", byKey["i1"]!, AS_OF)).toBe(false);
     expect(kpiMatches("next_90", byKey["i2"]!, AS_OF)).toBe(true);
     expect(kpiMatches("next_90", byKey["i3"]!, AS_OF)).toBe(true);

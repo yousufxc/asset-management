@@ -90,7 +90,7 @@ export const GROUP_LABEL: Record<TimelineGroup, string> = {
   overdue: "Overdue",
   due_this_month: "Due This Month",
   next_30: "Next 30 Days",
-  next_60_90: "Next 60–90 Days",
+  next_60_90: "Next 30–90 Days",
   beyond_90: "Beyond 90 Days",
   paid: "Paid",
 };

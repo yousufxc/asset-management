@@ -85,7 +85,7 @@ describe("InstalmentsTab render smoke", () => {
     expect(html).toContain(formatAed(75_000));
     expect(html).toContain("Due This Month (1)");
     expect(html).toContain("Next 30 Days (2)");
-    expect(html).toContain("Next 60–90 Days (3)");
+    expect(html).toContain("Next 30–90 Days (3)");
     expect(html).toContain("Beyond 90 Days (2)");
     expect(html).toContain("<details");
     expect(html).toContain("Paid (9)");
