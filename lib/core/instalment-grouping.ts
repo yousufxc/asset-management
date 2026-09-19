@@ -90,7 +90,7 @@ export const GROUP_LABEL: Record<TimelineGroup, string> = {
   overdue: "Overdue",
   due_this_month: "Due This Month",
   next_30: "Next 30 Days",
-  next_60_90: "Next 60–90 Days",
+  next_60_90: "Next 30–90 Days",
   beyond_90: "Beyond 90 Days",
   paid: "Paid",
 };
@@ -213,4 +213,20 @@ export function kpiMatches(kpi: KpiKey, p: UnifiedPayment, asOfIso: string): boo
     case "remaining":
       return p.status !== "paid";
   }
+}
+
+/** The three dropdown filters (property / type / status). The KPI-card click
+ *  filter is intentionally NOT part of this: KPIs must respond to the
+ *  dropdowns, while the KPI click only filters the timeline (rule 2.1). */
+export interface DropdownFilters {
+  propertyId: number | null;
+  type: "all" | "installment" | "mortgage";
+  status: "all" | "overdue" | "upcoming" | "paid";
+}
+
+export function dropdownMatches(p: UnifiedPayment, f: DropdownFilters): boolean {
+  if (f.propertyId !== null && p.propertyId !== f.propertyId) return false;
+  if (f.type !== "all" && p.type !== f.type) return false;
+  if (f.status !== "all" && p.status !== f.status) return false;
+  return true;
 }
