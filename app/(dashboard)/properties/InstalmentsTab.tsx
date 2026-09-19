@@ -86,6 +86,16 @@ export default function InstalmentsTab({
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [unified, propertyById]);
 
+  const filtersActive =
+    propertyFilter !== null || typeFilter !== "all" || statusFilter !== "all" || kpiFilter !== null;
+
+  function clearAllFilters() {
+    setPropertyFilter(null);
+    setTypeFilter("all");
+    setStatusFilter("all");
+    setKpiFilter(null);
+  }
+
   const kpiCards: { key: KpiKey; total: { amountFils: number; count: number }; color: string }[] = [
     { key: "overdue", total: kpis.overdue, color: "var(--bad)" },
     { key: "due_this_month", total: kpis.dueThisMonth, color: "var(--warn)" },
@@ -186,6 +196,25 @@ export default function InstalmentsTab({
       </div>
 
       <AnimateOnScroll><div className="card" style={{ padding: "12px 20px" }}>
+        {filtersActive && (
+          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+            <button
+              type="button"
+              onClick={clearAllFilters}
+              style={{
+                background: "transparent",
+                color: "var(--muted)",
+                border: "none",
+                margin: 0,
+                padding: "4px 12px",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              Clear Filters
+            </button>
+          </div>
+        )}
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 180 }}>
             <label>Property</label>
