@@ -17,6 +17,7 @@ import {
 } from "@/lib/core/instalment-grouping";
 import { MarkPaidButton, MarkUnpaidButton } from "./InstallmentActions";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
+import ConfirmModal from "@/app/components/ConfirmModal";
 
 const typeBadgeStyle: React.CSSProperties = {
   display: "inline-block",
@@ -49,6 +50,8 @@ export default function InstalmentsTab({
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [kpiFilter, setKpiFilter] = useState<KpiKey | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [showExportConfirm, setShowExportConfirm] = useState(false);
 
   const propertyById = useMemo(() => {
     const m = new Map<number, Property>();
@@ -94,6 +97,26 @@ export default function InstalmentsTab({
     setTypeFilter("all");
     setStatusFilter("all");
     setKpiFilter(null);
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/instalments/export");
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      a.download = `instalments-export-${dateStr}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Export error:", e);
+    } finally {
+      setExporting(false);
+    }
   }
 
   const kpiCards: { key: KpiKey; total: { amountFils: number; count: number }; color: string }[] = [
@@ -196,8 +219,8 @@ export default function InstalmentsTab({
       </div>
 
       <AnimateOnScroll><div className="card" style={{ padding: "12px 20px" }}>
-        {filtersActive && (
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 4 }}>
+          {filtersActive && (
             <button
               type="button"
               onClick={clearAllFilters}
@@ -213,8 +236,16 @@ export default function InstalmentsTab({
             >
               Clear Filters
             </button>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={() => setShowExportConfirm(true)}
+            disabled={exporting}
+            style={{ margin: 0, fontSize: 13, padding: "4px 12px" }}
+          >
+            {exporting ? "Exporting..." : "Export"}
+          </button>
+        </div>
         <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           <div style={{ flex: 1, minWidth: 180 }}>
             <label>Property</label>
@@ -281,6 +312,19 @@ export default function InstalmentsTab({
             );
           })}
         </div></AnimateOnScroll>
+      )}
+
+      {showExportConfirm && (
+        <ConfirmModal
+          title="Export Data"
+          message="Are you sure you want to export instalments data?"
+          confirmLabel="Export"
+          onConfirm={() => {
+            handleExport();
+            setShowExportConfirm(false);
+          }}
+          onCancel={() => setShowExportConfirm(false)}
+        />
       )}
     </>
   );
