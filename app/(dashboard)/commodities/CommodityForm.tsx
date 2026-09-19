@@ -120,8 +120,9 @@ export default function CommodityForm() {
   }
 
   return (
-    <AnimateOnScroll><form onSubmit={onSubmit} className="card">
-      <h3 style={{ marginTop: 0 }}>Add commodity</h3>
+    <AnimateOnScroll><div>
+      <form onSubmit={onSubmit} className="card">
+        <h3 style={{ marginTop: 0 }}>Add commodity</h3>
       <div className="row">
         <div style={{ flex: 1, minWidth: 160 }}>
           <label>Type *</label>
@@ -269,6 +270,16 @@ export default function CommodityForm() {
       <button type="submit" disabled={saving}>
         {saving ? "Saving…" : "Add commodity"}
       </button>
-    </form></AnimateOnScroll>
+      </form>
+
+      <hr style={{ margin: "20px 0 12px", borderColor: "var(--border)" }} />
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        style={{ marginTop: 0, background: "var(--panel-2)", color: "var(--muted)" }}
+      >
+        Close
+      </button>
+    </div></AnimateOnScroll>
   );
 }

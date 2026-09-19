@@ -16,6 +16,7 @@ import CommodityWeightByMetalChart from "./charts/CommodityWeightByMetalChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 import ConfirmModal from "@/app/components/ConfirmModal";
+import InfoIcon from "@/app/components/InfoIcon";
 
 const dropdownBtnStyle: React.CSSProperties = {
   display: "block",
@@ -229,15 +230,21 @@ export default function CommodityContent({
             <AnimateChartOnScroll><CommodityWeightByMetalChart enriched={enriched} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
-            <h4 style={{ marginTop: 0 }}>P&L by Holding</h4>
+            <h4 style={{ marginTop: 0 }}>
+              P&amp;L by Holding <InfoIcon title="P&L by Holding" text="Profit or loss for each holding: current value minus what you paid (total weight × price, including all pieces). Green bars are gains, red bars are losses. Uses live spot prices when available." />
+            </h4>
             <AnimateChartOnScroll><CommodityPLByHoldingChart enriched={enriched} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
-            <h4 style={{ marginTop: 0 }}>Cost vs Current Value</h4>
+            <h4 style={{ marginTop: 0 }}>
+              Cost vs Current Value <InfoIcon title="Cost vs Current Value" text="Compares what you paid for each holding (grey bar) against what it is worth now (amber bar), including all pieces. Uses live spot prices when available." />
+            </h4>
             <AnimateChartOnScroll><CommodityCostVsValueChart enriched={enriched} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card" style={{ gridColumn: "1 / -1" }}>
-            <h4 style={{ marginTop: 0 }}>ROI % by Holding</h4>
+            <h4 style={{ marginTop: 0 }}>
+              ROI % by Holding <InfoIcon title="ROI % by Holding" text="Return on investment for each holding: profit or loss as a percentage of what you paid, including all pieces. Green is a gain, red is a loss. Uses live spot prices when available." />
+            </h4>
             <AnimateChartOnScroll><CommodityROIChart enriched={enriched} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
         </div>
