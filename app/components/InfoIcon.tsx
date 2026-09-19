@@ -9,6 +9,7 @@ interface Props {
 
 export default function InfoIcon({ title, text }: Props) {
   const [open, setOpen] = useState(false);
+  const [alignRight, setAlignRight] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -29,6 +30,15 @@ export default function InfoIcon({ title, text }: Props) {
     };
   }, [open]);
 
+  function toggle() {
+    const el = wrapRef.current;
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      setAlignRight(window.innerWidth - rect.right < 300);
+    }
+    setOpen((p) => !p);
+  }
+
   return (
     <span
       ref={wrapRef}
@@ -38,7 +48,7 @@ export default function InfoIcon({ title, text }: Props) {
         type="button"
         aria-label={`About ${title}`}
         aria-expanded={open}
-        onClick={() => setOpen((p) => !p)}
+        onClick={toggle}
         style={{
           border: "none",
           background: "transparent",
@@ -55,11 +65,11 @@ export default function InfoIcon({ title, text }: Props) {
       </button>
       {open && (
         <div
-          role="tooltip"
           style={{
             position: "absolute",
             top: "calc(100% + 8px)",
-            left: 0,
+            left: alignRight ? undefined : 0,
+            right: alignRight ? 0 : undefined,
             zIndex: 40,
             width: 300,
             maxWidth: "min(300px, calc(100vw - 48px))",
