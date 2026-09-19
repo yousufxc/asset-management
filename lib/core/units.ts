@@ -32,6 +32,22 @@ export function formatAed(fils: number): string {
   return `AED ${aed.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+/**
+ * Compact AED for KPI numbers: "AED 1.2M", "AED 345.0K", otherwise the full
+ * "AED 1,234.56". Rounds to whole AED first so the KPI never shows fils-level
+ * noise.
+ */
+export function formatAedShort(fils: number): string {
+  const aed = Math.round(fils / 100);
+  if (Math.abs(aed) >= 1_000_000) {
+    return `AED ${(aed / 1_000_000).toFixed(1)}M`;
+  }
+  if (Math.abs(aed) >= 1_000) {
+    return `AED ${(aed / 1_000).toFixed(1)}K`;
+  }
+  return formatAed(fils);
+}
+
 // ---------------------------------------------------------------------------
 // WEIGHT: convert to grams (canonical unit used by valuation).
 // ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ import {
   parseUaeDateToIso,
   parseDateToIso,
   formatIsoToUae,
+  formatAedShort,
 } from "@/lib/core/units";
 
 describe("money AED <-> fils", () => {
@@ -65,6 +66,34 @@ describe("UAE date parsing (DD/MM/YYYY) — the silent-bug guard (rule 2.2)", ()
   });
   it("round-trips to UAE display", () => {
     expect(formatIsoToUae("2026-03-07")).toBe("07/03/2026");
+  });
+});
+
+describe("formatAedShort (KPI display, hand-checked)", () => {
+  it("shows full AED below AED 1,000", () => {
+    expect(formatAedShort(50_000)).toBe("AED 500.00");
+    expect(formatAedShort(0)).toBe("AED 0.00");
+  });
+
+  it("rounds to whole AED first, so 999.99 AED crosses into K", () => {
+    // 99,999 fils = AED 999.99 -> rounds to 1,000 AED -> "1.0K", not "1,000.00".
+    expect(formatAedShort(99_999)).toBe("AED 1.0K");
+  });
+
+  it("formats thousands as K", () => {
+    // 1,000,000 fils = AED 10,000.
+    expect(formatAedShort(1_000_000)).toBe("AED 10.0K");
+    // 123,456 fils = AED 1,234.56 -> 1,235 AED -> 1.2K.
+    expect(formatAedShort(123_456)).toBe("AED 1.2K");
+  });
+
+  it("formats millions as M", () => {
+    // 200,000,000 fils = AED 2,000,000.
+    expect(formatAedShort(200_000_000)).toBe("AED 2.0M");
+  });
+
+  it("keeps the sign on negative KPI values", () => {
+    expect(formatAedShort(-123_456)).toBe("AED -1.2K");
   });
 });
 
