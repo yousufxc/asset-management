@@ -267,10 +267,9 @@ export default function PropertyContent({
 
   function infoHeader(label: string, infoTitle: string, infoText: string) {
     return (
-      <div style={{ display: "flex", alignItems: "center", marginTop: 0 }}>
-        <h4 style={{ margin: 0 }}>{label}</h4>
-        <InfoIcon title={infoTitle} text={infoText} />
-      </div>
+      <h4 style={{ marginTop: 0 }}>
+        {label} <InfoIcon title={infoTitle} text={infoText} />
+      </h4>
     );
   }
 
