@@ -49,7 +49,7 @@ const populatedSnapshot: PortfolioSnapshot = {
   ],
   commodities: [
     {
-      id: 1, metal_type: "gold", weight: 100, weight_unit: "gram",
+      id: 1, metal_type: "gold", weight: 100, weight_unit: "gram", piece_count: 1,
       current_price_per_unit_fils: 300000, bought_price_per_unit_fils: 250000,
       target_sell_price_per_unit_fils: null, purchase_date: "2024-06-01",
       current_price_date: "2026-07-01", notes: null,

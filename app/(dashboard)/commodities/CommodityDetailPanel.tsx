@@ -104,6 +104,9 @@ export default function CommodityDetailPanel({
     const weightVal = numOrNull("weight");
     if (weightVal !== commodity.weight) payload.weight = weightVal;
 
+    const pieceCountVal = numOrNull("piece_count");
+    if (pieceCountVal !== commodity.piece_count) payload.piece_count = pieceCountVal;
+
     const weightUnitVal = String(fd.get("weight_unit") ?? "");
     if (weightUnitVal !== commodity.weight_unit) payload.weight_unit = weightUnitVal;
 
@@ -199,7 +202,14 @@ export default function CommodityDetailPanel({
       </div>
       <div className="detail-row">
         <span className="detail-label">Amount</span>
-        <span>{commodity.weight} {commodity.weight_unit}</span>
+        <span>
+          {commodity.weight * commodity.piece_count} {commodity.weight_unit}
+          {commodity.piece_count > 1 && (
+            <span style={{ fontSize: 11, color: "var(--muted)", marginLeft: 6 }}>
+              ({commodity.piece_count} × {commodity.weight} {commodity.weight_unit})
+            </span>
+          )}
+        </span>
       </div>
       <div className="detail-row">
         <span className="detail-label">Price when bought</span>
@@ -288,7 +298,7 @@ export default function CommodityDetailPanel({
           </select>
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label>Unit &amp; Weight *</label>
+          <label>Unit &amp; Weight per piece *</label>
           {!unit ? (
             <select
               value=""
@@ -334,6 +344,19 @@ export default function CommodityDetailPanel({
               <input type="hidden" name="weight_unit" value={unit} />
             </div>
           )}
+        </div>
+        <div style={{ flex: 1, minWidth: 120 }}>
+          <label>Number of pieces *</label>
+          <input
+            name="piece_count"
+            type="number"
+            min={1}
+            step={1}
+            required
+            defaultValue={commodity.piece_count}
+            placeholder="e.g. 5"
+            onKeyDown={numeralOnly}
+          />
         </div>
       </div>
       <div className="row">
@@ -451,7 +474,7 @@ export default function CommodityDetailPanel({
       <div className="detail-header">
         <h3 style={{ margin: 0 }}>
           {METAL_LABEL[commodity.metal_type] ?? commodity.metal_type}{" "}
-          ({commodity.weight} {displayUnit})
+          ({commodity.weight * commodity.piece_count} {displayUnit})
         </h3>
         <button
           type="button"

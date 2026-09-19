@@ -385,7 +385,12 @@ export default function CommodityContent({
                           </a>
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>
-                          {c.weight} {c.weight_unit}
+                          {c.weight * c.piece_count} {c.weight_unit}
+                          {c.piece_count > 1 && (
+                            <span className="muted" style={{ marginLeft: 6, fontSize: 11 }}>
+                              ({c.piece_count} pcs)
+                            </span>
+                          )}
                         </td>
                         <td style={{ whiteSpace: "nowrap" }}>{formatIsoToUae(c.purchase_date)}</td>
                         <td style={{ whiteSpace: "nowrap" }}>

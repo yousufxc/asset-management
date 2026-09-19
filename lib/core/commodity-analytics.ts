@@ -53,13 +53,23 @@ export interface EnrichedCommodity {
   plPct: number | null;
 }
 
+/**
+ * Total amount held in the commodity's own weight_unit: weight per piece ×
+ * number of pieces. All value/weight calculations must go through this so
+ * piece counts are always included.
+ */
+export function totalWeightInUnit(c: Commodity): number {
+  return c.weight * (c.piece_count ?? 1);
+}
+
 export function enrichCommodity(c: Commodity): EnrichedCommodity {
-  const cost = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.bought_price_per_unit_fils });
-  const value = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.current_price_per_unit_fils });
+  const totalWeight = totalWeightInUnit(c);
+  const cost = commodityTotalFils({ weight: totalWeight, pricePerUnitFils: c.bought_price_per_unit_fils });
+  const value = commodityTotalFils({ weight: totalWeight, pricePerUnitFils: c.current_price_per_unit_fils });
   const hasCurrent = c.current_price_per_unit_fils > 0;
   const pl = value.totalFils - cost.totalFils;
   const plPct = hasCurrent && cost.totalFils > 0 ? (pl / cost.totalFils) * 100 : null;
-  const grams = toGrams(c.weight, c.weight_unit);
+  const grams = toGrams(totalWeight, c.weight_unit);
   return { commodity: c, costFils: cost.totalFils, valueFils: value.totalFils, grams, hasCurrent, pl, plPct };
 }
 

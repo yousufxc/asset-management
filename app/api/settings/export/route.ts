@@ -129,7 +129,7 @@ function buildCommoditiesSheet(wb: ExcelJS.Workbook, commodities: Commodity[]): 
   const ws = wb.addWorksheet("Commodities");
   const enriched = enrichCommodities(commodities);
   const cols = [
-    "Metal Type", "Weight", "Unit", "Purchase Date",
+    "Metal Type", "Weight per Piece", "Unit", "Pieces", "Purchase Date",
     "Bought Price/Unit (AED)", "Cost (AED)", "Current Price/Unit (AED)",
     "Current Value (AED)", "Target Sell/Unit (AED)", "Target %",
     "P/L (AED)", "P/L %", "Notes",
@@ -145,7 +145,7 @@ function buildCommoditiesSheet(wb: ExcelJS.Workbook, commodities: Commodity[]): 
       : null;
 
     const row = ws.addRow([
-      c.metal_type, c.weight, c.weight_unit,
+      c.metal_type, c.weight, c.weight_unit, c.piece_count,
       dateVal(c.purchase_date),
       aedVal(c.bought_price_per_unit_fils),
       aedVal(e.costFils),
@@ -157,18 +157,18 @@ function buildCommoditiesSheet(wb: ExcelJS.Workbook, commodities: Commodity[]): 
       pctVal(e.hasCurrent ? e.plPct : null),
       c.notes ?? "",
     ]);
-    fmtDate(row.getCell(4));
-    fmtMoney(row.getCell(5));
+    fmtDate(row.getCell(5));
     fmtMoney(row.getCell(6));
     fmtMoney(row.getCell(7));
-    if (e.hasCurrent) fmtMoney(row.getCell(8));
-    fmtMoney(row.getCell(9));
-    fmtPct(row.getCell(10));
-    if (e.hasCurrent) fmtMoney(row.getCell(11));
-    fmtPct(row.getCell(12));
+    fmtMoney(row.getCell(8));
+    if (e.hasCurrent) fmtMoney(row.getCell(9));
+    fmtMoney(row.getCell(10));
+    fmtPct(row.getCell(11));
+    if (e.hasCurrent) fmtMoney(row.getCell(12));
+    fmtPct(row.getCell(13));
   }
   ws.getColumn(1).width = 14;
-  ws.getColumn(13).width = 30;
+  ws.getColumn(14).width = 30;
   for (let i = 2; i <= cols.length; i++) {
     const col = ws.getColumn(i);
     if (col) col.width = Math.max(14, (cols[i - 1]?.length ?? 10));

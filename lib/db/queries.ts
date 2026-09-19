@@ -343,16 +343,17 @@ export function insertCommodity(input: CommodityInput): Commodity {
   const db = getDb();
   const stmt = db.prepare(`
     INSERT INTO commodities
-      (metal_type, weight, weight_unit, current_price_per_unit_fils,
+      (metal_type, weight, weight_unit, piece_count, current_price_per_unit_fils,
        bought_price_per_unit_fils, target_sell_price_per_unit_fils, purchase_date, current_price_date, notes)
     VALUES
-      (@metal_type, @weight, @weight_unit, @current_price_per_unit_fils,
+      (@metal_type, @weight, @weight_unit, @piece_count, @current_price_per_unit_fils,
        @bought_price_per_unit_fils, @target_sell_price_per_unit_fils, @purchase_date, @current_price_date, @notes)
   `);
   const info = stmt.run({
     metal_type: input.metal_type,
     weight: input.weight,
     weight_unit: input.weight_unit,
+    piece_count: input.piece_count ?? 1,
     current_price_per_unit_fils: aedToFils(input.current_price_per_unit_aed),
     bought_price_per_unit_fils: aedToFils(input.bought_price_per_unit_aed),
     target_sell_price_per_unit_fils: aedOrNull(input.target_sell_price_per_unit_aed),
@@ -389,6 +390,7 @@ export function updateCommodity(id: number, data: CommodityUpdate): Commodity | 
   if (data.metal_type !== undefined) { sets.push("metal_type = @metal_type"); params.metal_type = data.metal_type; }
   if (data.weight !== undefined) { sets.push("weight = @weight"); params.weight = data.weight; }
   if (data.weight_unit !== undefined) { sets.push("weight_unit = @weight_unit"); params.weight_unit = data.weight_unit; }
+  if (data.piece_count !== undefined) { sets.push("piece_count = @piece_count"); params.piece_count = data.piece_count; }
   if (data.current_price_per_unit_aed !== undefined) { sets.push("current_price_per_unit_fils = @current_price_per_unit_fils"); params.current_price_per_unit_fils = aedToFils(data.current_price_per_unit_aed); }
   if (data.bought_price_per_unit_aed !== undefined) { sets.push("bought_price_per_unit_fils = @bought_price_per_unit_fils"); params.bought_price_per_unit_fils = aedToFils(data.bought_price_per_unit_aed); }
   if (data.target_sell_price_per_unit_aed !== undefined) { sets.push("target_sell_price_per_unit_fils = @target_sell_price_per_unit_fils"); params.target_sell_price_per_unit_fils = aedOrNull(data.target_sell_price_per_unit_aed); }
