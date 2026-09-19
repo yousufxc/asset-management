@@ -6,6 +6,7 @@ import { formatAed, formatAedShort, formatIsoToUae } from "@/lib/core/units";
 import {
   buildUnifiedPayments,
   computeKpiTotals,
+  dropdownMatches,
   groupTimeline,
   kpiMatches,
   KPI_LABEL,
@@ -60,17 +61,20 @@ export default function InstalmentsTab({
     [installments, mortgages, asOfIso],
   );
 
-  const kpis = useMemo(() => computeKpiTotals(unified, asOfIso), [unified, asOfIso]);
+  // KPIs respond to the three dropdown filters, but NOT to the KPI-card click
+  // filter — clicking a KPI card only narrows the timeline (show-your-work).
+  const dropdownFiltered = useMemo(() => {
+    return unified.filter((p) =>
+      dropdownMatches(p, { propertyId: propertyFilter, type: typeFilter, status: statusFilter }),
+    );
+  }, [unified, propertyFilter, typeFilter, statusFilter]);
+
+  const kpis = useMemo(() => computeKpiTotals(dropdownFiltered, asOfIso), [dropdownFiltered, asOfIso]);
 
   const filtered = useMemo(() => {
-    return unified.filter((p) => {
-      if (propertyFilter !== null && p.propertyId !== propertyFilter) return false;
-      if (typeFilter !== "all" && p.type !== typeFilter) return false;
-      if (statusFilter !== "all" && p.status !== statusFilter) return false;
-      if (kpiFilter !== null && !kpiMatches(kpiFilter, p, asOfIso)) return false;
-      return true;
-    });
-  }, [unified, propertyFilter, typeFilter, statusFilter, kpiFilter, asOfIso]);
+    if (kpiFilter === null) return dropdownFiltered;
+    return dropdownFiltered.filter((p) => kpiMatches(kpiFilter, p, asOfIso));
+  }, [dropdownFiltered, kpiFilter, asOfIso]);
 
   const grouped = useMemo(() => groupTimeline(filtered, asOfIso), [filtered, asOfIso]);
 

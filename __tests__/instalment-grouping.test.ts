@@ -3,6 +3,7 @@ import {
   addDaysIso,
   buildUnifiedPayments,
   computeKpiTotals,
+  dropdownMatches,
   endOfMonthIso,
   groupTimeline,
   kpiMatches,
@@ -209,5 +210,59 @@ describe("kpiMatches (show-your-work filtering)", () => {
   it("due_this_month KPI matches only that group", () => {
     expect(kpiMatches("due_this_month", byKey["i2"]!, AS_OF)).toBe(true);
     expect(kpiMatches("due_this_month", byKey["i3"]!, AS_OF)).toBe(false);
+  });
+});
+
+describe("dropdownMatches and filter-aware KPIs (hand-checked)", () => {
+  // Property 1: overdue 50,000 + this-month 100,000 instalments.
+  // Property 2: 12-month 0% mortgage of 12,000,000 -> 1,000,000/month,
+  //   start 2026-01-15: Feb..Sep paid (8), Oct..Jan upcoming (4).
+  const installments = [
+    inst({ id: 1, property_id: 1, due_date: "2026-08-15", amount_fils: 50_000, status: "upcoming" }),
+    inst({ id: 2, property_id: 1, due_date: "2026-09-25", amount_fils: 100_000 }),
+  ];
+  const payments = buildUnifiedPayments(installments, [mortgage({})], AS_OF);
+  const all = { propertyId: null, type: "all", status: "all" } as const;
+
+  it("matches everything with no dropdown filters", () => {
+    expect(payments.filter((p) => dropdownMatches(p, all))).toHaveLength(14);
+  });
+
+  it("filters by property", () => {
+    const f = { ...all, propertyId: 1 };
+    const matches = payments.filter((p) => dropdownMatches(p, f));
+    expect(matches.map((p) => p.key).sort()).toEqual(["i1", "i2"]);
+  });
+
+  it("filters by type mortgage", () => {
+    const f = { ...all, type: "mortgage" as const };
+    expect(payments.filter((p) => dropdownMatches(p, f))).toHaveLength(12);
+  });
+
+  it("filters by status upcoming", () => {
+    const f = { ...all, status: "upcoming" as const };
+    // instalments: 1 overdue, 1 upcoming; mortgage: 8 paid, 4 upcoming -> 5
+    expect(payments.filter((p) => dropdownMatches(p, f))).toHaveLength(5);
+  });
+
+  it("combines filters with AND logic", () => {
+    const f = { propertyId: 2, type: "mortgage" as const, status: "paid" as const };
+    expect(payments.filter((p) => dropdownMatches(p, f))).toHaveLength(8);
+  });
+
+  it("KPI totals change when dropdown filters are applied", () => {
+    const allKpis = computeKpiTotals(payments, AS_OF);
+    expect(allKpis.overdue).toEqual({ amountFils: 50_000, count: 1 });
+
+    // Filtering to property 2 (mortgage only) removes the overdue instalment
+    // and shrinks remaining to the 4 upcoming mortgage payments.
+    const mortgageOnly = payments.filter((p) =>
+      dropdownMatches(p, { propertyId: 2, type: "all", status: "all" }),
+    );
+    const mortgageKpis = computeKpiTotals(mortgageOnly, AS_OF);
+    expect(mortgageKpis.overdue).toEqual({ amountFils: 0, count: 0 });
+    expect(mortgageKpis.remaining).toEqual({ amountFils: 4_000_000, count: 4 });
+    expect(mortgageKpis.dueNext90).toEqual({ amountFils: 3_000_000, count: 3 }); // Oct, Nov, Dec
+    expect(mortgageKpis.dueThisMonth).toEqual({ amountFils: 0, count: 0 });
   });
 });

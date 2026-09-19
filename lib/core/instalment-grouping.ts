@@ -214,3 +214,19 @@ export function kpiMatches(kpi: KpiKey, p: UnifiedPayment, asOfIso: string): boo
       return p.status !== "paid";
   }
 }
+
+/** The three dropdown filters (property / type / status). The KPI-card click
+ *  filter is intentionally NOT part of this: KPIs must respond to the
+ *  dropdowns, while the KPI click only filters the timeline (rule 2.1). */
+export interface DropdownFilters {
+  propertyId: number | null;
+  type: "all" | "installment" | "mortgage";
+  status: "all" | "overdue" | "upcoming" | "paid";
+}
+
+export function dropdownMatches(p: UnifiedPayment, f: DropdownFilters): boolean {
+  if (f.propertyId !== null && p.propertyId !== f.propertyId) return false;
+  if (f.type !== "all" && p.type !== f.type) return false;
+  if (f.status !== "all" && p.status !== f.status) return false;
+  return true;
+}
