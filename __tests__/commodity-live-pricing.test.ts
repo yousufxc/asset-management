@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { applyLiveSpotPrices } from "@/lib/core/commodity-analytics";
+import { applyLiveSpotPrices, enrichCommodity, totalWeightInUnit } from "@/lib/core/commodity-analytics";
 import type { Commodity } from "@/lib/types";
 
 function commodity(over: Partial<Commodity>): Commodity {
@@ -8,6 +8,7 @@ function commodity(over: Partial<Commodity>): Commodity {
     metal_type: "gold",
     weight: 100,
     weight_unit: "gram",
+    piece_count: 1,
     current_price_per_unit_fils: 20_000, // stored snapshot
     bought_price_per_unit_fils: 15_000,
     target_sell_price_per_unit_fils: null,
@@ -72,5 +73,42 @@ describe("applyLiveSpotPrices", () => {
     );
     expect(out[0]!.source).toBe("live");
     expect(out[1]!.source).toBe("stored");
+  });
+});
+
+describe("totalWeightInUnit", () => {
+  it("multiplies per-piece weight by piece count", () => {
+    expect(totalWeightInUnit(commodity({ weight: 10, piece_count: 5 }))).toBe(50);
+  });
+
+  it("defaults to 1 piece when piece_count is missing", () => {
+    const c = commodity({ piece_count: 1 });
+    delete (c as Partial<Commodity>).piece_count;
+    expect(totalWeightInUnit(c)).toBe(100);
+  });
+});
+
+describe("enrichCommodity with piece count", () => {
+  it("cost, value, grams, and P/L all include piece count", () => {
+    // 10 g per piece × 5 pieces = 50 g total.
+    const c = commodity({
+      weight: 10,
+      piece_count: 5,
+      weight_unit: "gram",
+      bought_price_per_unit_fils: 10_000, // AED 100/g
+      current_price_per_unit_fils: 12_000, // AED 120/g
+    });
+    const e = enrichCommodity(c);
+    expect(e.grams).toBe(50);
+    expect(e.costFils).toBe(50 * 10_000);
+    expect(e.valueFils).toBe(50 * 12_000);
+    expect(e.pl).toBe(50 * 2_000);
+    expect(e.plPct).toBeCloseTo(20);
+  });
+
+  it("converts piece-adjusted weight to grams across units", () => {
+    // 2 kg per piece × 3 pieces = 6 kg = 6000 g.
+    const e = enrichCommodity(commodity({ weight: 2, piece_count: 3, weight_unit: "kg" }));
+    expect(e.grams).toBe(6000);
   });
 });

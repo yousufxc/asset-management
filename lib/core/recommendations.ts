@@ -8,6 +8,7 @@
  */
 import { computeRunway, addMonthsIso } from "@/lib/core/runway";
 import { commodityTotalFils } from "@/lib/core/valuation";
+import { totalWeightInUnit } from "@/lib/core/commodity-analytics";
 import { formatAed, formatIsoToUae } from "@/lib/core/units";
 import type { RunwayInput, RunwayResult } from "@/lib/core/runway";
 import type { Property, CashAccount, Commodity, Installment } from "@/lib/types";
@@ -123,8 +124,8 @@ export function computeRecommendations(
   const commodityValueMap = new Map<number, number>();
   const validCommodities: Commodity[] = [];
   for (const c of commodities) {
-    if (c.current_price_per_unit_fils <= 0 || c.weight <= 0) continue;
-    const { totalFils } = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.current_price_per_unit_fils });
+    if (c.current_price_per_unit_fils <= 0 || totalWeightInUnit(c) <= 0) continue;
+    const { totalFils } = commodityTotalFils({ weight: totalWeightInUnit(c), pricePerUnitFils: c.current_price_per_unit_fils });
     if (totalFils <= 0) continue;
     commodityValueMap.set(c.id, totalFils);
     validCommodities.push(c);
@@ -134,13 +135,14 @@ export function computeRecommendations(
   if (hasShortfall) {
     for (const c of validCommodities) {
       const totalFils = commodityValueMap.get(c.id)!;
+      const totalWeight = totalWeightInUnit(c);
 
       // a) Minimal — cover only the first unpaid installment
       const firstInst = unpaid[0];
       if (firstInst && totalFils >= firstInst.amount_fils) {
-        const weightNeeded = Math.ceil((firstInst.amount_fils / totalFils) * c.weight * 100) / 100;
-        const weightToSell = Math.min(weightNeeded, c.weight);
-        const sellValue = Math.round((weightToSell / c.weight) * totalFils);
+        const weightNeeded = Math.ceil((firstInst.amount_fils / totalFils) * totalWeight * 100) / 100;
+        const weightToSell = Math.min(weightNeeded, totalWeight);
+        const sellValue = Math.round((weightToSell / totalWeight) * totalFils);
 
         const criticality = firstInst.due_date <= addDays(asOf, 30);
         recs.push({
@@ -152,7 +154,7 @@ export function computeRecommendations(
           description: `Sell ${weightToSell}${c.weight_unit} of ${c.metal_type} (worth ${formatAed(sellValue)}) to cover ${firstInst.milestone_label ?? `Installment #${firstInst.id}`} (${formatAed(firstInst.amount_fils)} due ${formatIsoToUae(firstInst.due_date)}). Preserves ${formatAed(totalFils - sellValue)} of your position.`,
           commodityId: c.id,
           metalType: c.metal_type,
-          weight: c.weight,
+          weight: totalWeight,
           weightUnit: c.weight_unit,
           weightToSell,
           totalValueFils: sellValue,
@@ -186,8 +188,8 @@ export function computeRecommendations(
         if (covered.length > 1) {
           const critical = covered.some((i) => i.dueDate <= addDays(asOf, 30));
           const effectiveWeight = Math.min(
-            Math.ceil(((totalFils - remaining) / totalFils) * c.weight * 100) / 100,
-            c.weight,
+            Math.ceil(((totalFils - remaining) / totalFils) * totalWeight * 100) / 100,
+            totalWeight,
           );
 
           recs.push({
@@ -199,7 +201,7 @@ export function computeRecommendations(
             description: `Sell ${effectiveWeight}${c.weight_unit} of ${c.metal_type} (worth ${formatAed(totalFils)}${remaining > 0 ? `, with ${formatAed(remaining)} left over` : ""}) to cover: ${covered.map((i) => `${i.label} (${formatAed(i.amountFils)})`).join(", ")}.`,
             commodityId: c.id,
             metalType: c.metal_type,
-            weight: c.weight,
+            weight: totalWeight,
             weightUnit: c.weight_unit,
             weightToSell: effectiveWeight,
             totalValueFils: totalFils,

@@ -38,7 +38,7 @@ function makeCash(overrides: Partial<CashAccount> = {}): CashAccount {
 
 function makeCommodity(overrides: Partial<Commodity> = {}): Commodity {
   return {
-    id: 1, metal_type: "gold", weight: 50, weight_unit: "gram",
+    id: 1, metal_type: "gold", weight: 50, weight_unit: "gram", piece_count: 1,
     current_price_per_unit_fils: 5000, bought_price_per_unit_fils: 4000,
     target_sell_price_per_unit_fils: null,
     purchase_date: "2025-01-01", current_price_date: "2026-06-01",
@@ -143,6 +143,30 @@ describe("sell_commodity: minimal option", () => {
     expect(minimal.length).toBeGreaterThan(0);
     expect(minimal[0]!.rationale).toBeTruthy();
     expect(minimal[0]!.priority).toBe("critical"); // due within 30 days
+  });
+});
+
+// ─── piece count ───────────────────────────────────────────────────────────
+
+describe("sell_commodity: piece count is included in totals", () => {
+  it("values the whole holding (weight per piece × pieces)", () => {
+    // 10 g per piece × 5 pieces = 50 g total at 10,000 fils/g = 500,000 fils.
+    // First installment is 200,000 → minimal sell ≈ 20 g. With piece count
+    // ignored, the holding would only be 100,000 fils and no rec would appear.
+    const input: RecommendationInput = {
+      asOf, properties: [], cashAccounts: [],
+      commodities: [makeCommodity({ weight: 10, piece_count: 5, current_price_per_unit_fils: 10_000 })],
+      installments: [makeInstallment({ id: 1, amount_fils: 200_000, due_date: "2026-07-01" })],
+      liquidCashFils: 50_000,
+      runwayInput: shortfallInput(50_000),
+    };
+    const recs = computeRecommendations(input);
+    const minimal = recs.filter((r) => r.type === "sell_commodity" && (r as SellCommodityMove).option === "minimal") as SellCommodityMove[];
+    expect(minimal.length).toBe(1);
+    // Sell value covers exactly the 200,000 installment (40% of the 500,000 holding).
+    expect(minimal[0]!.totalValueFils).toBe(200_000);
+    expect(minimal[0]!.weightToSell).toBeCloseTo(20, 5);
+    expect(minimal[0]!.weight).toBe(50);
   });
 });
 

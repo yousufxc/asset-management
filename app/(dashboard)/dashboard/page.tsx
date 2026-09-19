@@ -25,7 +25,7 @@ import {
   computeNetEquity,
 } from "@/lib/core/mortgage";
 import type { MortgagePaymentInput } from "@/lib/core/mortgage";
-import { shouldSellAlert, applyLiveSpotPrices } from "@/lib/core/commodity-analytics";
+import { shouldSellAlert, applyLiveSpotPrices, totalWeightInUnit } from "@/lib/core/commodity-analytics";
 import { commodityTotalFils } from "@/lib/core/valuation";
 import { computeRecommendations } from "@/lib/core/recommendations";
 import { fetchSpotPrices, toSpotMap } from "@/lib/integrations/metals";
@@ -171,7 +171,7 @@ export default async function DashboardPage() {
     (sum, c) =>
       sum +
       commodityTotalFils({
-        weight: c.weight,
+        weight: totalWeightInUnit(c),
         pricePerUnitFils: c.current_price_per_unit_fils,
       }).totalFils,
     0,
@@ -462,13 +462,20 @@ export default async function DashboardPage() {
                 <tbody>
                   {livePriced.map(({ commodity: c, source }) => {
                     const value = commodityTotalFils({
-                      weight: c.weight,
+                      weight: totalWeightInUnit(c),
                       pricePerUnitFils: c.current_price_per_unit_fils,
                     }).totalFils;
                     return (
                       <tr key={c.id}>
                         <td>{c.metal_type.charAt(0).toUpperCase()}{c.metal_type.slice(1)}</td>
-                        <td>{c.weight} {c.weight_unit}</td>
+                        <td>
+                          {totalWeightInUnit(c)} {c.weight_unit}
+                          {c.piece_count > 1 && (
+                            <span className="muted" style={{ marginLeft: 6, fontSize: 11 }}>
+                              ({c.piece_count} pcs)
+                            </span>
+                          )}
+                        </td>
                         <td>{formatAed(c.current_price_per_unit_fils)}/{c.weight_unit}</td>
                         <td>
                           <span className="pill upcoming" style={{ fontSize: 10 }}>
@@ -533,14 +540,17 @@ export default async function DashboardPage() {
             <p className="muted">{sellAlerts.length} holding{sellAlerts.length !== 1 ? "s" : ""} hit target price.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {sellAlerts.map((c) => {
-                const currentVal = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.current_price_per_unit_fils }).totalFils;
-                const boughtVal = commodityTotalFils({ weight: c.weight, pricePerUnitFils: c.bought_price_per_unit_fils }).totalFils;
+                const currentVal = commodityTotalFils({ weight: totalWeightInUnit(c), pricePerUnitFils: c.current_price_per_unit_fils }).totalFils;
+                const boughtVal = commodityTotalFils({ weight: totalWeightInUnit(c), pricePerUnitFils: c.bought_price_per_unit_fils }).totalFils;
                 const gain = currentVal - boughtVal;
                 return (
                   <div key={c.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: "1px solid var(--border)" }}>
                     <div>
                       <strong>{c.metal_type.charAt(0).toUpperCase()}{c.metal_type.slice(1)}</strong>
-                      <span className="muted" style={{ marginLeft: 8 }}>{c.weight} {c.weight_unit}</span>
+                      <span className="muted" style={{ marginLeft: 8 }}>
+                        {totalWeightInUnit(c)} {c.weight_unit}
+                        {c.piece_count > 1 && ` · ${c.piece_count} pcs`}
+                      </span>
                     </div>
                     <div>
                       <span className="muted" style={{ marginRight: 8 }}>Target: {formatAed(c.target_sell_price_per_unit_fils!)}/{c.weight_unit}</span>

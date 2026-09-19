@@ -110,8 +110,9 @@ export interface AppSettings {
 export interface Commodity {
   id: number;
   metal_type: MetalType;
-  weight: number; // the amount
+  weight: number; // weight PER PIECE, in weight_unit
   weight_unit: WeightUnit;
+  piece_count: number; // number of pieces held
   current_price_per_unit_fils: number; // price per weight_unit, now
   bought_price_per_unit_fils: number; // price per weight_unit, when bought
   target_sell_price_per_unit_fils: number | null; // user's sell target price per unit

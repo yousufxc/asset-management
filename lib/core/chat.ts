@@ -1,5 +1,6 @@
 import type { Property, CashAccount, Commodity, Installment } from "@/lib/types";
 import { filsToAed } from "@/lib/core/units";
+import { totalWeightInUnit } from "@/lib/core/commodity-analytics";
 
 export interface PortfolioSnapshot {
   properties: Property[];
@@ -14,7 +15,7 @@ export function buildSystemPrompt(snapshot: PortfolioSnapshot, asOfIso: string):
   const totalCashFils = cashAccounts.reduce((s, a) => s + a.current_balance_fils, 0);
   const totalPropertyValueFils = properties.reduce((s, p) => s + (p.current_value_fils ?? 0), 0);
   const totalCommodityValueFils = commodities.reduce(
-    (s, c) => s + Math.round(c.weight * c.current_price_per_unit_fils),
+    (s, c) => s + Math.round(totalWeightInUnit(c) * c.current_price_per_unit_fils),
     0,
   );
   const totalNetWorthFils = totalCashFils + totalPropertyValueFils + totalCommodityValueFils;
@@ -78,11 +79,13 @@ export function buildSystemPrompt(snapshot: PortfolioSnapshot, asOfIso: string):
     lines.push("");
     lines.push("## Commodities");
     for (const c of commodities) {
-      const val = Math.round(c.weight * c.current_price_per_unit_fils);
-      const boughtVal = Math.round(c.weight * c.bought_price_per_unit_fils);
+      const totalWeight = totalWeightInUnit(c);
+      const val = Math.round(totalWeight * c.current_price_per_unit_fils);
+      const boughtVal = Math.round(totalWeight * c.bought_price_per_unit_fils);
       const gain = val - boughtVal;
       const gainPct = boughtVal > 0 ? ((gain / boughtVal) * 100).toFixed(1) : "N/A";
-      lines.push(`- ${c.metal_type}: ${c.weight} ${c.weight_unit}, current value AED ${filsToAed(val).toLocaleString("en-AE")}, bought at AED ${filsToAed(boughtVal).toLocaleString("en-AE")} (${gain >= 0 ? "+" : ""}${gainPct}%)`);
+      const piecesLabel = c.piece_count > 1 ? ` × ${c.piece_count} pieces` : "";
+      lines.push(`- ${c.metal_type}: ${totalWeight} ${c.weight_unit}${piecesLabel}, current value AED ${filsToAed(val).toLocaleString("en-AE")}, bought at AED ${filsToAed(boughtVal).toLocaleString("en-AE")} (${gain >= 0 ? "+" : ""}${gainPct}%)`);
     }
   }
 

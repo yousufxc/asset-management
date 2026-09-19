@@ -75,6 +75,7 @@ export default function CommodityForm() {
       metal_type: metal,
       weight: Number(fd.get("weight") ?? 0),
       weight_unit: weightUnit,
+      piece_count: Number(fd.get("piece_count") ?? 1),
       current_price_per_unit_aed: computedCurrentPrice,
       bought_price_per_unit_aed: numOrNull("bought_price_per_unit_aed"),
       target_sell_price_per_unit_aed: numOrNull("target_sell_price_per_unit_aed"),
@@ -138,7 +139,7 @@ export default function CommodityForm() {
           </select>
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
-          <label>Unit &amp; Weight *</label>
+          <label>Unit &amp; Weight per piece *</label>
           {!unit ? (
             <select
               value=""
@@ -185,6 +186,19 @@ export default function CommodityForm() {
               <input type="hidden" name="weight_unit" value={unit} />
             </div>
           )}
+        </div>
+        <div style={{ flex: 1, minWidth: 120 }}>
+          <label>Number of pieces *</label>
+          <input
+            name="piece_count"
+            type="number"
+            min={1}
+            step={1}
+            required
+            defaultValue={1}
+            placeholder="e.g. 5"
+            onKeyDown={numeralOnly}
+          />
         </div>
       </div>
       <div className="row">
