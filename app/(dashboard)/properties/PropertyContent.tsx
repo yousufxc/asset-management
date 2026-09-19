@@ -21,6 +21,7 @@ import PortfolioROIChart from "./charts/PortfolioROIChart";
 import AnimateOnScroll from "@/app/components/AnimateOnScroll";
 import AnimateChartOnScroll from "@/app/components/AnimateChartOnScroll";
 import ConfirmModal from "@/app/components/ConfirmModal";
+import InfoIcon from "@/app/components/InfoIcon";
 
 const TYPE_LABEL: Record<string, string> = {
   apartment: "Apartment",
@@ -264,6 +265,15 @@ export default function PropertyContent({
     margin: 0,
   };
 
+  function infoHeader(label: string, infoTitle: string, infoText: string) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", marginTop: 0 }}>
+        <h4 style={{ margin: 0 }}>{label}</h4>
+        <InfoIcon title={infoTitle} text={infoText} />
+      </div>
+    );
+  }
+
   return (
     <>
       <h2>Property</h2>
@@ -277,14 +287,22 @@ export default function PropertyContent({
           </div></AnimateOnScroll>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16, marginBottom: 24 }}>
           <AnimateOnScroll><div className="card">
-            <h4 style={{ marginTop: 0 }}>Portfolio Value</h4>
+            {infoHeader(
+              "Portfolio Value",
+              "Portfolio Value",
+              "The total current value of every property in your portfolio, based on each property's latest valuation. It answers: what is everything worth today, on paper?"
+            )}
             {totalPortfolioValue > 0 && (
               <div className="kpi-total">{formatAedShort(totalPortfolioValue)}</div>
             )}
             <AnimateChartOnScroll><ValueByPropertyChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
-            <h4 style={{ marginTop: 0 }}>Capital Appreciation</h4>
+            {infoHeader(
+              "Capital Appreciation",
+              "Capital Appreciation",
+              "The change in property value since purchase: current value minus purchase price, shown in AED and as a percentage of total purchase price. Positive means your properties are worth more than you paid; negative means less."
+            )}
             {totalPortfolioValue > 0 && (
               <div className="kpi-total">
                 {totalAppreciationFils >= 0 ? "+" : ""}{formatAedShort(totalAppreciationFils)}
@@ -295,7 +313,11 @@ export default function PropertyContent({
             )}
             <AnimateChartOnScroll><CapitalAppreciationChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total ROI</h4><AnimateChartOnScroll><PortfolioROIChart properties={properties} maintenance={maintenance} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">{infoHeader(
+            "Total ROI",
+            "Total ROI",
+            "Total return on each property as a percentage of its purchase price: (current value − purchase price + net annual rent − maintenance costs) ÷ purchase price. \"Snapshot\" shows the lifetime gain to date; \"Annualized\" shows the time-weighted return per year."
+          )}<AnimateChartOnScroll><PortfolioROIChart properties={properties} maintenance={maintenance} /></AnimateChartOnScroll></div></AnimateOnScroll>
           <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Composition by Type</h4><AnimateChartOnScroll><PortfolioCompositionChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
           <AnimateOnScroll><div className="card">
             <h4 style={{ marginTop: 0 }}>Net Rental Income</h4>
@@ -307,9 +329,21 @@ export default function PropertyContent({
             <AnimateChartOnScroll><RentalIncomeChart properties={properties} /></AnimateChartOnScroll>
           </div></AnimateOnScroll>
           <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Installment Timeline</h4><AnimateChartOnScroll><InstallmentTimelineChart installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Rental Yield</h4><AnimateChartOnScroll><RentalYieldChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Total Equity</h4><AnimateChartOnScroll><EquityChart properties={properties} installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
-          <AnimateOnScroll><div className="card"><h4 style={{ marginTop: 0 }}>Cash Flow (24m)</h4><AnimateChartOnScroll><CashFlowTimelineChart properties={properties} installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">{infoHeader(
+            "Rental Yield",
+            "Rental Yield",
+            "How much rental income each property generates relative to what you paid: net annual rent ÷ purchase price. Only rented, completed properties are included — off-plan properties are excluded."
+          )}<AnimateChartOnScroll><RentalYieldChart properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">{infoHeader(
+            "Total Equity",
+            "Total Equity",
+            "The part of each property you truly own: current value minus any unpaid instalments. It is roughly what you would keep if you sold at today's valuation and settled the remaining payments."
+          )}<AnimateChartOnScroll><EquityChart properties={properties} installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
+          <AnimateOnScroll><div className="card">{infoHeader(
+            "Cash Flow (24m)",
+            "Cash Flow (24 months)",
+            "A projection of the next 24 months of property cash movement: green bars are rental income coming in, red bars are instalment payments going out, and the blue line is the net position each month."
+          )}<AnimateChartOnScroll><CashFlowTimelineChart properties={properties} installments={installments} /></AnimateChartOnScroll></div></AnimateOnScroll>
           <AnimateOnScroll><div className="card" style={{ gridColumn: "1 / -1" }}><h4 style={{ marginTop: 0 }}>Diversification</h4><AnimateChartOnScroll><DiversificationCharts properties={properties} /></AnimateChartOnScroll></div></AnimateOnScroll>
         </div>
       </>)}
