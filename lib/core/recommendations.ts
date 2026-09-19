@@ -222,6 +222,7 @@ export function computeRecommendations(
 
       const best = ranked[0]!;
       if (best.totalFils > 0) {
+        const bestTotalWeight = totalWeightInUnit(best.c);
         const covered: CoveredInstallment[] = [];
         let remaining = best.totalFils;
         for (const inst of unpaid) {
@@ -248,12 +249,12 @@ export function computeRecommendations(
             priority: "high",
             rationale: `${best.c.metal_type} has the lowest unrealised gain margin (${best.marginPct}% vs bought) — you lose the least potential upside by selling this first. Compared to: ${others}.`,
             title: `Best value sale: ${best.c.metal_type}`,
-            description: `Sell your ${best.c.metal_type} holding (${best.c.weight}${best.c.weight_unit}, worth ${formatAed(best.totalFils)}, bought at ${formatAed(best.c.bought_price_per_unit_fils)}/unit, now ${formatAed(best.c.current_price_per_unit_fils)}/unit, +${best.marginPct}%) to cover ${covered.length} payment${covered.length === 1 ? "" : "s"}: ${covered.map((i) => `${i.label} (${formatAed(i.amountFils)})`).join(", ")}.${remaining > 0 ? ` ${formatAed(remaining)} left over.` : ""}`,
+            description: `Sell your ${best.c.metal_type} holding (${bestTotalWeight}${best.c.weight_unit}, worth ${formatAed(best.totalFils)}, bought at ${formatAed(best.c.bought_price_per_unit_fils)}/unit, now ${formatAed(best.c.current_price_per_unit_fils)}/unit, +${best.marginPct}%) to cover ${covered.length} payment${covered.length === 1 ? "" : "s"}: ${covered.map((i) => `${i.label} (${formatAed(i.amountFils)})`).join(", ")}.${remaining > 0 ? ` ${formatAed(remaining)} left over.` : ""}`,
             commodityId: best.c.id,
             metalType: best.c.metal_type,
-            weight: best.c.weight,
+            weight: bestTotalWeight,
             weightUnit: best.c.weight_unit,
-            weightToSell: best.c.weight,
+            weightToSell: bestTotalWeight,
             totalValueFils: best.totalFils,
             coveredInstallments: covered,
             surplusFils: remaining,
@@ -268,7 +269,7 @@ export function computeRecommendations(
     const liquidAccounts = cashAccounts.filter((a) => a.is_fixed_deposit === 0 && a.current_balance_fils > 0);
     if (liquidAccounts.length > 0) {
       const bestCommodity = validCommodities
-        .map((c) => ({ c, totalFils: commodityValueMap.get(c.id)! }))
+        .map((c) => ({ c, totalFils: commodityValueMap.get(c.id)!, totalWeight: totalWeightInUnit(c) }))
         .sort((a, b) => a.totalFils - b.totalFils)[0]!;
 
       const gapRemaining = Math.max(0, runway.worstShortfallFils - bestCommodity.totalFils);
@@ -283,12 +284,12 @@ export function computeRecommendations(
             priority: runway.daysUntilShortfall !== null && runway.daysUntilShortfall <= 30 ? "critical" : "high",
             rationale: `${bestCommodity.c.metal_type} covers ${formatAed(bestCommodity.totalFils)} of the ${formatAed(runway.worstShortfallFils)} gap; the remaining ${formatAed(gapRemaining)} can be drawn from your liquid ${bestCash.label} (${formatAed(bestCash.current_balance_fils)} available). The commodity sale provides the genuinely new liquidity.`,
             title: `Sell ${bestCommodity.c.metal_type} + draw from ${bestCash.label}`,
-            description: `Sell your ${bestCommodity.c.metal_type} (${bestCommodity.c.weight}${bestCommodity.c.weight_unit}, worth ${formatAed(bestCommodity.totalFils)}) for ${formatAed(bestCommodity.totalFils)} in new liquidity, and draw ${formatAed(gapRemaining)} from ${bestCash.label} to cover the ${formatAed(runway.worstShortfallFils)} shortfall.`,
+            description: `Sell your ${bestCommodity.c.metal_type} (${bestCommodity.totalWeight}${bestCommodity.c.weight_unit}, worth ${formatAed(bestCommodity.totalFils)}) for ${formatAed(bestCommodity.totalFils)} in new liquidity, and draw ${formatAed(gapRemaining)} from ${bestCash.label} to cover the ${formatAed(runway.worstShortfallFils)} shortfall.`,
             commodity: {
               commodityId: bestCommodity.c.id,
               metalType: bestCommodity.c.metal_type,
               weightUnit: bestCommodity.c.weight_unit,
-              weightToSell: bestCommodity.c.weight,
+              weightToSell: bestCommodity.totalWeight,
               sellValueFils: bestCommodity.totalFils,
             },
             cash: {
